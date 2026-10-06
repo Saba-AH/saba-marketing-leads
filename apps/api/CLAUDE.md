@@ -30,7 +30,7 @@ Los estándares del backend viven por tema (se cargan por referencia):
 
 ## Estado actual
 
-- Módulos: `health` (sondas de dependencias) y `leads` (referencia de CRUD con Drizzle, test unitario con repositorio fake y e2e contra Postgres real).
+- Módulos: `health` (sondas de dependencias), `leads` (referencia de CRUD con Drizzle, test unitario con repositorio fake y e2e contra Postgres real), `mobileAppVersions` y `auth` (login de staff contra Supabase Auth + `AuthGuard` global; ver `docs/api_modules.md`).
 - Infra cableada: pool de Drizzle + agregador de esquema (`db-schema.ts`), migraciones con reversa obligatoria (`scripts/migrate.ts`, `scripts/rollback.ts`), throttling, filtros de errores de dominio/HTTP, logging estructurado con correlation id, Swagger desde Zod.
 - `Dockerfile` con targets `runner` y `migrator`.
 
@@ -38,6 +38,5 @@ Los estándares del backend viven por tema (se cargan por referencia):
 
 | Pieza | Estado |
 |-------|--------|
-| Autenticación (guard global + `@Public()` ya marcado en health) | pendiente — p. ej. verificar el JWT de Supabase Auth |
 | `PermissionsGuard`, `@RequirePermissions()` | pendiente |
 | Interceptor global del sobre de respuesta | pendiente |

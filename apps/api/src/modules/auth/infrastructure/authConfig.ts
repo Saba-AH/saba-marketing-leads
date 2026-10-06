@@ -1,0 +1,42 @@
+import { z } from 'zod';
+
+const authEnvSchema = z.object({
+  SUPABASE_URL: z.url(),
+  SUPABASE_PUBLISHABLE_KEY: z.string().min(1),
+  /** Solo si el proyecto todavía firma con el secreto HS256 legado. */
+  SUPABASE_JWT_SECRET: z.string().min(1).optional(),
+  TURNSTILE_SECRET_KEY: z.string().min(1),
+});
+
+export interface AuthConfig {
+  supabaseUrl: string;
+  /** `iss` de los JWT de Supabase Auth. */
+  issuer: string;
+  publishableKey: string;
+  jwtSecret: string | null;
+  turnstileSecretKey: string;
+}
+
+/**
+ * Falla al arrancar si falta algo: una API que levanta sin poder validar
+ * sesiones respondería 401 a todo y el motivo quedaría enterrado en un log.
+ */
+export function loadAuthConfig(
+  env: NodeJS.ProcessEnv = process.env
+): AuthConfig {
+  const parsed = authEnvSchema.safeParse(env);
+  if (!parsed.success) {
+    const faltantes = parsed.error.issues.map((i) => i.path.join('.'));
+    throw new Error(
+      `configuración de auth incompleta o inválida (apps/api/.env): ${faltantes.join(', ')}`
+    );
+  }
+  const supabaseUrl = parsed.data.SUPABASE_URL.replace(/\/+$/, '');
+  return {
+    supabaseUrl,
+    issuer: `${supabaseUrl}/auth/v1`,
+    publishableKey: parsed.data.SUPABASE_PUBLISHABLE_KEY,
+    jwtSecret: parsed.data.SUPABASE_JWT_SECRET ?? null,
+    turnstileSecretKey: parsed.data.TURNSTILE_SECRET_KEY,
+  };
+}

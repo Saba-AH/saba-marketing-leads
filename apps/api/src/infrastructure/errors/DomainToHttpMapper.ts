@@ -7,6 +7,12 @@ import type { DomainErrorCode } from '../i18n/domainMessages';
  * error de `tsc`, no un 500 enmascarado descubierto en producción.
  */
 export const domainErrorHttpStatus: Record<DomainErrorCode, HttpStatus> = {
+  AUTH_CREDENCIALES_INVALIDAS: HttpStatus.UNAUTHORIZED,
+  AUTH_CAPTCHA_INVALIDO: HttpStatus.BAD_REQUEST,
+  AUTH_DEMASIADOS_INTENTOS: HttpStatus.TOO_MANY_REQUESTS,
+  AUTH_CUENTA_BLOQUEADA: HttpStatus.LOCKED,
+  AUTH_SIN_ACCESO: HttpStatus.FORBIDDEN,
+  AUTH_SESION_INVALIDA: HttpStatus.UNAUTHORIZED,
   LEADS_CORREO_DUPLICADO: HttpStatus.CONFLICT,
 };
 

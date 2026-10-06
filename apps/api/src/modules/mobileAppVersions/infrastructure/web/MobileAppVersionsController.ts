@@ -6,6 +6,7 @@ import {
   mobilePlatforms,
   type TMobileAppVersionsResponse,
 } from '@repo/schemas';
+import { Public } from '../../../../shared/decorators/Public';
 import { ZodApiResponse } from '../../../../shared/decorators/zodSwagger';
 import { createZodDto } from '../../../../shared/utils/createZodDto';
 import type { ListarMobileAppVersionsPort } from '../../application/ports/in/ListarMobileAppVersionsPort';
@@ -16,8 +17,10 @@ class ListarMobileAppVersionsQueryDto extends createZodDto(
   listarMobileAppVersionsQuerySchema
 ) {}
 
+// La app móvil la consulta antes de iniciar sesión, para exigir actualizar.
 @ApiTags('mobile-app-versions')
 @Controller('mobile-app-versions')
+@Public()
 export class MobileAppVersionsController {
   constructor(
     @Inject(MOBILE_APP_VERSIONS_TOKENS.ListarMobileAppVersions)
