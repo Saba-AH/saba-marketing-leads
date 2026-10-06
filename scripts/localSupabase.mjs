@@ -117,13 +117,13 @@ function run(command, args, env) {
   });
 }
 
-/**
- * `npm run dev`. Levantar el stack, migrar y sembrar solo tiene sentido contra
- * la base local: con `DB_TARGET=supabase` en el `.env`, migrar en cada
- * arranque tocaría producción. Ahí solo arrancan las apps.
- */
 const TARGETS = ['local', 'supabase'];
 
+/**
+ * `npm run dev:local` / `dev:supabase`. Levantar el stack, migrar y sembrar
+ * solo tiene sentido contra la base local: contra Supabase, migrar en cada
+ * arranque tocaría producción. Ahí solo arrancan las apps.
+ */
 async function dev(target = 'local') {
   if (!TARGETS.includes(target)) {
     console.error(
@@ -146,8 +146,8 @@ async function dev(target = 'local') {
 
 /**
  * `npm run db:sync:saba`: copia de prod los usuarios de
- * `apps/api/scripts/sync/sabaSyncUsers.ts`. Fuerza DB_TARGET=local: con
- * `supabase` en el `.env`, el `db:migrate` previo apuntaría a prod.
+ * `apps/api/scripts/sync/sabaSyncUsers.ts`. Fuerza el destino local: el
+ * `db:migrate` previo nunca puede apuntar a prod.
  */
 async function sync() {
   process.env.DB_TARGET = 'local';

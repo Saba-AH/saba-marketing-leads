@@ -86,7 +86,7 @@ contraseña real, su perfil, sus solicitudes y todo lo que cuelga de ellas— m�
 los catálogos que esas solicitudes referencian. Qué tablas entran está en
 `scripts/sync/syncPlan.ts`.
 
-- Escribe **solo** en el Supabase local, sin importar `DB_TARGET`, y migra antes.
+- Escribe **solo** en el Supabase local, y migra antes.
 - Prod manda: correrlo de nuevo reemplaza ese alcance (lo que hayas cambiado ahí
   en local se pierde); lo demás no se toca. Es una transacción: si falla, queda
   la copia anterior.

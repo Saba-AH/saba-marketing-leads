@@ -13,7 +13,7 @@ import { syncSaba } from './sync/syncSaba';
 /**
  * `npm run db:sync:saba` (lo lanza `scripts/localSupabase.mjs sync`, que antes
  * levanta y migra el stack local). Origen: DATABASE_SUPABASE del `.env`, solo
- * lectura. Destino: siempre el Supabase local, sin importar DB_TARGET.
+ * lectura. Destino: siempre el Supabase local.
  */
 loadEnv({ path: resolve(__dirname, '../.env'), quiet: true });
 
