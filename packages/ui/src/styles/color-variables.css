@@ -29,24 +29,22 @@
   --color-gray-900: #18181b;
   --color-gray-950: #1a1a1a;
 
-  /* Brand Colors — morado de la marca.
-     El 600 es el `--purple` del prototipo (prototipo visual
-     styles.css) y es el que usan `bg-brand-solid` y la variante por defecto del
-     Button; el 700 es su `--purple-dark` (hover), y el 50/100 son su
-     `--purple-light` / `--purple-mid`. El resto de la rampa se interpola entre
-     esos anclajes. */
-  --color-brand-25: #faf5ff;
-  --color-brand-50: #f3e8ff;
-  --color-brand-100: #e8d5ff;
-  --color-brand-200: #d6b4fe;
-  --color-brand-300: #bd8bfc;
-  --color-brand-400: #a25cf9;
-  --color-brand-500: #8a2bf5;
-  --color-brand-600: #7300ff;
-  --color-brand-700: #5c00cc;
-  --color-brand-800: #4a00a3;
-  --color-brand-900: #3b0080;
-  --color-brand-950: #25004f;
+  /* Brand Colors — los verdes de Saba web: 50 (#ECFFD6), 300 (#A3F26D) y 700
+     (#3a631f) son sus hex tal cual; el resto completa la rampa entre ellos.
+     Acentos, foco y la variante `cta` del Button; la acción principal es
+     casi negra (`--primary`), como en Saba. */
+  --color-brand-25: #f7ffee;
+  --color-brand-50: #ecffd6;
+  --color-brand-100: #dafbb8;
+  --color-brand-200: #c3f794;
+  --color-brand-300: #a3f26d;
+  --color-brand-400: #84d54f;
+  --color-brand-500: #63a936;
+  --color-brand-600: #4c842a;
+  --color-brand-700: #3a631f;
+  --color-brand-800: #2f501a;
+  --color-brand-900: #264016;
+  --color-brand-950: #14230b;
 
   /* Secondary Colors */
   --color-secondary-25: #f5fbff;

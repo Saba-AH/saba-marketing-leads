@@ -1,13 +1,26 @@
 import type { Metadata } from 'next';
-import { Manrope } from 'next/font/google';
 import localFont from 'next/font/local';
 import { ClientProviders } from '@/context/client-providers';
 import './globals.css';
 
-/** Tipografía base del panel. */
-const manrope = Manrope({
-  subsets: ['latin'],
-  variable: '--font-manrope',
+/**
+ * La de Saba web, con sus mismos archivos: el Light hace de peso normal, como
+ * allá (`saba/src/index.css`).
+ */
+const antiqueOlive = localFont({
+  src: [
+    {
+      path: './fonts/AntiqueOliveStd-Light.ttf',
+      weight: '400',
+      style: 'normal',
+    },
+    {
+      path: './fonts/AntiqueOliveStd-Bold.ttf',
+      weight: '700',
+      style: 'normal',
+    },
+  ],
+  variable: '--font-antique-olive',
 });
 
 /** Se mantiene solo para bloques monoespaciados. */
@@ -30,7 +43,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className={`${manrope.variable} ${geistMono.variable}`}>
+      <body className={`${antiqueOlive.variable} ${geistMono.variable}`}>
         <ClientProviders>{children}</ClientProviders>
       </body>
     </html>

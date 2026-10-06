@@ -32,9 +32,9 @@
   --popover: var(--color-base-white);
   --popover-foreground: var(--color-gray-900);
 
-  /* El morado de la marca. Un elemento "primary" sin más contexto es la acción
-     principal de su pantalla. */
-  --primary: var(--color-brand-600);
+  /* Como Saba web: la acción principal es casi negra (su slate-900); el verde
+     de la marca queda para acentos y el anillo de foco. */
+  --primary: var(--color-gray-900);
   --primary-foreground: var(--color-base-white);
 
   --secondary: var(--color-gray-100);
@@ -53,7 +53,8 @@
 
   --border: var(--color-gray-200);
   --input: var(--color-gray-200);
-  --ring: var(--color-brand-600);
+  /* El verde del foco del login de Saba (#3a631f). */
+  --ring: var(--color-brand-700);
 
   --chart-1: var(--color-brand-600);
   --chart-2: var(--color-secondary-500);
@@ -67,12 +68,12 @@
      ítem activo en un gris apenas más marcado. */
   --sidebar: var(--color-gray-50);
   --sidebar-foreground: var(--color-gray-700);
-  --sidebar-primary: var(--color-brand-600);
+  --sidebar-primary: var(--color-gray-900);
   --sidebar-primary-foreground: var(--color-base-white);
   --sidebar-accent: var(--color-gray-100);
   --sidebar-accent-foreground: var(--color-gray-900);
   --sidebar-border: var(--color-gray-200);
-  --sidebar-ring: var(--color-brand-600);
+  --sidebar-ring: var(--color-brand-700);
 }
 
 .dark {
