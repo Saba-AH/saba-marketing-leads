@@ -16,7 +16,7 @@
       // `npm run dev:supabase` setea DB_TARGET en el shell, y
       // `scripts/localSupabase.mjs` exporta lo que lee de `supabase status`;
       // en `envMode: strict`, sin esto no llegarían a la API.
-      "passThroughEnv": ["DB_TARGET", "DATABASE_LOCAL"],
+      "passThroughEnv": ["DB_TARGET", "DATABASE_LOCAL", "SUPABASE_STUDIO_URL"],
       "cache": false,
       "persistent": true
     },

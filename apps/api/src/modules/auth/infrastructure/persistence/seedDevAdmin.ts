@@ -1,4 +1,5 @@
 import { sql } from 'drizzle-orm';
+import { isLocalDatabaseUrl } from '../../../../infrastructure/database/databaseUrl';
 import type { ApiDb } from '../../../../infrastructure/database/drizzle.module';
 
 /**
@@ -14,13 +15,10 @@ export const DEV_ADMIN = {
   apellido: 'Hernández',
 } as const;
 
-const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
-
 export function assertLocalDatabase(url: string): void {
-  const { hostname } = new URL(url);
-  if (!LOCAL_HOSTS.has(hostname)) {
+  if (!isLocalDatabaseUrl(url)) {
     throw new Error(
-      `el admin de desarrollo solo se siembra en una base local (host: ${hostname})`
+      `el admin de desarrollo solo se siembra en una base local (host: ${new URL(url).hostname})`
     );
   }
 }

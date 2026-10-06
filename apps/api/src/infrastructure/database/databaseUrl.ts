@@ -50,6 +50,13 @@ export function resolveDatabaseUrl(): string {
   return supabase;
 }
 
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
+
+/** Si la base está en esta máquina (el stack local), sin importar cómo se eligió. */
+export function isLocalDatabaseUrl(url: string): boolean {
+  return LOCAL_HOSTS.has(new URL(url).hostname);
+}
+
 /** Para logs: nunca imprimir credenciales. */
 export function redactDatabaseUrl(url: string): string {
   return url.replace(/\/\/[^@]*@/, '//***@');

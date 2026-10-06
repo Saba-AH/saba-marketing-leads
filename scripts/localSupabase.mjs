@@ -18,6 +18,8 @@ import { parse } from 'dotenv';
 /** Variable de la API ← clave de `supabase status -o json`. */
 const FROM_STATUS = {
   DATABASE_LOCAL: 'DB_URL',
+  // Solo para el banner de arranque de la API.
+  SUPABASE_STUDIO_URL: 'STUDIO_URL',
 };
 
 const SHELL = process.platform === 'win32';
