@@ -1,11 +1,12 @@
 import { API } from '@repo/services';
+import { recargarEn } from '@/lib/session/recargarEn';
 import { loginPathFor } from '@/lib/session/safeNextPath';
 
 let api: API | null = null;
 
 function goToLogin(): void {
   const { pathname, search } = window.location;
-  window.location.assign(loginPathFor(`${pathname}${search}`));
+  recargarEn(loginPathFor(`${pathname}${search}`));
 }
 
 /**

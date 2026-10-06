@@ -1,21 +1,19 @@
-import Link from 'next/link';
+import { cookies } from 'next/headers';
+import { UserMenu } from '@/features/auth/ui/widgets/UserMenu';
+import { AppShell } from '@/shared/ui/layouts/AppShell';
 
-export default function AppLayout({
+/** Cookie que escribe el sidebar de shadcn al abrirlo o colapsarlo. */
+const SIDEBAR_COOKIE = 'sidebar_state';
+
+export default async function AppLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const sidebarState = (await cookies()).get(SIDEBAR_COOKIE)?.value;
   return (
-    <div className="min-h-svh">
-      <nav className="border-b px-6 py-3 flex gap-4 text-sm">
-        <Link href="/" className="font-semibold">
-          Saba Marketing Leads
-        </Link>
-        <Link href="/leads" className="text-muted-foreground">
-          Leads
-        </Link>
-      </nav>
+    <AppShell defaultOpen={sidebarState !== 'false'} pieSidebar={<UserMenu />}>
       {children}
-    </div>
+    </AppShell>
   );
 }
