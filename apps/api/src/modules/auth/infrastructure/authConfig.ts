@@ -1,10 +1,18 @@
 import { z } from 'zod';
 
+/** `VAR=` en el `.env` cuenta como no definida: el `.env` trae en blanco lo que no se usa. */
+function optional<T extends z.ZodType>(schema: T) {
+  return z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    schema.optional()
+  );
+}
+
 const authEnvSchema = z.object({
   SUPABASE_URL: z.url(),
   SUPABASE_PUBLISHABLE_KEY: z.string().min(1),
   /** Solo si el proyecto todavía firma con el secreto HS256 legado. */
-  SUPABASE_JWT_SECRET: z.string().min(1).optional(),
+  SUPABASE_JWT_SECRET: optional(z.string()),
   TURNSTILE_SECRET_KEY: z.string().min(1),
 });
 
