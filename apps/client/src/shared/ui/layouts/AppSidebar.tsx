@@ -43,13 +43,13 @@ export function AppSidebar({
           <img
             alt="Saba"
             className="h-6 w-auto group-data-[collapsible=icon]:hidden"
-            height={220}
-            src="/logos/logo-white.png"
-            width={938}
+            height={305}
+            src="/logos/logo.png"
+            width={1017}
           />
           <img
             alt="Saba"
-            className="hidden size-7 rounded-full ring-1 ring-sidebar-border group-data-[collapsible=icon]:block"
+            className="hidden size-7 group-data-[collapsible=icon]:block"
             height={305}
             src="/logos/iso.png"
             width={305}
