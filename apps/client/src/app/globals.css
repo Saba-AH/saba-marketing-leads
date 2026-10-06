@@ -1,0 +1,45 @@
+/* Tailwind v4 entrypoint (CSS-first) */
+@import "tailwindcss";
+
+/* Source paths for Tailwind v4 scanning (monorepo) */
+@source "../../**/*.{ts,tsx}";
+@source "../../../../packages/ui/src/**/*.{ts,tsx}";
+
+/* Primitivos de color + capa semántica de shadcn (must be after @import tailwindcss).
+   Los tokens de color viven en `packages/ui`, no acá: ver su `globals.css`. */
+@import "@repo/ui/globals.css";
+
+/* Utilidades semánticas propias, construidas sobre esos primitivos. */
+@import "../css/bg-variables.css";
+@import "../css/fg-variables.css";
+@import "../css/border-variables.css";
+@import "../css/text-variables.css";
+
+/* La tipografía del prototipo. `layout.tsx` solo declaraba la variable de la
+   fuente y ningún CSS la consumía, así que la app venía renderizando con la
+   fuente del sistema. Definir `--font-sans` la aplica a todo, porque es la que
+   Tailwind usa por defecto en `html`. */
+@theme {
+  --font-sans:
+    var(--font-manrope), -apple-system, "Segoe UI", Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+@layer utilities {
+  .scrollbar-color-gray::-webkit-scrollbar-thumb {
+    background-color: gray;
+  }
+}
+
+/* El login es siempre claro; Chrome autofill respeta el tema del perfil si no se anula. */
+@layer components {
+  .login-input:-webkit-autofill,
+  .login-input:-webkit-autofill:hover,
+  .login-input:-webkit-autofill:focus,
+  .login-input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px var(--color-auth-autofill-bg) inset !important;
+    box-shadow: 0 0 0 1000px var(--color-auth-autofill-bg) inset !important;
+    -webkit-text-fill-color: var(--color-auth-autofill-fg) !important;
+    caret-color: var(--color-auth-autofill-fg);
+  }
+}
