@@ -26,7 +26,8 @@ npm run dev                                  # Supabase local + migraciones + se
 
 | Comando | Qué hace |
 |---------|----------|
-| `npm run dev` | Levanta Supabase local, migra, siembra y arranca API y cliente. En el sidebar de turbo, `@repo/api#dev:info` resume contra qué base corre y qué abrir |
+| `npm run dev` / `dev:local` | Levanta Supabase local, migra, siembra y arranca API y cliente. En el sidebar de turbo, `@repo/api#dev:info` resume contra qué base corre y qué abrir |
+| `npm run dev:supabase` | Arranca API y cliente contra el Supabase real (sin levantar el stack ni migrar) |
 | `npm run build` | Compila packages, API y cliente |
 | `npm run typecheck` | `tsc --noEmit` en cada workspace |
 | `npm test` | Vitest (API, contra el Postgres del Supabase local) + Jest (cliente, MSW) |
@@ -67,9 +68,11 @@ Drizzle habla Postgres, y Supabase **es** Postgres: no hay que cambiar código.
   `globalSetup` de Vitest y truncan entre tests.
 - **Variables del stack:** `npm run dev` corre las tareas con
   `scripts/localSupabase.mjs`, que lee `supabase status` y exporta la conexión
-  (y, con auth, las llaves) al entorno. No se copian al `.env`. Con
-  `DB_TARGET=supabase` (shell o `apps/api/.env`) no levanta el stack, **no
-  migra** (eso es `npm run db:migrate:supabase`, a propósito) y manda el `.env`.
+  (y, con auth, las llaves) al entorno. No se copian al `.env`.
+- **Destino por comando:** `npm run dev:local` (o `npm run dev`) usa el stack
+  local; `npm run dev:supabase` usa el proyecto real: no levanta el stack, **no
+  migra** (eso es `npm run db:migrate:supabase`, a propósito) y toma la
+  conexión del `.env`.
 - **Supabase:** poner en `DATABASE` la connection string del proyecto
   (Dashboard → Connect; para migrar usar la de puerto 5432) y correr
   `npm -C apps/api run db:migrate`.

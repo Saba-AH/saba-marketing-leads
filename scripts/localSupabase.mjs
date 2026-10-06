@@ -1,7 +1,7 @@
 /**
  * Puente entre el stack local de Supabase y las tareas del monorepo.
  *
- *   node scripts/localSupabase.mjs dev              `npm run dev` (ver `dev()`)
+ *   node scripts/localSupabase.mjs dev <destino>    `npm run dev:local` / `dev:supabase`
  *   node scripts/localSupabase.mjs start            levanta el stack (salida corta)
  *   node scripts/localSupabase.mjs exec <cmd...>    corre <cmd> con el entorno local
  *
@@ -32,10 +32,14 @@ function apiEnvFile() {
   }
 }
 
+/**
+ * El destino lo elige el comando (`npm run dev:local` / `dev:supabase`), que
+ * fija DB_TARGET para el proceso; no se configura en el `.env`. Una
+ * `DATABASE` explícita (despliegue, CI) gana sobre todo.
+ */
 function usesLocalStack() {
-  const file = apiEnvFile();
-  const target = process.env.DB_TARGET ?? file.DB_TARGET ?? 'local';
-  const explicit = process.env.DATABASE ?? file.DATABASE;
+  const target = process.env.DB_TARGET ?? 'local';
+  const explicit = process.env.DATABASE ?? apiEnvFile().DATABASE;
   return target.trim().toLowerCase() === 'local' && !explicit;
 }
 
@@ -112,13 +116,22 @@ function run(command, args, env) {
  * la base local: con `DB_TARGET=supabase` en el `.env`, migrar en cada
  * arranque tocaría producción. Ahí solo arrancan las apps.
  */
-async function dev() {
+const TARGETS = ['local', 'supabase'];
+
+async function dev(target = 'local') {
+  if (!TARGETS.includes(target)) {
+    console.error(
+      `destino desconocido: ${target} (usar ${TARGETS.join(' | ')})`
+    );
+    process.exit(1);
+  }
+  process.env.DB_TARGET = target;
   if (usesLocalStack()) {
     await start();
     await run('npm', ['run', 'db:setup'], localEnv());
   } else {
     console.log(
-      '· DB_TARGET=supabase: sin stack local ni migraciones (migrar a mano con `npm run db:migrate:supabase`)'
+      '· Supabase remoto: sin stack local ni migraciones (migrar a mano con `npm run db:migrate:supabase`)'
     );
   }
   // `dev:info` es el resumen de la API en el sidebar de turbo.
@@ -127,14 +140,14 @@ async function dev() {
 
 const [mode, command, ...args] = process.argv.slice(2);
 if (mode === 'dev') {
-  await dev();
+  await dev(command);
 } else if (mode === 'start') {
   await start();
 } else if (mode === 'exec' && command) {
   await run(command, args, localEnv());
 } else {
   console.error(
-    'uso: node scripts/localSupabase.mjs dev | start | exec <comando...>'
+    'uso: node scripts/localSupabase.mjs dev [local|supabase] | start | exec <comando...>'
   );
   process.exit(1);
 }

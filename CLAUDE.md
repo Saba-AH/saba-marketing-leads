@@ -58,7 +58,8 @@ Desde la raíz:
 
 | Comando | Qué hace |
 |---------|----------|
-| `npm run dev` | Levanta Supabase local, migra, siembra y arranca API y cliente |
+| `npm run dev` / `dev:local` | Levanta Supabase local, migra, siembra y arranca API y cliente |
+| `npm run dev:supabase` | API y cliente contra el Supabase real (sin migrar). El destino lo elige el comando, no el `.env` |
 | `npm run db:up` / `db:down` / `db:status` | Stack local de Supabase |
 | `npm run db:setup` / `db:reset` | Migra y siembra / recrea el stack desde cero |
 | `npm -C apps/api run db:generate` | Genera una migración de Drizzle desde los `*.schema.ts` |

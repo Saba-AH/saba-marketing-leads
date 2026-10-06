@@ -55,7 +55,7 @@ export function startupBanner(input: StartupBannerInput): string {
   const api = `http://localhost:${input.port}`;
   const origen = input.explicitDatabase
     ? 'DATABASE explícita'
-    : `DB_TARGET=${input.dbTarget}`;
+    : `destino ${input.dbTarget}`;
 
   const rows: Row[] = [
     ...(input.panelUrl ? [{ label: 'Panel', value: input.panelUrl }] : []),
