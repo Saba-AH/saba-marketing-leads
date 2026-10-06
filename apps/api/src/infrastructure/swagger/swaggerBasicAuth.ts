@@ -26,7 +26,9 @@ export function resolveSwaggerAccess(
   if (user && password) {
     return { mode: 'protected', credentials: { user, password } };
   }
-  return env.NODE_ENV === 'production' ? { mode: 'disabled' } : { mode: 'open' };
+  return env.NODE_ENV === 'production'
+    ? { mode: 'disabled' }
+    : { mode: 'open' };
 }
 
 /** Comparación en tiempo constante: no filtra por timing cuánto acertó. */

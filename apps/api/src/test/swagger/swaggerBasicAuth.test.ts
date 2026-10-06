@@ -42,9 +42,9 @@ describe('isAuthorized', () => {
 
   it('rechaza contraseña o usuario incorrectos', () => {
     expect(isAuthorized(basic('admin', 'otra'), credentials)).toBe(false);
-    expect(
-      isAuthorized(basic('otro', credentials.password), credentials)
-    ).toBe(false);
+    expect(isAuthorized(basic('otro', credentials.password), credentials)).toBe(
+      false
+    );
   });
 
   it('rechaza sin header o con otro esquema', () => {

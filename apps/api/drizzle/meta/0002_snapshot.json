@@ -47,9 +47,7 @@
       "uniqueConstraints": {
         "leads_correo_unique": {
           "name": "leads_correo_unique",
-          "columns": [
-            "correo"
-          ],
+          "columns": ["correo"],
           "nullsNotDistinct": false
         }
       },
