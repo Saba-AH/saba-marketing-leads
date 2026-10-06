@@ -1,0 +1,8 @@
+# Capa web
+
+- **DTOs**: `createZodDto(schema)` + `ZodValidationPipe` (ya global). Los esquemas salen de `@repo/schemas`, que los comparte con el cliente.
+- **Sobre de respuesta**: toda respuesta va como `{ success, data }` / `{ success, error }`, la forma que produce `buildSafeResponseSchema` en `@repo/schemas`. El lado `success: true` lo arma el presenter del módulo (ver `HealthPresenter.ts`); no hay interceptor global para eso — sigue siendo tarea del presenter. El lado `success: false` sí lo arma un filtro global (`DomainExceptionFilter` / `HttpExceptionFilter`, ver `.claude/rules/errors.md`): agrega `code`, `correlationId`, `timestamp` y `path` a cualquier error que llegue a la capa web, sin que el controller haga nada.
+- **Presenters**: la traducción de dominio → contrato vive en `infrastructure/web/*Presenter.ts`. El dominio no conoce la forma del sobre.
+- **Rate limiting**: `ThrottlerGuard` global vía `APP_GUARD` (`security.module.ts`). 100 req/60 s en producción, 1000 en desarrollo. `@SkipThrottle()` para lo que un monitor consulta a alta frecuencia (el health check ya lo usa). Los endpoints caros (subidas, búsquedas pesadas) merecen su propio tramo con `@Throttle({ default: { limit, ttl } })`: conviene protegerlos aparte.
+- **Guards**: el template no trae un guard de autenticación global. Cuando el proyecto agregue autenticación, el patrón es un guard global vía `APP_GUARD` con un decorador `@Public()` para que rutas puntuales (como el health check) opten por salir, y un `PermissionsGuard` / `@RequirePermissions()` para autorización por permiso (ver `.claude/rules/permissions.md`).
+- **Sin `any`, sin `console.log` en código de módulo** (en el bootstrap está bien), sin lógica de dominio en los adaptadores.

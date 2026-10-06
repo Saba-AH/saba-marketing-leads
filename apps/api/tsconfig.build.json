@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  // Sin `rootDir`, tsc calcula la raíz común de TODO lo incluido — que por
+  // defecto también arrastra `drizzle.config.ts`, `vitest.config.ts` y
+  // `scripts/` (viven junto a `src/`, no dentro) — y el build termina en
+  // `dist/src/main.js` en vez de `dist/main.js`, rompiendo `start:prod` y
+  // el runner de Cloud Run. Acotar a `src/` es lo que hace que la salida
+  // quede plana. `tsconfig.json` (typecheck) no lleva este rootDir porque
+  // sí necesita cubrir esos archivos de raíz.
+  "compilerOptions": {
+    "rootDir": "./src",
+    // El .tsbuildinfo vive DENTRO de dist para que `deleteOutDir` de nest-cli
+    // lo borre junto con la salida. Si quedara fuera (default con
+    // `incremental: true`), sobrevive al borrado y tsc cree que ya emitió →
+    // `dist/main.js` nunca se regenera y `nest start`/`start:prod` fallan con
+    // "Cannot find module dist/main".
+    "tsBuildInfoFile": "./dist/tsconfig.build.tsbuildinfo"
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "src/test", "**/*.test.ts", "**/*spec.ts"]
+}
