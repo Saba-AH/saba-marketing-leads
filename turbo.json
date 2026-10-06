@@ -30,7 +30,7 @@
       "dependsOn": ["^build"],
       // Turbo corre en `envMode: strict`: lo que no está acá no llega a la
       // tarea. Los tests de la API se conectan a Postgres de verdad, así que
-      // sin esto vitest cae a su default (`localhost:5433`) — que acierta en
+      // sin esto vitest cae a su default (`localhost:54332`) — que acierta en
       // el runner de GitHub y falla dentro del contenedor de Cloud Build,
       // donde la base es un sidecar en otro host.
       "env": ["DATABASE"],

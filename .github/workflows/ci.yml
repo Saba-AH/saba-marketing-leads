@@ -19,24 +19,6 @@ jobs:
     name: Lint · typecheck · test · build
     runs-on: ubuntu-latest
 
-    # Los tests de integración corren contra Postgres real (no un doble). El
-    # globalSetup de Vitest se conecta a localhost:5433 por defecto — mismo
-    # puerto que docker-compose en local — crea la base de tests y migra.
-    services:
-      db:
-        image: pgvector/pgvector:pg16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: app_dev
-        ports:
-          - 5433:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d app_dev"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-
     # Las actions van pinneadas al SHA del commit, no al tag: la política de
     # Actions de la organización lo exige, y es la única forma de que `v4` no
     # signifique algo distinto mañana. El comentario dice qué release es cada
@@ -51,6 +33,13 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      # Los tests de integración corren contra Postgres real (no un doble): el
+      # mismo stack local de Supabase que en desarrollo (`supabase/config.toml`,
+      # Postgres en :54332). El globalSetup de Vitest crea la base de tests y
+      # migra. Studio y pg-meta no hacen falta en CI.
+      - name: Supabase local
+        run: npx supabase start -x studio,postgres-meta
 
       - name: Formato y lint
         run: npm run format-and-lint

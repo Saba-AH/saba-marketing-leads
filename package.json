@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Monorepo fullstack: apps/api (NestJS + Drizzle/Postgres·Supabase) + apps/client (Next.js SSR) sobre Turborepo, con packages compartidos, skills de agentes y Ralph.",
   "scripts": {
-    "dev": "npm run db:up && turbo dev",
+    "dev": "npm run db:up && npm run db:setup && turbo dev",
     "dev:supabase": "DB_TARGET=supabase turbo dev",
     "dev:apps": "turbo dev",
     "build": "turbo build",
@@ -16,15 +16,18 @@
     "format-and-lint": "biome check .",
     "format-and-lint:fix": "biome check . --write",
     "format-and-lint:error": "biome check . --diagnostic-level=error",
-    "db:up": "docker compose up -d --wait db",
-    "db:down": "docker compose down",
-    "db:reset": "docker compose down -v && npm run db:up",
+    "db:up": "supabase start",
+    "db:down": "supabase stop",
+    "db:status": "supabase status",
+    "db:setup": "npm run db:migrate && npm -C apps/api run db:seed",
+    "db:reset": "supabase stop --no-backup && npm run db:up && npm run db:setup",
     "db:migrate": "npm -C apps/api run db:migrate",
     "db:migrate:supabase": "DB_TARGET=supabase npm -C apps/api run db:migrate"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.2",
     "@types/node": "^24.3.0",
+    "supabase": "^2.120.0",
     "tsx": "^4.20.3",
     "turbo": "2.5.6",
     "typescript": "5.9.2"

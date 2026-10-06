@@ -7,31 +7,32 @@ packages compartidos, reglas y skills de agentes (Matt Pocock) y Ralph.
 ## Requisitos
 
 - Node **>= 20** (CI usa 22) y npm 11
-- **Docker** (Postgres local para desarrollo y tests)
+- **Docker** (lo usa el stack local de Supabase: Postgres + Auth, para desarrollo y tests)
 
 ## Arranque
 
 ```bash
 npm install
 cp apps/api/.env.example apps/api/.env       # valores por defecto sirven en local
-npm run db:up                                # Postgres + pgvector en docker (puerto 5433)
-npm -C apps/api run db:migrate               # aplica las migraciones de Drizzle
-npm run dev                                  # API (8080) + cliente (3002)
+npm run dev                                  # Supabase local + migraciones + seed + API (8080) + cliente (3002)
 ```
 
 - Cliente: http://localhost:3002 (estado del sistema) y http://localhost:3002/leads
 - API: http://localhost:8080/api/v1/health · Swagger: http://localhost:8080/api/docs
+- Supabase Studio local: http://localhost:54333
+- Admin de desarrollo (lo crea `db:seed`, solo en local): `angel.hernandez@sabatransporte.com` / `12345678`
 
 ## Comandos
 
 | Comando | Qué hace |
 |---------|----------|
-| `npm run dev` | Levanta Postgres (docker), API y cliente en paralelo |
+| `npm run dev` | Levanta Supabase local, migra, siembra y arranca API y cliente |
 | `npm run build` | Compila packages, API y cliente |
 | `npm run typecheck` | `tsc --noEmit` en cada workspace |
-| `npm test` | Vitest (API, contra Postgres real en docker) + Jest (cliente, MSW) |
+| `npm test` | Vitest (API, contra el Postgres del Supabase local) + Jest (cliente, MSW) |
 | `npm run format-and-lint` | `biome check .` — lo mismo que corre el CI |
-| `npm run db:up` / `db:down` / `db:reset` | Postgres de docker-compose |
+| `npm run db:up` / `db:down` / `db:status` | Stack local de Supabase (`supabase start` / `stop` / `status`) |
+| `npm run db:setup` / `db:reset` | Migra y siembra / recrea el stack desde cero (borra los datos locales) |
 | `npm -C apps/api run db:generate` | Nueva migración desde los `*.schema.ts` (escribir su `drizzle/down/<tag>.down.sql`) |
 | `npm -C apps/api run db:migrate` / `db:rollback` / `db:seed` | Migraciones sobre `DATABASE` |
 
@@ -48,20 +49,22 @@ npm run dev                                  # API (8080) + cliente (3002)
 │   ├── ui/             # shadcn/ui + tokens de Tailwind
 │   ├── utils/          # Helpers sin framework
 │   └── typescript-config/
-├── docker-compose.yml  # Postgres + pgvector (dev y tests)
-├── docker/postgres/    # init SQL (extensiones)
+├── supabase/           # config del stack local de Supabase (db + auth + studio)
 ├── .claude/ · .agents/ # reglas y skills de agentes (mattpocock/skills, ver skills-lock.json)
 ├── docs/agents/        # cómo consumen las skills el tracker, labels y docs de dominio
 ├── ralph/              # loop autónomo de agentes (AFK)
 └── .scratch/           # PRDs/specs por épica
 ```
 
-## Base de datos: Docker en local, Supabase en la nube
+## Base de datos: Supabase local en desarrollo, Supabase en la nube
 
 Drizzle habla Postgres, y Supabase **es** Postgres: no hay que cambiar código.
 
-- **Local/tests:** `docker-compose.yml`. Los tests de la API crean y migran una
-  base aparte (`app_dev_test`) en el `globalSetup` de Vitest y truncan entre tests.
+- **Local/tests:** el stack de Supabase CLI (`supabase/config.toml`): Postgres en
+  `:54332`, Auth y Studio en `:54331`/`:54333` (puertos propios para convivir con
+  otro stack local). Las migraciones son **las de Drizzle**, no las del CLI. Los
+  tests de la API crean y migran una base aparte (`app_dev_test`) en el
+  `globalSetup` de Vitest y truncan entre tests.
 - **Supabase:** poner en `DATABASE` la connection string del proyecto
   (Dashboard → Connect; para migrar usar la de puerto 5432) y correr
   `npm -C apps/api run db:migrate`.

@@ -11,8 +11,9 @@
  * No carga `.env`: eso lo hace quien llama, una sola vez.
  */
 
+/** Postgres del stack local de Supabase (`supabase/config.toml`, `[db] port`). */
 export const DEFAULT_LOCAL_DATABASE_URL =
-  'postgresql://postgres:postgres@localhost:5433/app_dev';
+  'postgresql://postgres:postgres@localhost:54332/postgres';
 
 const DB_TARGETS = ['local', 'supabase'] as const;
 export type DbTarget = (typeof DB_TARGETS)[number];
@@ -39,7 +40,7 @@ export function resolveDatabaseUrl(): string {
     return localDatabaseUrl();
   }
   // Sin fallback a local a propósito: pedir Supabase y caer en silencio en
-  // Docker haría creer que se está mirando producción.
+  // el stack local haría creer que se está mirando producción.
   const supabase = process.env.DATABASE_SUPABASE;
   if (!supabase) {
     throw new Error(

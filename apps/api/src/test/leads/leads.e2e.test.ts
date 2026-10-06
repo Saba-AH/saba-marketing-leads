@@ -16,7 +16,7 @@ import {
 process.env.DATABASE = testDatabaseUrl();
 
 /**
- * Integración contra Postgres real (docker-compose): el índice único del
+ * Integración contra Postgres real (Supabase local): el índice único del
  * correo y el orden del listado solo existen en la base.
  */
 describe('/leads', () => {

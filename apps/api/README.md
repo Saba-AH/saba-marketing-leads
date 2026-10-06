@@ -1,6 +1,6 @@
 # @repo/api — API
 
-NestJS. **Único camino a los datos**: Postgres (Docker en local, Supabase en la nube) se alcanza solo desde aquí.
+NestJS. **Único camino a los datos**: Postgres (Supabase local en desarrollo, Supabase en la nube) se alcanza solo desde aquí.
 
 ## Correr
 
@@ -13,7 +13,7 @@ npm run dev
 Solo la API:
 
 ```bash
-npm run db:up            # Postgres + pgvector en Docker
+npm run db:up && npm run db:setup   # Supabase local, migraciones y seed
 npm run dev -w @repo/api
 ```
 

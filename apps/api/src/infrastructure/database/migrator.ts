@@ -41,9 +41,8 @@ export function createPool(url = databaseUrl()): Pool {
  * Extensiones que el esquema necesita para siquiera crearse: sin `vector` la
  * columna `embedding` no existe como tipo.
  *
- * En local las siembra el init de docker-compose, pero eso solo corre al crear
- * el volumen — una base nueva (la de tests, o Cloud SQL) no pasa por ahí. Es
- * idempotente, así que corre siempre antes de migrar.
+ * Una base nueva (la de tests, o Cloud SQL) no las trae. Es idempotente, así
+ * que corre siempre antes de migrar.
  */
 export async function ensureExtensions(pool: Pool): Promise<void> {
   await pool.query('CREATE EXTENSION IF NOT EXISTS vector');
