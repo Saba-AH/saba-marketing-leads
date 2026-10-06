@@ -5,7 +5,11 @@ import { config as loadEnv } from 'dotenv';
 import helmet from 'helmet';
 import 'reflect-metadata';
 import { AppModule } from './app.module';
-import { startupBanner } from './infrastructure/bootstrap/startupBanner';
+import { allowedOrigins } from './infrastructure/bootstrap/allowedOrigins';
+import {
+  shouldColor,
+  startupBanner,
+} from './infrastructure/bootstrap/startupBanner';
 import {
   dbTarget,
   redactDatabaseUrl,
@@ -23,18 +27,6 @@ loadEnv({ path: resolve(__dirname, '../.env') });
 // en Error Reporting con traza, no perderse en un stdout sin estructura.
 registerUncaughtErrorHandlers(new StructuredLogger());
 
-/**
- * Orígenes permitidos. El cliente es SSR en su propio servicio de Cloud Run,
- * así que el navegador es lo único que llama a esta API: CORS es la frontera
- * real, no un detalle de configuración.
- */
-function allowedOrigins(): string[] {
-  return (process.env.CORS_ALLOWED_ORIGINS ?? 'http://localhost:3002')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean);
-}
-
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   app.useLogger(app.get(StructuredLogger));
@@ -50,6 +42,8 @@ async function bootstrap() {
     })
   );
 
+  // El cliente es SSR en su propio servicio, así que el navegador es lo único
+  // que llama a esta API: CORS es la frontera real, no un detalle.
   app.enableCors({
     origin: allowedOrigins(),
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -83,6 +77,7 @@ async function bootstrap() {
       explicitDatabase: Boolean(process.env.DATABASE),
       panelUrl: allowedOrigins()[0],
       studioUrl: process.env.SUPABASE_STUDIO_URL,
+      color: shouldColor(),
     })
   );
 

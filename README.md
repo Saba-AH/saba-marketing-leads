@@ -26,7 +26,7 @@ npm run dev                                  # Supabase local + migraciones + se
 
 | Comando | Qué hace |
 |---------|----------|
-| `npm run dev` | Levanta Supabase local, migra, siembra y arranca API y cliente |
+| `npm run dev` | Levanta Supabase local, migra, siembra y arranca API y cliente. En el sidebar de turbo, `@repo/api#dev:info` resume contra qué base corre y qué abrir |
 | `npm run build` | Compila packages, API y cliente |
 | `npm run typecheck` | `tsc --noEmit` en cada workspace |
 | `npm test` | Vitest (API, contra el Postgres del Supabase local) + Jest (cliente, MSW) |

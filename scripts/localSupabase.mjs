@@ -121,7 +121,8 @@ async function dev() {
       '· DB_TARGET=supabase: sin stack local ni migraciones (migrar a mano con `npm run db:migrate:supabase`)'
     );
   }
-  await run('turbo', ['dev'], localEnv());
+  // `dev:info` es el resumen de la API en el sidebar de turbo.
+  await run('turbo', ['run', 'dev', 'dev:info'], localEnv());
 }
 
 const [mode, command, ...args] = process.argv.slice(2);
