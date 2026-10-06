@@ -21,6 +21,9 @@
         "DB_TARGET",
         "DATABASE_LOCAL",
         "SUPABASE_STUDIO_URL",
+        "SUPABASE_URL",
+        "SUPABASE_PUBLISHABLE_KEY",
+        "SUPABASE_JWT_SECRET",
         "API_URL"
       ],
       "cache": false,

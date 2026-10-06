@@ -28,7 +28,9 @@ export function loadAuthConfig(
   if (!parsed.success) {
     const faltantes = parsed.error.issues.map((i) => i.path.join('.'));
     throw new Error(
-      `configuración de auth incompleta o inválida (apps/api/.env): ${faltantes.join(', ')}`
+      `configuración de auth incompleta o inválida: ${faltantes.join(', ')}. ` +
+        'Con el Supabase local, arrancar con `npm run dev` (las toma de ' +
+        '`supabase status`); para el Supabase real, definirlas en apps/api/.env.'
     );
   }
   const supabaseUrl = parsed.data.SUPABASE_URL.replace(/\/+$/, '');
