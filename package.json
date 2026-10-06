@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Monorepo fullstack: apps/api (NestJS + Drizzle/Postgres·Supabase) + apps/client (Next.js SSR) sobre Turborepo, con packages compartidos, skills de agentes y Ralph.",
   "scripts": {
-    "dev": "npm run db:up && npm run db:setup && turbo dev",
+    "dev": "node scripts/localSupabase.mjs start && node scripts/localSupabase.mjs exec npm run db:setup && node scripts/localSupabase.mjs exec turbo dev",
     "dev:supabase": "DB_TARGET=supabase turbo dev",
     "dev:apps": "turbo dev",
     "build": "turbo build",
@@ -27,6 +27,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.2.2",
     "@types/node": "^24.3.0",
+    "dotenv": "^17.4.2",
     "supabase": "^2.120.0",
     "tsx": "^4.20.3",
     "turbo": "2.5.6",

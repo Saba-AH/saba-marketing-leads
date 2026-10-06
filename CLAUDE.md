@@ -18,7 +18,7 @@ Dentro de esa frontera, en `apps/client` ya están permitidos Server Components 
 
 ## Base de datos: Postgres (Supabase)
 
-- **Local y tests:** stack local de Supabase CLI (`supabase/config.toml`: Postgres en **54332**, Auth en 54331, Studio en 54333). Las migraciones son las de Drizzle (el CLI tiene las suyas apagadas); `db:seed` crea un admin de desarrollo y se niega a correr contra una base remota. Los tests de la API corren contra una base aparte (`app_dev_test`) que el `globalSetup` de Vitest crea y migra.
+- **Local y tests:** stack local de Supabase CLI (`supabase/config.toml`: Postgres en **54332**, Auth en 54331, Studio en 54333). Las migraciones son las de Drizzle (el CLI tiene las suyas apagadas); `db:seed` crea un admin de desarrollo y se niega a correr contra una base remota. `npm run dev` toma la conexión del stack de `supabase status` (`scripts/localSupabase.mjs`), no del `.env`. Los tests de la API corren contra una base aparte (`app_dev_test`) que el `globalSetup` de Vitest crea y migra.
 - **Staging/producción:** **Supabase** (que es Postgres). Solo cambia `DATABASE` en `apps/api/.env` / en el entorno del despliegue. Las migraciones de Drizzle se aplican igual (`npm -C apps/api run db:migrate`).
 - El ORM es **Drizzle** (`drizzle-orm/node-postgres`). Las PK usan `gen_random_uuid()` (nativo de Postgres, funciona igual en Docker y Supabase).
 
