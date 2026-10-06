@@ -18,6 +18,7 @@ import {
 } from './infrastructure/database/databaseUrl';
 import { registerUncaughtErrorHandlers } from './infrastructure/logging/registerUncaughtErrorHandlers';
 import { StructuredLogger } from './infrastructure/logging/StructuredLogger';
+import { DEV_ADMIN } from './modules/auth/infrastructure/persistence/seedDevAdmin';
 import { ZodValidationPipe } from './shared/pipes/zodValidationPipe';
 
 // `nest start` corre desde apps/api (cwd) o desde dist/; cubrimos ambos.
@@ -84,6 +85,8 @@ async function bootstrap() {
       explicitDatabase: Boolean(process.env.DATABASE),
       panelUrl: allowedOrigins()[0],
       studioUrl: process.env.SUPABASE_STUDIO_URL,
+      authUrl: process.env.SUPABASE_URL,
+      devLogin: { correo: DEV_ADMIN.email, contrasena: DEV_ADMIN.password },
       color: shouldColor(),
     })
   );

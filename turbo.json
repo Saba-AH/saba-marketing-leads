@@ -33,7 +33,14 @@
     // aparece en el sidebar de la TUI junto a las tareas `dev`. Lee el mismo
     // entorno que la API, así que pasa las mismas variables.
     "dev:info": {
-      "passThroughEnv": ["DB_TARGET", "DATABASE_LOCAL", "SUPABASE_STUDIO_URL"],
+      "passThroughEnv": [
+        "DB_TARGET",
+        "DATABASE_LOCAL",
+        "SUPABASE_STUDIO_URL",
+        "SUPABASE_URL",
+        "SUPABASE_PUBLISHABLE_KEY",
+        "SUPABASE_JWT_SECRET"
+      ],
       "cache": false
     },
     "lint": {

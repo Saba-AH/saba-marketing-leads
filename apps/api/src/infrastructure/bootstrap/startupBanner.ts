@@ -14,6 +14,10 @@ export interface StartupBannerInput {
   panelUrl?: string;
   /** Studio del stack local; lo exporta `scripts/localSupabase.mjs`. */
   studioUrl?: string;
+  /** Supabase Auth contra el que se validan las sesiones (`SUPABASE_URL`). */
+  authUrl?: string;
+  /** Credenciales del admin del seed: solo se muestran si la base es local. */
+  devLogin?: { correo: string; contrasena: string };
   /** Lo que falta o está mal en la configuración. */
   warnings?: string[];
   color: boolean;
@@ -71,6 +75,15 @@ export function startupBanner(input: StartupBannerInput): string {
         ? `${redactDatabaseUrl(input.databaseUrl)} (${origen})`
         : `sin resolver (${origen})`,
     },
+    ...(input.authUrl ? [{ label: 'Auth', value: input.authUrl }] : []),
+    ...(local && input.devLogin
+      ? [
+          {
+            label: 'Login',
+            value: `${input.devLogin.correo} / ${input.devLogin.contrasena}`,
+          },
+        ]
+      : []),
     ...(input.warnings ?? []).map((warning) => ({
       label: '⚠',
       value: warning,
