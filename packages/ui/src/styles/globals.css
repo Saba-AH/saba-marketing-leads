@@ -1,0 +1,163 @@
+/* NOTE: @import "tailwindcss" is provided by the app's globals.css */
+
+@import "tw-animate-css";
+
+/* Los primitivos de color viven acá, no en la app: son los tokens que consume
+   la capa semántica de abajo, y `packages/ui` es quien debe poder compilarse
+   sin depender del CSS de un consumidor. */
+@import "./color-variables.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* -----------------------------------------------------------------------------
+   Capa semántica
+   -----------------------------------------------------------------------------
+   Cada token de shadcn apunta a un primitivo de la marca. Esta indirección es el
+   punto: los componentes de la librería (y los que se agreguen después) leen
+   `--primary` o `--border` y salen en marca sin que nadie les pase `className`.
+   Venía con la paleta neutra por defecto de shadcn — grises `oklch(… 0 0)` sin
+   relación con el prototipo—, y por eso las vistas escribían `border-gray-200` a
+   mano en cada archivo.
+
+   Regla: una vista usa la capa semántica (`bg-primary`, `border-border`). Los
+   primitivos (`brand-600`, `gray-200`) se tocan solo acá.
+   -------------------------------------------------------------------------- */
+
+:root {
+  --background: var(--color-base-white);
+  --foreground: var(--color-gray-900);
+
+  --card: var(--color-base-white);
+  --card-foreground: var(--color-gray-900);
+  --popover: var(--color-base-white);
+  --popover-foreground: var(--color-gray-900);
+
+  /* El morado de la marca. Un elemento "primary" sin más contexto es la acción
+     principal de su pantalla. */
+  --primary: var(--color-brand-600);
+  --primary-foreground: var(--color-base-white);
+
+  --secondary: var(--color-gray-100);
+  --secondary-foreground: var(--color-gray-900);
+
+  /* `muted` es la superficie de apoyo: cabecera de tabla, filas alternas. */
+  --muted: var(--color-gray-50);
+  --muted-foreground: var(--color-gray-500);
+
+  /* `accent` es el hover sobre superficie clara. */
+  --accent: var(--color-gray-50);
+  --accent-foreground: var(--color-gray-900);
+
+  --destructive: var(--color-error-600);
+  --destructive-foreground: var(--color-base-white);
+
+  --border: var(--color-gray-200);
+  --input: var(--color-gray-200);
+  --ring: var(--color-brand-600);
+
+  --chart-1: var(--color-brand-600);
+  --chart-2: var(--color-secondary-500);
+  --chart-3: var(--color-success-500);
+  --chart-4: var(--color-warning-500);
+  --chart-5: var(--color-error-500);
+
+  --radius: 0.625rem;
+
+  /* El sidebar es la única superficie oscura del panel: `gray-950` es el
+     `--black` del prototipo. Su rampa es independiente de la del contenido. */
+  --sidebar: var(--color-gray-950);
+  --sidebar-foreground: var(--color-gray-400);
+  --sidebar-primary: var(--color-brand-600);
+  --sidebar-primary-foreground: var(--color-base-white);
+  --sidebar-accent: var(--color-gray-800);
+  --sidebar-accent-foreground: var(--color-base-white);
+  --sidebar-border: var(--color-gray-800);
+  --sidebar-ring: var(--color-brand-600);
+}
+
+.dark {
+  --background: var(--color-gray-dark-950);
+  --foreground: var(--color-gray-dark-100);
+
+  --card: var(--color-gray-dark-900);
+  --card-foreground: var(--color-gray-dark-100);
+  --popover: var(--color-gray-dark-900);
+  --popover-foreground: var(--color-gray-dark-100);
+
+  /* En oscuro el 600 pierde contraste contra el fondo: sube a 500. */
+  --primary: var(--color-brand-500);
+  --primary-foreground: var(--color-base-white);
+
+  --secondary: var(--color-gray-dark-800);
+  --secondary-foreground: var(--color-gray-dark-100);
+
+  --muted: var(--color-gray-dark-800);
+  --muted-foreground: var(--color-gray-dark-400);
+
+  --accent: var(--color-gray-dark-800);
+  --accent-foreground: var(--color-gray-dark-100);
+
+  --destructive: var(--color-error-500);
+  --destructive-foreground: var(--color-base-white);
+
+  --border: var(--color-gray-dark-700);
+  --input: var(--color-gray-dark-700);
+  --ring: var(--color-brand-500);
+
+  --sidebar: var(--color-gray-950);
+  --sidebar-foreground: var(--color-gray-400);
+  --sidebar-primary: var(--color-brand-600);
+  --sidebar-primary-foreground: var(--color-base-white);
+  --sidebar-accent: var(--color-gray-800);
+  --sidebar-accent-foreground: var(--color-base-white);
+  --sidebar-border: var(--color-gray-800);
+  --sidebar-ring: var(--color-brand-600);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
