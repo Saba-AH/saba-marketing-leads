@@ -1,0 +1,12 @@
+# Biome formatea con line endings LF. Sin esto, un checkout en Windows con
+# core.autocrlf=true reintroduce CRLF y `biome check` falla en local.
+* text=auto eol=lf
+
+# Binarios: que git no los toque.
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.xlsx binary
+*.pdf binary

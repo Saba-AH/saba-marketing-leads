@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Variable pública embebida en el bundle del cliente en build time; en CI solo
+  # tiene que ser una URL válida para que el build no falle.
+  NEXT_PUBLIC_API_URL: http://localhost:8080
+
+jobs:
+  verify:
+    name: Lint · typecheck · test · build
+    runs-on: ubuntu-latest
+
+    # Los tests de integración corren contra Postgres real (no un doble). El
+    # globalSetup de Vitest se conecta a localhost:5433 por defecto — mismo
+    # puerto que docker-compose en local — crea la base de tests y migra.
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: app_dev
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d app_dev"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    # Las actions van pinneadas al SHA del commit, no al tag: la política de
+    # Actions de la organización lo exige, y es la única forma de que `v4` no
+    # signifique algo distinto mañana. El comentario dice qué release es cada
+    # una; para actualizarlas, resolver el tag nuevo con
+    # `gh api repos/actions/<action>/git/ref/tags/<tag>`.
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Formato y lint
+        run: npm run format-and-lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm run test
+
+      - name: Build
+        run: npm run build

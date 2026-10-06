@@ -1,0 +1,45 @@
+{
+  "name": "saba-marketing-leads",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Monorepo fullstack: apps/api (NestJS + Drizzle/Postgres·Supabase) + apps/client (Next.js SSR) sobre Turborepo, con packages compartidos, skills de agentes y Ralph.",
+  "scripts": {
+    "dev": "npm run db:up && turbo dev",
+    "dev:supabase": "DB_TARGET=supabase turbo dev",
+    "dev:apps": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "format": "biome format --write \"**/*.{ts,tsx,md}\"",
+    "format-and-lint": "biome check .",
+    "format-and-lint:fix": "biome check . --write",
+    "format-and-lint:error": "biome check . --diagnostic-level=error",
+    "db:up": "docker compose up -d --wait db",
+    "db:down": "docker compose down",
+    "db:reset": "docker compose down -v && npm run db:up",
+    "db:migrate": "npm -C apps/api run db:migrate",
+    "db:migrate:supabase": "DB_TARGET=supabase npm -C apps/api run db:migrate"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.2.2",
+    "@types/node": "^24.3.0",
+    "tsx": "^4.20.3",
+    "turbo": "2.5.6",
+    "typescript": "5.9.2"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-win32-x64-msvc": "^4.57.1",
+    "@tailwindcss/oxide-win32-x64-msvc": "^4.1.18",
+    "lightningcss-win32-x64-msvc": "^1.30.2"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "npm@11.5.2",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}

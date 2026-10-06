@@ -1,0 +1,58 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "tasks": {
+    "//#format-and-lint": {},
+    "//#format-and-lint:fix": {
+      "cache": false
+    },
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**", "out/**"]
+    },
+    "dev": {
+      "dependsOn": ["^build"],
+      // `npm run dev:supabase` lo setea en el shell; en `envMode: strict` sin
+      // esto no llegaría a la API.
+      "passThroughEnv": ["DB_TARGET"],
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "dependsOn": []
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      // Turbo corre en `envMode: strict`: lo que no está acá no llega a la
+      // tarea. Los tests de la API se conectan a Postgres de verdad, así que
+      // sin esto vitest cae a su default (`localhost:5433`) — que acierta en
+      // el runner de GitHub y falla dentro del contenedor de Cloud Build,
+      // donde la base es un sidecar en otro host.
+      "env": ["DATABASE"],
+      "outputs": []
+    },
+    "py:setup": {
+      "cache": false
+    },
+    "py:dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "py:lint": {
+      "dependsOn": [],
+      "outputs": []
+    },
+    "py:format": {
+      "cache": false
+    },
+    "py:test": {
+      "dependsOn": [],
+      "outputs": []
+    }
+  }
+}
