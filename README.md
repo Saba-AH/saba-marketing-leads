@@ -34,6 +34,7 @@ npm run dev                                  # Supabase local + migraciones + se
 | `npm run format-and-lint` | `biome check .` — lo mismo que corre el CI |
 | `npm run db:up` / `db:down` / `db:status` | Stack local de Supabase (`supabase start` / `stop` / `status`) |
 | `npm run db:setup` / `db:reset` | Migra y siembra / recrea el stack desde cero (borra los datos locales) |
+| `npm run db:sync:saba` | Copia de prod al Supabase local los usuarios de `apps/api/scripts/sync/sabaSyncUsers.ts` con sus solicitudes (ver abajo) |
 | `npm -C apps/api run db:generate` | Nueva migración desde los `*.schema.ts` (escribir su `drizzle/down/<tag>.down.sql`) |
 | `npm -C apps/api run db:migrate` / `db:rollback` / `db:seed` | Migraciones sobre `DATABASE` |
 
@@ -76,6 +77,23 @@ Drizzle habla Postgres, y Supabase **es** Postgres: no hay que cambiar código.
 - **Supabase:** poner en `DATABASE` la connection string del proyecto
   (Dashboard → Connect; para migrar usar la de puerto 5432) y correr
   `npm -C apps/api run db:migrate`.
+
+## Datos de Saba en local: `npm run db:sync:saba`
+
+Trae de prod (`DATABASE_SUPABASE`, en una transacción de **solo lectura**) los
+usuarios listados en `apps/api/scripts/sync/sabaSyncUsers.ts` —su cuenta con la
+contraseña real, su perfil, sus solicitudes y todo lo que cuelga de ellas— más
+los catálogos que esas solicitudes referencian. Qué tablas entran está en
+`scripts/sync/syncPlan.ts`.
+
+- Escribe **solo** en el Supabase local, sin importar `DB_TARGET`, y migra antes.
+- Prod manda: correrlo de nuevo reemplaza ese alcance (lo que hayas cambiado ahí
+  en local se pierde); lo demás no se toca. Es una transacción: si falla, queda
+  la copia anterior.
+- La copia vive en el volumen de Docker: sobrevive a `supabase stop`; se pierde
+  con `npm run db:reset`.
+- El seed no pisa a un usuario sincronizado: si el correo del admin de desarrollo
+  ya es de prod, se entra con la contraseña real.
 
 ## Módulo de referencia: `leads`
 

@@ -23,6 +23,7 @@
     "db:setup": "npm run db:migrate && npm -C apps/api run db:seed",
     "db:reset": "supabase stop --no-backup && npm run db:up && npm run db:setup",
     "db:migrate": "npm -C apps/api run db:migrate",
+    "db:sync:saba": "node scripts/localSupabase.mjs sync",
     "db:migrate:supabase": "DB_TARGET=supabase npm -C apps/api run db:migrate"
   },
   "devDependencies": {

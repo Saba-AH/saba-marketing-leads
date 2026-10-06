@@ -58,6 +58,15 @@ export function isLocalDatabaseUrl(url: string): boolean {
   return LOCAL_HOSTS.has(new URL(url).hostname);
 }
 
+/** Guarda de los comandos que escriben datos de prueba: nunca contra una base remota. */
+export function assertLocalDatabase(url: string, operacion: string): void {
+  if (!isLocalDatabaseUrl(url)) {
+    throw new Error(
+      `${operacion} solo escribe en una base local (host: ${new URL(url).hostname})`
+    );
+  }
+}
+
 /** Para logs: nunca imprimir credenciales. */
 export function redactDatabaseUrl(url: string): string {
   return url.replace(/\/\/[^@]*@/, '//***@');

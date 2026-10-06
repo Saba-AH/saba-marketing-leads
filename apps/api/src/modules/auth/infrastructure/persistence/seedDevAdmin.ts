@@ -1,11 +1,10 @@
 import { sql } from 'drizzle-orm';
-import { isLocalDatabaseUrl } from '../../../../infrastructure/database/databaseUrl';
-import type { ApiDb } from '../../../../infrastructure/database/drizzle.module';
+import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 
 /**
  * Admin de desarrollo para poder iniciar sesión contra el stack local de
  * Supabase. Contraseña trivial a propósito: solo existe en local, y
- * `assertLocalDatabase` impide sembrarlo en cualquier otra base.
+ * `assertLocalDatabase` (en `scripts/seed.ts`) impide sembrarlo en otra base.
  */
 export const DEV_ADMIN = {
   id: 'de000000-0000-0000-0000-000000000001',
@@ -15,21 +14,24 @@ export const DEV_ADMIN = {
   apellido: 'Hernández',
 } as const;
 
-export function assertLocalDatabase(url: string): void {
-  if (!isLocalDatabaseUrl(url)) {
-    throw new Error(
-      `el admin de desarrollo solo se siembra en una base local (host: ${new URL(url).hostname})`
-    );
-  }
-}
-
 /**
  * Idempotente: correrlo de nuevo no duplica nada ni cambia la contraseña.
+ * Si el correo ya es de otro usuario (el de prod, traído por
+ * `npm run db:sync:saba`), no hace nada: ese manda.
+ *
+ * @returns si sembró (o ya estaba) el admin de desarrollo.
  *
  * SQL cruda: `auth.*` es de GoTrue y `profiles` de Saba; ninguna tiene
  * `*.schema.ts` en este repo, así que el builder no las conoce.
  */
-export async function seedDevAdmin(db: ApiDb): Promise<void> {
+export async function seedDevAdmin(
+  db: NodePgDatabase<Record<string, unknown>>
+): Promise<boolean> {
+  const { rows } = await db.execute<{ id: string }>(sql`
+    SELECT id::text FROM auth.users WHERE lower(email) = lower(${DEV_ADMIN.email})
+  `);
+  if (rows.some((row) => row.id !== DEV_ADMIN.id)) return false;
+
   await db.transaction(async (tx) => {
     // GoTrue escanea las columnas de tokens como string: NULL rompe el login.
     await tx.execute(sql`
@@ -76,4 +78,5 @@ export async function seedDevAdmin(db: ApiDb): Promise<void> {
       ON CONFLICT (id) DO UPDATE SET role = 'admin'
     `);
   });
+  return true;
 }

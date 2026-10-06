@@ -2,14 +2,15 @@
  * Puente entre el stack local de Supabase y las tareas del monorepo.
  *
  *   node scripts/localSupabase.mjs dev <destino>    `npm run dev:local` / `dev:supabase`
+ *   node scripts/localSupabase.mjs sync             `npm run db:sync:saba` (ver `sync()`)
  *   node scripts/localSupabase.mjs start            levanta el stack (salida corta)
  *   node scripts/localSupabase.mjs exec <cmd...>    corre <cmd> con el entorno local
  *
  * `exec` lee `supabase status` y exporta lo que la API necesita para hablar con
  * el stack: así nadie copia puertos ni llaves a su `.env`, y no se
  * desincronizan si cambia `supabase/config.toml`. Solo cuando la base elegida
- * es la local: con `DB_TARGET=supabase` (o `DATABASE` explícita) no toca nada y
- * manda el `.env`.
+ * es la local: con `npm run dev:supabase` (o una `DATABASE` explícita) no toca
+ * nada y manda el `.env`.
  */
 import { execFileSync, spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -143,16 +144,31 @@ async function dev(target = 'local') {
   await run('turbo', ['run', 'dev', 'dev:info'], localEnv());
 }
 
+/**
+ * `npm run db:sync:saba`: copia de prod los usuarios de
+ * `apps/api/scripts/sync/sabaSyncUsers.ts`. Fuerza DB_TARGET=local: con
+ * `supabase` en el `.env`, el `db:migrate` previo apuntaría a prod.
+ */
+async function sync() {
+  process.env.DB_TARGET = 'local';
+  await start();
+  const env = localEnv();
+  await run('npm', ['run', 'db:migrate'], env);
+  await run('npm', ['-C', 'apps/api', 'run', 'db:sync:saba'], env);
+}
+
 const [mode, command, ...args] = process.argv.slice(2);
 if (mode === 'dev') {
   await dev(command);
+} else if (mode === 'sync') {
+  await sync();
 } else if (mode === 'start') {
   await start();
 } else if (mode === 'exec' && command) {
   await run(command, args, localEnv());
 } else {
   console.error(
-    'uso: node scripts/localSupabase.mjs dev [local|supabase] | start | exec <comando...>'
+    'uso: node scripts/localSupabase.mjs dev [local|supabase] | sync | start | exec <comando...>'
   );
   process.exit(1);
 }
