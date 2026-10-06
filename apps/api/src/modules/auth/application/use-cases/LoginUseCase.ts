@@ -42,7 +42,9 @@ export class LoginUseCase implements LoginPort {
     @Inject(AUTH_TOKENS.LoginAttempts)
     private readonly attempts: LoginAttemptsPort,
     @Inject(AUTH_TOKENS.Clock)
-    private readonly clock: ClockPort
+    private readonly clock: ClockPort,
+    @Inject(AUTH_TOKENS.PanelAllowedEmails)
+    private readonly allowedEmails: readonly string[]
   ) {}
 
   async execute(command: LoginCommand): Promise<LoginResult> {
@@ -103,7 +105,7 @@ export class LoginUseCase implements LoginPort {
 
     // El dueño real de la sesión manda, no el perfil que coincidió por correo.
     const owner = await this.staff.findById(session.userId);
-    if (!owner || !canEnterPanel(owner)) {
+    if (!owner || !canEnterPanel(owner, this.allowedEmails)) {
       await this.auth.revoke(session.accessToken);
       await attempt({ userId: session.userId, reason: 'wrong_portal' });
       throw new SinAccesoException();

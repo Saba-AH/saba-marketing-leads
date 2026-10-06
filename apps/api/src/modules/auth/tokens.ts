@@ -10,5 +10,6 @@ export const AUTH_TOKENS = {
   AccessTokenVerifier: Symbol('AccessTokenVerifierPort'),
   ActiveSessionReader: Symbol('ActiveSessionReaderPort'),
   Clock: Symbol('ClockPort'),
+  PanelAllowedEmails: Symbol('PanelAllowedEmails'),
   Config: Symbol('AuthConfig'),
 } as const;

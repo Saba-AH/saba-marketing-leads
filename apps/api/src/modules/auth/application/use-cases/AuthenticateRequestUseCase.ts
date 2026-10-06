@@ -20,7 +20,9 @@ export class AuthenticateRequestUseCase implements AuthenticateRequestPort {
     @Inject(AUTH_TOKENS.AccessTokenVerifier)
     private readonly tokens: AccessTokenVerifierPort,
     @Inject(AUTH_TOKENS.ActiveSessionReader)
-    private readonly sessions: ActiveSessionReaderPort
+    private readonly sessions: ActiveSessionReaderPort,
+    @Inject(AUTH_TOKENS.PanelAllowedEmails)
+    private readonly allowedEmails: readonly string[]
   ) {}
 
   async execute(accessToken: string): Promise<AuthenticatedUser> {
@@ -32,7 +34,9 @@ export class AuthenticateRequestUseCase implements AuthenticateRequestPort {
       claims.sessionId
     );
     if (!profile) throw new SesionInvalidaException();
-    if (!canEnterPanel(profile)) throw new SinAccesoException();
+    if (!canEnterPanel(profile, this.allowedEmails)) {
+      throw new SinAccesoException();
+    }
 
     return toAuthenticatedUser(profile);
   }

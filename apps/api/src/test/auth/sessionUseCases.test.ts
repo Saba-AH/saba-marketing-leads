@@ -13,7 +13,8 @@ function authenticate(
 ): AuthenticateRequestUseCase {
   return new AuthenticateRequestUseCase(
     { verify: async () => (token.valid ? claims() : null) },
-    { findProfileBySession: async () => sessionProfile }
+    { findProfileBySession: async () => sessionProfile },
+    ['angel.hernandez@sabatransporte.com']
   );
 }
 

@@ -50,7 +50,8 @@ describe('LoginUseCase', () => {
         findById: async (id) => perfiles.find((p) => p.id === id) ?? null,
       },
       attempts,
-      { now: () => AHORA }
+      { now: () => AHORA },
+      [CORREO]
     );
   });
 

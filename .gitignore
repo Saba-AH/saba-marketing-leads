@@ -34,6 +34,8 @@ credentials.json
 *.key.json
 *credecial*
 *credencial*
+# …pero el código fuente no es una credencial (CredencialesInvalidasException.ts).
+!*credencial*.ts
 
 # Logs
 logs/

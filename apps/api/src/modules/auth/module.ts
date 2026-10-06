@@ -4,6 +4,7 @@ import { AuthenticateRequestUseCase } from './application/use-cases/Authenticate
 import { LoginUseCase } from './application/use-cases/LoginUseCase';
 import { LogoutUseCase } from './application/use-cases/LogoutUseCase';
 import { RefreshSesionUseCase } from './application/use-cases/RefreshSesionUseCase';
+import { PANEL_ALLOWED_EMAILS } from './domain/panelAccess';
 import { loadAuthConfig } from './infrastructure/authConfig';
 import { GoTrueAuthProvider } from './infrastructure/external/GoTrueAuthProvider';
 import { JoseAccessTokenVerifier } from './infrastructure/external/JoseAccessTokenVerifier';
@@ -22,6 +23,7 @@ import { AUTH_TOKENS } from './tokens';
   providers: [
     { provide: AUTH_TOKENS.Config, useFactory: () => loadAuthConfig() },
     { provide: AUTH_TOKENS.Clock, useClass: SystemClock },
+    { provide: AUTH_TOKENS.PanelAllowedEmails, useValue: PANEL_ALLOWED_EMAILS },
     { provide: AUTH_TOKENS.AuthProvider, useClass: GoTrueAuthProvider },
     {
       provide: AUTH_TOKENS.CaptchaVerifier,

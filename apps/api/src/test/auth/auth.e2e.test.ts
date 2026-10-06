@@ -1,29 +1,36 @@
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { Pool } from 'pg';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { localDatabaseUrl } from '../../infrastructure/database/databaseUrl';
 import { DrizzleModule } from '../../infrastructure/database/drizzle.module';
 import { ErrorsModule } from '../../infrastructure/errors/ErrorsModule';
 import { LoggingModule } from '../../infrastructure/logging/LoggingModule';
-import { DEV_ADMIN } from '../../modules/auth/infrastructure/persistence/seedDevAdmin';
 import { AuthModule } from '../../modules/auth/module';
 import { AUTH_TOKENS } from '../../modules/auth/tokens';
 import { HealthModule } from '../../modules/health/module';
 import { ZodValidationPipe } from '../../shared/pipes/zodValidationPipe';
+import {
+  createE2EStaff,
+  E2E_STAFF,
+  removeE2EStaff,
+} from '../support/e2eStaffUser';
 import { useLocalAuthEnv } from '../support/localSupabase';
 
 // Contra el stack local completo: GoTrue emite y revoca sesiones de verdad y
-// `auth.sessions` vive en la base del stack, no en la de tests. Necesita el
-// admin de desarrollo (`npm run db:setup`).
+// `auth.sessions` vive en la base del stack, no en la de tests. Usa su propio
+// usuario (lo crea y lo borra) y su propia lista de acceso al panel.
 process.env.DATABASE = localDatabaseUrl();
 useLocalAuthEnv();
 
 describe('auth (contra Supabase local)', () => {
   let app: INestApplication;
   let captchaOk = true;
+  const stack = new Pool({ connectionString: localDatabaseUrl() });
 
   beforeAll(async () => {
+    await createE2EStaff(stack);
     const moduleRef = await Test.createTestingModule({
       imports: [
         LoggingModule,
@@ -36,6 +43,8 @@ describe('auth (contra Supabase local)', () => {
       // Cloudflare no se llama desde los tests.
       .overrideProvider(AUTH_TOKENS.CaptchaVerifier)
       .useValue({ verify: async () => captchaOk })
+      .overrideProvider(AUTH_TOKENS.PanelAllowedEmails)
+      .useValue([E2E_STAFF.email])
       .compile();
 
     app = moduleRef.createNestApplication();
@@ -44,12 +53,14 @@ describe('auth (contra Supabase local)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
+    await removeE2EStaff(stack);
+    await stack.end();
   });
 
   function login(
-    contrasena: string = DEV_ADMIN.password,
-    correo: string = DEV_ADMIN.email
+    contrasena: string = E2E_STAFF.password,
+    correo: string = E2E_STAFF.email
   ) {
     return request(app.getHttpServer())
       .post('/auth/login')
@@ -60,9 +71,9 @@ describe('auth (contra Supabase local)', () => {
     const entrada = await login();
     expect(entrada.status).toBe(200);
     expect(entrada.body.data.usuario).toEqual({
-      id: DEV_ADMIN.id,
-      correo: DEV_ADMIN.email,
-      nombre: 'Angel Hernández',
+      id: E2E_STAFF.id,
+      correo: E2E_STAFF.email,
+      nombre: 'E2E Auth',
       rol: 'admin',
     });
     const { accessToken, refreshToken } = entrada.body.data.sesion;
@@ -71,7 +82,7 @@ describe('auth (contra Supabase local)', () => {
       .get('/me')
       .set('Authorization', `Bearer ${accessToken}`);
     expect(me.status).toBe(200);
-    expect(me.body.data.correo).toBe(DEV_ADMIN.email);
+    expect(me.body.data.correo).toBe(E2E_STAFF.email);
 
     const renovada = await request(app.getHttpServer())
       .post('/auth/refresh')
