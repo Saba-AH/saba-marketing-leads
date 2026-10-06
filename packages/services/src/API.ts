@@ -1,8 +1,8 @@
+import { AuthService } from './components/auth';
 import { HealthService } from './components/health';
 import { LeadsService } from './components/leads';
 import type { HttpClient, TokenProvider } from './http';
 import { SafeFetchClient } from './http';
-import { getAccessToken } from './lib/token';
 
 /**
  * API configuration
@@ -10,6 +10,8 @@ import { getAccessToken } from './lib/token';
 export interface APIConfig {
   baseURL: string;
   token?: TokenProvider;
+  /** Se llama cuando la API responde 401 (sesión vencida o revocada). */
+  onUnauthorized?: () => void;
   /** Optional: provide a custom HttpClient implementation (for testing or alternative transports) */
   httpClient?: HttpClient;
 }
@@ -18,6 +20,7 @@ export interface APIConfig {
  * Versioned API service interface
  */
 export interface APIService {
+  auth: AuthService;
   health: HealthService;
   leads: LeadsService;
 }
@@ -34,15 +37,13 @@ export class API {
       config.httpClient ??
       new SafeFetchClient({
         baseUrl: config.baseURL,
-        // La referencia, no el resultado: `TokenProvider` acepta una función y
-        // `SafeFetchClient` la resuelve en cada request. Invocarla acá
-        // congelaría el token del momento en que se construyó el singleton, y
-        // quien inicie sesión después seguiría mandando peticiones sin él.
-        token: config.token ?? getAccessToken,
+        token: config.token,
+        onUnauthorized: config.onUnauthorized,
       });
 
     // Wire services with dependencies
     this.v1 = Object.freeze({
+      auth: new AuthService(this.httpClient),
       health: new HealthService(this.httpClient),
       leads: new LeadsService(this.httpClient),
     });

@@ -15,8 +15,14 @@
       "dependsOn": ["^build"],
       // `npm run dev:supabase` setea DB_TARGET en el shell, y
       // `scripts/localSupabase.mjs` exporta lo que lee de `supabase status`;
-      // en `envMode: strict`, sin esto no llegarían a la API.
-      "passThroughEnv": ["DB_TARGET", "DATABASE_LOCAL", "SUPABASE_STUDIO_URL"],
+      // en `envMode: strict`, sin esto no llegarían a la API. API_URL es la
+      // de NestJS para el BFF del cliente.
+      "passThroughEnv": [
+        "DB_TARGET",
+        "DATABASE_LOCAL",
+        "SUPABASE_STUDIO_URL",
+        "API_URL"
+      ],
       "cache": false,
       "persistent": true
     },

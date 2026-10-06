@@ -1,7 +1,6 @@
 import type { TLead } from '@repo/schemas';
 import { HttpResponse, http } from 'msw';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080';
+import { BACKEND_URL } from '@/__tests__/mocks/backendUrl';
 
 export const leadsFixture: TLead[] = [
   {
@@ -14,10 +13,10 @@ export const leadsFixture: TLead[] = [
 ];
 
 export const leadsHandlers = [
-  http.get(`${API_URL}/api/v1/leads`, () =>
+  http.get(`${BACKEND_URL}/v1/leads`, () =>
     HttpResponse.json({ success: true, data: leadsFixture })
   ),
-  http.post(`${API_URL}/api/v1/leads`, async ({ request }) => {
+  http.post(`${BACKEND_URL}/v1/leads`, async ({ request }) => {
     const body = (await request.json()) as Pick<TLead, 'nombre' | 'correo'>;
     return HttpResponse.json(
       {

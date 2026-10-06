@@ -1,10 +1,9 @@
 import { HttpResponse, http } from 'msw';
 import React from 'react';
+import { BACKEND_URL } from '@/__tests__/mocks/backendUrl';
 import { LeadsPage } from '@/features/leads/ui/pages/LeadsPage';
 import { server } from '../mocks/server';
 import { render, screen, userEvent, waitFor } from '../test-utils/test-utils';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080';
 
 describe('LeadsPage', () => {
   it('lista los leads que devuelve la API', async () => {
@@ -28,7 +27,7 @@ describe('LeadsPage', () => {
   it('envía el lead y limpia el formulario', async () => {
     let enviado: unknown;
     server.use(
-      http.post(`${API_URL}/api/v1/leads`, async ({ request }) => {
+      http.post(`${BACKEND_URL}/v1/leads`, async ({ request }) => {
         enviado = await request.json();
         return HttpResponse.json(
           {

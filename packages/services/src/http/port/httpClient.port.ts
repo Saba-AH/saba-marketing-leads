@@ -31,6 +31,8 @@ export interface HttpClientConfig {
   token?: TokenProvider;
   /** Default headers to include in all requests */
   defaultHeaders?: Record<string, string>;
+  /** Se llama ante un 401, antes de devolver el error (p. ej. para ir al login). */
+  onUnauthorized?: () => void;
 }
 
 /**

@@ -1,7 +1,6 @@
 import type { THealth } from '@repo/schemas';
 import { HttpResponse, http } from 'msw';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080';
+import { BACKEND_URL } from '@/__tests__/mocks/backendUrl';
 
 export const healthyResponse: THealth = {
   status: 'ok',
@@ -13,13 +12,13 @@ export const healthyResponse: THealth = {
 };
 
 export const healthHandlers = [
-  http.get(`${API_URL}/api/v1/health`, () =>
+  http.get(`${BACKEND_URL}/v1/health`, () =>
     HttpResponse.json({ success: true, data: healthyResponse })
   ),
 ];
 
 /** Sobrescribe el handler por defecto: la base de datos caída. */
-export const databaseDownHandler = http.get(`${API_URL}/api/v1/health`, () =>
+export const databaseDownHandler = http.get(`${BACKEND_URL}/v1/health`, () =>
   HttpResponse.json(
     {
       success: true,

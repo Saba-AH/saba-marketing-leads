@@ -90,5 +90,5 @@ Query + react-hook-form) → tests en ambos lados.
 ```bash
 docker build -f apps/api/Dockerfile -t saba-leads-api .
 docker build -f apps/api/Dockerfile --target migrator -t saba-leads-migrator .
-docker build -f apps/client/Dockerfile --build-arg NEXT_PUBLIC_API_URL=https://api.example.com -t saba-leads-client .
+docker build -f apps/client/Dockerfile --build-arg NEXT_PUBLIC_TURNSTILE_SITE_KEY=<site key>  -t saba-leads-client .
 ```

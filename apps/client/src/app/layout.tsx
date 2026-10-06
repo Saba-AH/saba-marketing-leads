@@ -19,6 +19,8 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: 'Saba Marketing Leads',
   description: 'Panel de leads de marketing',
+  // Panel interno: nada de esto tiene que aparecer en un buscador.
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({

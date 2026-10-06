@@ -16,7 +16,7 @@ Solo el cliente:
 npm run dev -w @repo/client     # http://localhost:3002
 ```
 
-Requiere `apps/client/.env.local` (copiar de `.env.example`). `NEXT_PUBLIC_API_URL`, al ser `NEXT_PUBLIC_`, se embebe en el bundle en build time: cambiar de ambiente exige reconstruir.
+Variables en `apps/client/.env.example`. El navegador nunca llama a la API directo: habla con el BFF de Next (`/api/session/*` y el proxy `/api/backend/*`), que lee `API_URL` en runtime y guarda la sesión en cookies `httpOnly`. `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, al ser `NEXT_PUBLIC_`, se embebe en el bundle en build time.
 
 ## Comandos
 
