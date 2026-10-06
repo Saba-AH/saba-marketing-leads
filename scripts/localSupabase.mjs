@@ -1,6 +1,7 @@
 /**
  * Puente entre el stack local de Supabase y las tareas del monorepo.
  *
+ *   node scripts/localSupabase.mjs dev              `npm run dev` (ver `dev()`)
  *   node scripts/localSupabase.mjs start            levanta el stack (salida corta)
  *   node scripts/localSupabase.mjs exec <cmd...>    corre <cmd> con el entorno local
  *
@@ -56,27 +57,31 @@ function start() {
     shell: SHELL,
   });
   let pending = '';
+  const forward = (line) => {
+    if (!NOISE.some((pattern) => pattern.test(line))) {
+      process.stderr.write(`${line}\n`);
+    }
+  };
   child.stderr.setEncoding('utf8');
   child.stderr.on('data', (chunk) => {
     const lines = (pending + chunk).split('\n');
     pending = lines.pop() ?? '';
-    for (const line of lines) {
-      if (!NOISE.some((pattern) => pattern.test(line))) {
-        process.stderr.write(`${line}\n`);
-      }
-    }
+    lines.forEach(forward);
   });
-  child.on('exit', (code) => {
-    if (pending && !NOISE.some((pattern) => pattern.test(pending))) {
-      process.stderr.write(`${pending}\n`);
-    }
-    if (code !== 0) process.exit(code ?? 1);
-    const { STUDIO_URL, DB_URL } = status();
-    console.log(`✓ Supabase local · Studio ${STUDIO_URL} · Postgres ${DB_URL}`);
+  return new Promise((resolve) => {
+    child.on('exit', (code) => {
+      if (pending) forward(pending);
+      if (code !== 0) process.exit(code ?? 1);
+      const { STUDIO_URL, DB_URL } = status();
+      console.log(
+        `✓ Supabase local · Studio ${STUDIO_URL} · Postgres ${DB_URL}`
+      );
+      resolve();
+    });
   });
 }
 
-function exec(command, args) {
+function localEnv() {
   const env = { ...process.env };
   if (usesLocalStack()) {
     const local = status();
@@ -85,21 +90,48 @@ function exec(command, args) {
       env[name] ??= local[key];
     }
   }
+  return env;
+}
+
+/** Corre el comando y resuelve si sale bien; si falla, termina con su código. */
+function run(command, args, env) {
   const child = spawn(command, args, { stdio: 'inherit', env, shell: SHELL });
-  child.on('exit', (code, signal) => {
-    if (signal) process.kill(process.pid, signal);
-    process.exit(code ?? 1);
+  return new Promise((resolve) => {
+    child.on('exit', (code, signal) => {
+      if (signal) process.kill(process.pid, signal);
+      if (code !== 0) process.exit(code ?? 1);
+      resolve();
+    });
   });
 }
 
+/**
+ * `npm run dev`. Levantar el stack, migrar y sembrar solo tiene sentido contra
+ * la base local: con `DB_TARGET=supabase` en el `.env`, migrar en cada
+ * arranque tocaría producción. Ahí solo arrancan las apps.
+ */
+async function dev() {
+  if (usesLocalStack()) {
+    await start();
+    await run('npm', ['run', 'db:setup'], localEnv());
+  } else {
+    console.log(
+      '· DB_TARGET=supabase: sin stack local ni migraciones (migrar a mano con `npm run db:migrate:supabase`)'
+    );
+  }
+  await run('turbo', ['dev'], localEnv());
+}
+
 const [mode, command, ...args] = process.argv.slice(2);
-if (mode === 'start') {
-  start();
+if (mode === 'dev') {
+  await dev();
+} else if (mode === 'start') {
+  await start();
 } else if (mode === 'exec' && command) {
-  exec(command, args);
+  await run(command, args, localEnv());
 } else {
   console.error(
-    'uso: node scripts/localSupabase.mjs start | exec <comando...>'
+    'uso: node scripts/localSupabase.mjs dev | start | exec <comando...>'
   );
   process.exit(1);
 }

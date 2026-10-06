@@ -67,8 +67,9 @@ Drizzle habla Postgres, y Supabase **es** Postgres: no hay que cambiar código.
   `globalSetup` de Vitest y truncan entre tests.
 - **Variables del stack:** `npm run dev` corre las tareas con
   `scripts/localSupabase.mjs`, que lee `supabase status` y exporta la conexión
-  (y, con auth, las llaves) al entorno. No se copian al `.env`; con
-  `DB_TARGET=supabase` el script no inyecta nada y manda el `.env`.
+  (y, con auth, las llaves) al entorno. No se copian al `.env`. Con
+  `DB_TARGET=supabase` (shell o `apps/api/.env`) no levanta el stack, **no
+  migra** (eso es `npm run db:migrate:supabase`, a propósito) y manda el `.env`.
 - **Supabase:** poner en `DATABASE` la connection string del proyecto
   (Dashboard → Connect; para migrar usar la de puerto 5432) y correr
   `npm -C apps/api run db:migrate`.
