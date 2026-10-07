@@ -37,7 +37,7 @@ Reemplaza a `whatsapp-meta-v1.md` (envío suelto desde Configuración, escrito p
 
 ```
 # SUPABASE_* y TURNSTILE_SECRET_KEY ya existen (auth, ver apps/api/.env.example)
-WHATSAPP_GRAPH_VERSION=v25.0      # la que mostró el panel de Meta el 2026-10-07; verificar la vigente al implementar
+WHATSAPP_GRAPH_VERSION=v26.0      # la de los campos del webhook en Meta (2026-10-07)
 WHATSAPP_ACCESS_TOKEN=            # token de usuario del sistema (sin vencimiento)
 WHATSAPP_APP_SECRET=              # firma X-Hub-Signature-256
 WHATSAPP_VERIFY_TOKEN=            # handshake GET del webhook
@@ -67,6 +67,8 @@ Cliente: `NEXT_PUBLIC_META_APP_ID`, `NEXT_PUBLIC_WHATSAPP_ES_CONFIG_ID` (fase co
 - App **Saba-Chat** (ID `2332812997518690`), modo desarrollo, en el portafolio **Saba Global Services LLC** (no en "Prueba", que tiene las apps viejas).
 - Número de prueba `+1 555 634 6598` · `WHATSAPP_PHONE_NUMBER_ID=1014761568397246` · `WHATSAPP_WABA_ID=1293126782760816`.
 - `hello_world` entregado a un celular agregado como destinatario.
+- Webhook verificado por túnel rápido (`trycloudflare.com`, mientras no haya acceso a la cuenta de Cloudflare de `sabatransporte.com`). Campos suscritos: `messages`, `message_template_status_update`, `template_category_update`, `account_update`, `phone_number_quality_update`.
+- Saba-Chat suscrita a la WABA (`POST /{WABA_ID}/subscribed_apps`): sin eso llegan las pruebas del panel pero no los mensajes reales. Mensajes reales recibidos y guardados; ejemplo anonimizado en `apps/api/src/test/fixtures/whatsapp/mensajeTextoEntrante.json`.
 - Verificación del negocio iniciada (con documentos de la LLC).
 
 **Pendiente:**
@@ -307,3 +309,6 @@ Fases 1, 2 y 5 pueden ir en paralelo. Cada fase es un PR (el usuario commitea y 
 - El historial llega en lotes grandes: vigilar tamaño de `whatsapp_webhook_events.payload` y tiempo de procesamiento.
 - `has_permission_v2` todavía no existe: el resolver por constante se reemplaza cuando se aplique permisos v2.
 - Precios: respuestas gratis hasta 1 000/mes por número desde 2026-10-01; luego se cobran.
+- **Nombres de usuario de WhatsApp (BSUID):** el webhook trae `contacts[].user_id` y `messages[].from_user_id` (`VE.…`) además de `wa_id`. Con un cliente que activó nombre de usuario, `wa_id`/`from` pueden no venir: `whatsapp_contacts.wa_id NOT NULL UNIQUE` y el vínculo por teléfono no lo cubren. Resolver antes de la Fase 4.
+- Una app ajena llamada "Saba" (`3027254144127246`) está suscrita a la WABA de prueba y recibe sus webhooks. Identificar al dueño y desconectarla antes del número real.
+- `user_preferences` (baja de marketing del cliente): suscribir y respetar antes de enviar plantillas MARKETING a clientes reales.
