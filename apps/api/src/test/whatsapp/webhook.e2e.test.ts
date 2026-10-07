@@ -26,6 +26,9 @@ process.env.DATABASE = testDatabaseUrl();
 const CONFIG: WhatsAppConfig = {
   appSecret: 'app-secret',
   verifyToken: 'verify-token',
+  accessToken: null,
+  phoneNumberId: null,
+  graphVersion: 'v26.0',
 };
 
 const publicados: string[] = [];
@@ -101,6 +104,12 @@ describe('webhook de WhatsApp', () => {
     })
       .overrideProvider(WHATSAPP_TOKENS.Config)
       .useValue(CONFIG)
+      // Acá se prueba la recepción: el procesamiento en segundo plano chocaría
+      // con el TRUNCATE entre tests (tiene su propio test).
+      .overrideProvider(WHATSAPP_TOKENS.ProcesarWebhookEvento)
+      .useValue({ execute: async () => 'omitido' })
+      .overrideProvider(WHATSAPP_TOKENS.ReprocesarPendientes)
+      .useValue({ execute: async () => 0 })
       .compile();
 
     app = moduleRef.createNestApplication({ rawBody: true });

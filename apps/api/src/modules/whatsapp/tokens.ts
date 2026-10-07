@@ -10,4 +10,11 @@ export const WHATSAPP_TOKENS = {
   ClienteSabaReader: Symbol('ClienteSabaReaderPort'),
   ProcesarWebhookEvento: Symbol('ProcesarWebhookEventoPort'),
   ReprocesarPendientes: Symbol('ReprocesarPendientesPort'),
+  ChatsRepository: Symbol('ChatsRepositoryPort'),
+  WhatsAppCloud: Symbol('WhatsAppCloudPort'),
+  Clock: Symbol('ClockPort'),
+  ListarConversaciones: Symbol('ListarConversacionesPort'),
+  ListarMensajes: Symbol('ListarMensajesPort'),
+  ResponderConversacion: Symbol('ResponderConversacionPort'),
+  MarcarLeida: Symbol('MarcarLeidaPort'),
 } as const;

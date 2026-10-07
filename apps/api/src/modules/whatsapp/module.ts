@@ -1,23 +1,31 @@
 import { Module } from '@nestjs/common';
 import { SabaClientesModule } from '../sabaClientes/module';
+import { ListarConversacionesUseCase } from './application/use-cases/ListarConversacionesUseCase';
+import { ListarMensajesUseCase } from './application/use-cases/ListarMensajesUseCase';
+import { MarcarLeidaUseCase } from './application/use-cases/MarcarLeidaUseCase';
 import { ProcesarWebhookEventoUseCase } from './application/use-cases/ProcesarWebhookEventoUseCase';
 import { RecibirWebhookUseCase } from './application/use-cases/RecibirWebhookUseCase';
 import { ReprocesarPendientesUseCase } from './application/use-cases/ReprocesarPendientesUseCase';
+import { ResponderConversacionUseCase } from './application/use-cases/ResponderConversacionUseCase';
 import { VerificarSuscripcionWebhookUseCase } from './application/use-cases/VerificarSuscripcionWebhookUseCase';
 import { CqrsWebhookEventPublisher } from './infrastructure/bus/CqrsWebhookEventPublisher';
 import { ProcesarWebhookEventoHandler } from './infrastructure/bus/ProcesarWebhookEventoHandler';
 import { ReprocesadorWebhookService } from './infrastructure/bus/ReprocesadorWebhookService';
+import { GraphWhatsAppCloudAdapter } from './infrastructure/external/GraphWhatsAppCloudAdapter';
 import { HmacWebhookSignatureVerifier } from './infrastructure/external/HmacWebhookSignatureVerifier';
+import { SystemClock } from './infrastructure/external/SystemClock';
+import { DrizzleChatsRepository } from './infrastructure/persistence/DrizzleChatsRepository';
 import { DrizzleInboxUnitOfWork } from './infrastructure/persistence/DrizzleInboxUnitOfWork';
 import { DrizzleWebhookEventRepository } from './infrastructure/persistence/DrizzleWebhookEventRepository';
 import { SabaClientesCandidatosAdapter } from './infrastructure/sabaClientes/SabaClientesCandidatosAdapter';
+import { ChatsController } from './infrastructure/web/ChatsController';
 import { WhatsAppWebhookController } from './infrastructure/web/WhatsAppWebhookController';
 import { loadWhatsAppConfig } from './infrastructure/whatsappConfig';
 import { WHATSAPP_TOKENS } from './tokens';
 
 @Module({
   imports: [SabaClientesModule],
-  controllers: [WhatsAppWebhookController],
+  controllers: [WhatsAppWebhookController, ChatsController],
   providers: [
     { provide: WHATSAPP_TOKENS.Config, useFactory: () => loadWhatsAppConfig() },
     {
@@ -65,6 +73,32 @@ import { WHATSAPP_TOKENS } from './tokens';
       useExisting: ReprocesarPendientesUseCase,
     },
     ProcesarWebhookEventoHandler,
+    {
+      provide: WHATSAPP_TOKENS.ChatsRepository,
+      useClass: DrizzleChatsRepository,
+    },
+    {
+      provide: WHATSAPP_TOKENS.WhatsAppCloud,
+      useClass: GraphWhatsAppCloudAdapter,
+    },
+    { provide: WHATSAPP_TOKENS.Clock, useClass: SystemClock },
+    ListarConversacionesUseCase,
+    {
+      provide: WHATSAPP_TOKENS.ListarConversaciones,
+      useExisting: ListarConversacionesUseCase,
+    },
+    ListarMensajesUseCase,
+    {
+      provide: WHATSAPP_TOKENS.ListarMensajes,
+      useExisting: ListarMensajesUseCase,
+    },
+    ResponderConversacionUseCase,
+    {
+      provide: WHATSAPP_TOKENS.ResponderConversacion,
+      useExisting: ResponderConversacionUseCase,
+    },
+    MarcarLeidaUseCase,
+    { provide: WHATSAPP_TOKENS.MarcarLeida, useExisting: MarcarLeidaUseCase },
     ReprocesadorWebhookService,
   ],
 })

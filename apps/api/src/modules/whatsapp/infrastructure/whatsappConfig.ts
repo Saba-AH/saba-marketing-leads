@@ -11,11 +11,17 @@ function optional<T extends z.ZodType>(schema: T) {
 const whatsappEnvSchema = z.object({
   WHATSAPP_APP_SECRET: optional(z.string().min(1)),
   WHATSAPP_VERIFY_TOKEN: optional(z.string().min(1)),
+  WHATSAPP_ACCESS_TOKEN: optional(z.string().min(1)),
+  WHATSAPP_PHONE_NUMBER_ID: optional(z.string().min(1)),
+  WHATSAPP_GRAPH_VERSION: optional(z.string().min(1)),
 });
 
 export interface WhatsAppConfig {
   appSecret: string | null;
   verifyToken: string | null;
+  accessToken: string | null;
+  phoneNumberId: string | null;
+  graphVersion: string;
 }
 
 /**
@@ -29,5 +35,8 @@ export function loadWhatsAppConfig(
   return {
     appSecret: parsed.WHATSAPP_APP_SECRET ?? null,
     verifyToken: parsed.WHATSAPP_VERIFY_TOKEN ?? null,
+    accessToken: parsed.WHATSAPP_ACCESS_TOKEN ?? null,
+    phoneNumberId: parsed.WHATSAPP_PHONE_NUMBER_ID ?? null,
+    graphVersion: parsed.WHATSAPP_GRAPH_VERSION ?? 'v26.0',
   };
 }

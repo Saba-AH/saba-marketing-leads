@@ -13,6 +13,9 @@ describe('HmacWebhookSignatureVerifier', () => {
   const verifier = new HmacWebhookSignatureVerifier({
     appSecret: SECRETO,
     verifyToken: null,
+    accessToken: null,
+    phoneNumberId: null,
+    graphVersion: 'v26.0',
   });
 
   it('acepta la firma calculada con el app secret sobre el cuerpo crudo', () => {
@@ -38,6 +41,9 @@ describe('HmacWebhookSignatureVerifier', () => {
     const sinSecreto = new HmacWebhookSignatureVerifier({
       appSecret: null,
       verifyToken: null,
+      accessToken: null,
+      phoneNumberId: null,
+      graphVersion: 'v26.0',
     });
     expect(sinSecreto.esValida(cuerpo, firmar(cuerpo))).toBe(false);
   });
