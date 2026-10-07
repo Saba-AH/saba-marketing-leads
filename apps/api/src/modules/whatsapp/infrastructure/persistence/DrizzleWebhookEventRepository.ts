@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { and, asc, eq, isNull, lt, sql } from 'drizzle-orm';
 import {
   type ApiDb,
   DRIZZLE_CLIENT,
@@ -23,6 +24,31 @@ export class DrizzleWebhookEventRepository
         }))
       )
       .returning({ id: whatsappWebhookEvents.id });
+    return filas.map((fila) => fila.id);
+  }
+
+  async registrarFallo(eventoId: string, error: string): Promise<void> {
+    await this.db
+      .update(whatsappWebhookEvents)
+      .set({
+        intentos: sql`${whatsappWebhookEvents.intentos} + 1`,
+        error: error.slice(0, 2000),
+      })
+      .where(eq(whatsappWebhookEvents.id, eventoId));
+  }
+
+  async pendientes(maxIntentos: number, limite: number): Promise<string[]> {
+    const filas = await this.db
+      .select({ id: whatsappWebhookEvents.id })
+      .from(whatsappWebhookEvents)
+      .where(
+        and(
+          isNull(whatsappWebhookEvents.procesadoAt),
+          lt(whatsappWebhookEvents.intentos, maxIntentos)
+        )
+      )
+      .orderBy(asc(whatsappWebhookEvents.recibidoAt))
+      .limit(limite);
     return filas.map((fila) => fila.id);
   }
 }

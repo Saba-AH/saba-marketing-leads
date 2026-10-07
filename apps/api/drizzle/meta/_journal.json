@@ -36,6 +36,13 @@
       "when": 1791397286613,
       "tag": "0004_whatsapp_chats",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791403469622,
+      "tag": "0005_whatsapp_contacts_bsuid",
+      "breakpoints": true
     }
   ]
 }

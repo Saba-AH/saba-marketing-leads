@@ -16,6 +16,7 @@ Todo módulo nuevo se registra acá antes o en el mismo PR que su implementació
 - Chats de WhatsApp Cloud API (`.scratch/whatsapp-chats/PLAN.md`).
 - `GET/POST /whatsapp/webhook` lo llama Meta: público, sin rate limit y fuera del sobre `{ success, data }`. El `POST` se autentica con `X-Hub-Signature-256` (HMAC del cuerpo crudo con `WHATSAPP_APP_SECRET`; por eso `main.ts` crea la app con `rawBody: true`), guarda cada `entry[].changes[]` en `whatsapp_webhook_events` y publica `WebhookEventoRecibido` por el `EventBus`. El procesamiento es aparte, para responder 200 rápido.
 - Sin `WHATSAPP_APP_SECRET` / `WHATSAPP_VERIFY_TOKEN` la API arranca igual y el webhook responde 401/403.
+- Procesamiento: `ProcesarWebhookEventoHandler` (al instante) y `ReprocesadorWebhookService` (al arrancar y cada 60 s, hasta 5 intentos por evento) llaman a `ProcesarWebhookEventoUseCase`, que aplica cada evento en una transacción y lo marca. Un contacto se identifica por `user_id` (BSUID) o teléfono.
 - `saba_profile_id`, `tomada_por` y `enviado_por` guardan ids de `profiles` de Saba **sin FK**: la tabla es de otro sistema. Las lecturas de `profiles` y `applications` van a ir por un puerto de salida propio (`IClienteSabaReader`) que provee el módulo `sabaClientes`, no por consultas directas.
 
 ## `auth`

@@ -1,8 +1,13 @@
 import { Module } from '@nestjs/common';
+import { ProcesarWebhookEventoUseCase } from './application/use-cases/ProcesarWebhookEventoUseCase';
 import { RecibirWebhookUseCase } from './application/use-cases/RecibirWebhookUseCase';
+import { ReprocesarPendientesUseCase } from './application/use-cases/ReprocesarPendientesUseCase';
 import { VerificarSuscripcionWebhookUseCase } from './application/use-cases/VerificarSuscripcionWebhookUseCase';
 import { CqrsWebhookEventPublisher } from './infrastructure/bus/CqrsWebhookEventPublisher';
+import { ProcesarWebhookEventoHandler } from './infrastructure/bus/ProcesarWebhookEventoHandler';
+import { ReprocesadorWebhookService } from './infrastructure/bus/ReprocesadorWebhookService';
 import { HmacWebhookSignatureVerifier } from './infrastructure/external/HmacWebhookSignatureVerifier';
+import { DrizzleInboxUnitOfWork } from './infrastructure/persistence/DrizzleInboxUnitOfWork';
 import { DrizzleWebhookEventRepository } from './infrastructure/persistence/DrizzleWebhookEventRepository';
 import { WhatsAppWebhookController } from './infrastructure/web/WhatsAppWebhookController';
 import { loadWhatsAppConfig } from './infrastructure/whatsappConfig';
@@ -38,6 +43,22 @@ import { WHATSAPP_TOKENS } from './tokens';
       provide: WHATSAPP_TOKENS.RecibirWebhook,
       useExisting: RecibirWebhookUseCase,
     },
+    {
+      provide: WHATSAPP_TOKENS.InboxUnitOfWork,
+      useClass: DrizzleInboxUnitOfWork,
+    },
+    ProcesarWebhookEventoUseCase,
+    {
+      provide: WHATSAPP_TOKENS.ProcesarWebhookEvento,
+      useExisting: ProcesarWebhookEventoUseCase,
+    },
+    ReprocesarPendientesUseCase,
+    {
+      provide: WHATSAPP_TOKENS.ReprocesarPendientes,
+      useExisting: ReprocesarPendientesUseCase,
+    },
+    ProcesarWebhookEventoHandler,
+    ReprocesadorWebhookService,
   ],
 })
 export class WhatsAppModule {}

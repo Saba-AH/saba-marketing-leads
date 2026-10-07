@@ -65,6 +65,8 @@ describe('RecibirWebhookUseCase', () => {
   function armar(firmaValida: boolean) {
     const eventos: WebhookEventRepositoryPort = {
       guardar: vi.fn(async (cambios) => cambios.map((_, i) => `id-${i}`)),
+      registrarFallo: vi.fn(),
+      pendientes: vi.fn(),
     };
     const publicador: WebhookEventPublisherPort = {
       publicarRecibidos: vi.fn(),

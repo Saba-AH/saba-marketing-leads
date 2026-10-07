@@ -169,6 +169,16 @@ Agregar al glosario de `CONTEXT.md`: Contacto, Conversación, Ventana de atenci�
 
 ## Fase 4 — Webhook: procesamiento
 
+**Hecha (2026-10-07), con estos ajustes:**
+- Identidad del contacto: `wa_id` pasa a opcional y se suma `user_id` (BSUID, único); CHECK de que haya al menos uno (migración `0005`). Se busca por `user_id` o teléfono y se completa lo que falte.
+- Cada evento se procesa entero en una transacción (`InboxUnitOfWork`) que lo toma con `FOR UPDATE SKIP LOCKED`; el fallo se registra afuera (`intentos`, `error`).
+- Solo se procesa el campo `messages` (entrantes y `statuses`). `account_update`, `smb_message_echoes`, `history` y `smb_app_state_sync` pasan a la **Fase 9**: no hay payloads reales para probarlos con el número de prueba. Los demás campos se marcan procesados sin acción.
+- Reacciones, `unsupported` y `system` no abren la ventana de 24 h (se prefiere bloquear de más que un 131047).
+- Un `status` de un `wamid` desconocido se ignora. La Fase 6 tiene que guardar el `wamid` antes de que llegue el primer status, o reintentar.
+- El vínculo con Saba al crear el contacto (4.4) pasa a la **Fase 5**, que es la que trae el puerto `IClienteSabaReader`.
+
+**Plan original:**
+
 **4.1** `ProcesarWebhookEventoUseCase` (handler del evento + barrido): toma el evento, despacha por `campo`, marca `procesado_at` o incrementa `intentos` + `error`. Idempotente: todo upsert por `wamid`.
 
 **4.2** `ReprocesadorWebhookService` (`OnModuleInit`): al arrancar y cada 60 s procesa filas con `procesado_at IS NULL AND intentos < 5` (`FOR UPDATE SKIP LOCKED` para múltiples instancias).

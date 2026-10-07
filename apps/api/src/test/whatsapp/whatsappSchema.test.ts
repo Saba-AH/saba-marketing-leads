@@ -143,6 +143,18 @@ describe('esquema de WhatsApp', () => {
     expect(code).toBe(CHECK_VIOLATION);
   });
 
+  it('exige teléfono o user_id en cada contacto', async () => {
+    await getTestDb().insert(whatsappContacts).values({ userId: 'VE.1' });
+
+    const code = await pgErrorCode(
+      getTestDb()
+        .insert(whatsappContacts)
+        .values({ profileName: 'Sin identidad' })
+    );
+
+    expect(code).toBe(CHECK_VIOLATION);
+  });
+
   it('borra conversación y mensajes al borrar el contacto', async () => {
     const conversationId = await crearConversacion('584141234567');
     await getTestDb().insert(whatsappMessages).values({

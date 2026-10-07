@@ -19,8 +19,11 @@ export const whatsappContacts = pgTable(
   'whatsapp_contacts',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    // Solo dígitos, como lo manda Meta (E.164 sin "+").
-    waId: text('wa_id').notNull().unique(),
+    // Teléfono en solo dígitos (E.164 sin "+"). Meta no lo manda si el cliente
+    // activó nombre de usuario: ahí solo llega `user_id`.
+    waId: text('wa_id').unique(),
+    // BSUID de Meta (`VE.…`): identifica al cliente aunque no comparta su teléfono.
+    userId: text('user_id').unique(),
     profileName: text('profile_name'),
     sabaProfileId: uuid('saba_profile_id'),
     vinculoOrigen: text('vinculo_origen', { enum: ['auto', 'manual'] }),
@@ -32,6 +35,10 @@ export const whatsappContacts = pgTable(
       .defaultNow(),
   },
   (tabla) => [
+    check(
+      'whatsapp_contacts_identidad_check',
+      sql`${tabla.waId} IS NOT NULL OR ${tabla.userId} IS NOT NULL`
+    ),
     check(
       'whatsapp_contacts_vinculo_origen_check',
       sql`${tabla.vinculoOrigen} IN ('auto', 'manual')`

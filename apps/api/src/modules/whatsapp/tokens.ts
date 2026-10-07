@@ -6,4 +6,7 @@ export const WHATSAPP_TOKENS = {
   WebhookEventPublisher: Symbol('WebhookEventPublisherPort'),
   VerificarSuscripcionWebhook: Symbol('VerificarSuscripcionWebhookPort'),
   RecibirWebhook: Symbol('RecibirWebhookPort'),
+  InboxUnitOfWork: Symbol('InboxUnitOfWork'),
+  ProcesarWebhookEvento: Symbol('ProcesarWebhookEventoPort'),
+  ReprocesarPendientes: Symbol('ReprocesarPendientesPort'),
 } as const;

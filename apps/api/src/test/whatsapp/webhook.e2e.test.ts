@@ -164,7 +164,6 @@ describe('webhook de WhatsApp', () => {
       const filas = await getTestDb().select().from(whatsappWebhookEvents);
       expect(filas).toHaveLength(2);
       expect(filas.every((f) => f.campo === 'messages')).toBe(true);
-      expect(filas.every((f) => f.procesadoAt === null)).toBe(true);
       expect(filas.map((f) => f.payload)).toContainEqual(
         expect.objectContaining({
           messages: [expect.objectContaining({ id: 'wamid.HBgM' })],
