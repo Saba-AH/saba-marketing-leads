@@ -13,11 +13,19 @@
     },
     "dev": {
       "dependsOn": ["^build"],
-      // `npm run dev:supabase` lo setea en el shell; en `envMode: strict` sin
-      // esto no llegaría a la API.
-      "passThroughEnv": ["DB_TARGET"],
+      // `npm run dev:supabase` setea DB_TARGET en el shell, y
+      // `scripts/localSupabase.mjs` exporta lo que lee de `supabase status`;
+      // en `envMode: strict`, sin esto no llegarían a la API.
+      "passThroughEnv": ["DB_TARGET", "DATABASE_LOCAL", "SUPABASE_STUDIO_URL"],
       "cache": false,
       "persistent": true
+    },
+    // Resumen de contra qué corre la API y qué abrir (`apps/api/scripts/devInfo.ts`):
+    // aparece en el sidebar de la TUI junto a las tareas `dev`. Lee el mismo
+    // entorno que la API, así que pasa las mismas variables.
+    "dev:info": {
+      "passThroughEnv": ["DB_TARGET", "DATABASE_LOCAL", "SUPABASE_STUDIO_URL"],
+      "cache": false
     },
     "lint": {
       "dependsOn": []
@@ -30,7 +38,7 @@
       "dependsOn": ["^build"],
       // Turbo corre en `envMode: strict`: lo que no está acá no llega a la
       // tarea. Los tests de la API se conectan a Postgres de verdad, así que
-      // sin esto vitest cae a su default (`localhost:5433`) — que acierta en
+      // sin esto vitest cae a su default (`localhost:54332`) — que acierta en
       // el runner de GitHub y falla dentro del contenedor de Cloud Build,
       // donde la base es un sidecar en otro host.
       "env": ["DATABASE"],

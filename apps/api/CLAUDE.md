@@ -2,7 +2,7 @@
 
 NestJS + arquitectura hexagonal + DDD. Aplican las reglas de la raíz (`/CLAUDE.md`).
 
-Esta app es **el único camino a los datos**: Postgres (Docker en local, Supabase en la nube) se alcanza solo desde acá, vía Drizzle. El cliente (Next.js SSR) llama a esta API por HTTP.
+Esta app es **el único camino a los datos**: Postgres (Supabase local en desarrollo, Supabase en la nube) se alcanza solo desde acá, vía Drizzle. El cliente (Next.js SSR) llama a esta API por HTTP.
 
 ## Comandos
 
@@ -10,7 +10,7 @@ Esta app es **el único camino a los datos**: Postgres (Docker en local, Supabas
 npx turbo typecheck --filter @repo/api
 npx turbo lint --filter @repo/api        # arreglar: npm -C apps/api run lint:fix
 npm -C apps/api test                     # vitest
-npm run db:up                            # Postgres + pgvector local
+npm run db:up                            # Supabase local (Postgres + Auth)
 npm -C apps/api run db:generate          # migración nueva (+ escribir drizzle/down/<tag>.down.sql)
 npm -C apps/api run db:migrate           # aplica migraciones sobre DATABASE
 ```

@@ -5,6 +5,11 @@ import { config as loadEnv } from 'dotenv';
 import helmet from 'helmet';
 import 'reflect-metadata';
 import { AppModule } from './app.module';
+import { allowedOrigins } from './infrastructure/bootstrap/allowedOrigins';
+import {
+  shouldColor,
+  startupBanner,
+} from './infrastructure/bootstrap/startupBanner';
 import {
   dbTarget,
   redactDatabaseUrl,
@@ -22,18 +27,6 @@ loadEnv({ path: resolve(__dirname, '../.env') });
 // en Error Reporting con traza, no perderse en un stdout sin estructura.
 registerUncaughtErrorHandlers(new StructuredLogger());
 
-/**
- * Orígenes permitidos. El cliente es SSR en su propio servicio de Cloud Run,
- * así que el navegador es lo único que llama a esta API: CORS es la frontera
- * real, no un detalle de configuración.
- */
-function allowedOrigins(): string[] {
-  return (process.env.CORS_ALLOWED_ORIGINS ?? 'http://localhost:3002')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean);
-}
-
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   app.useLogger(app.get(StructuredLogger));
@@ -49,6 +42,8 @@ async function bootstrap() {
     })
   );
 
+  // El cliente es SSR en su propio servicio, así que el navegador es lo único
+  // que llama a esta API: CORS es la frontera real, no un detalle.
   app.enableCors({
     origin: allowedOrigins(),
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -73,26 +68,23 @@ async function bootstrap() {
 
   // Para humanos en la terminal: el StructuredLogger de abajo emite JSON (lo
   // que lee el agregador de logs) y las URLs se pierden entre los campos.
-  const baseUrl = `http://localhost:${port}`;
+  const databaseUrl = resolveDatabaseUrl();
   console.log(
-    [
-      '',
-      `  API:     ${baseUrl}/api/v1`,
-      `  Swagger: ${baseUrl}/api/docs`,
-      `  Health:  ${baseUrl}/api/v1/health`,
-      `  Base:    ${redactDatabaseUrl(resolveDatabaseUrl())}`,
-      '',
-    ].join('\n')
+    startupBanner({
+      port,
+      databaseUrl,
+      dbTarget: dbTarget(),
+      explicitDatabase: Boolean(process.env.DATABASE),
+      panelUrl: allowedOrigins()[0],
+      studioUrl: process.env.SUPABASE_STUDIO_URL,
+      color: shouldColor(),
+    })
   );
 
   const logger = app.get(StructuredLogger);
   logger.log(`API escuchando en http://localhost:${port}`, 'Bootstrap');
-  logger.log(`Swagger: http://localhost:${port}/api/docs`, 'Bootstrap');
-  logger.log(`Health:  http://localhost:${port}/api/v1/health`, 'Bootstrap');
-  // Que quede a la vista contra qué base corre: confundir Docker con
-  // Supabase es el error caro.
   logger.log(
-    `Base:    ${process.env.DATABASE ? 'DATABASE explícita' : `DB_TARGET=${dbTarget()}`} → ${redactDatabaseUrl(resolveDatabaseUrl())}`,
+    `Base: ${process.env.DATABASE ? 'DATABASE explícita' : `DB_TARGET=${dbTarget()}`} → ${redactDatabaseUrl(databaseUrl)}`,
     'Bootstrap'
   );
 }

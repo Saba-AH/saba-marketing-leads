@@ -89,7 +89,7 @@ Antes de dar el PR por listo, corré los loops completos una vez, en este orden 
 
 - `npm run format-and-lint` — Biome sobre todo el repo (lo mismo que corre el CI).
 - `npm run typecheck` — `tsc --noEmit` en cada workspace.
-- `npm test` — Vitest (api) + Jest (cliente). **Los tests de `apps/api` corren contra Postgres real**; necesitan `npm run db:up` (docker) levantado. Si el sandbox no puede correr ese Postgres, corré lo que puedas y **apoyate en el CI** como gate real (el workflow ya levanta un servicio Postgres).
+- `npm test` — Vitest (api) + Jest (cliente). **Los tests de `apps/api` corren contra Postgres real**; necesitan `npm run db:up` (Supabase local, en Docker) levantado. Si el sandbox no puede correr ese Postgres, corré lo que puedas y **apoyate en el CI** como gate real (el workflow ya levanta el Supabase local).
 - `npm run build` — compila todo; el cliente compila su servidor SSR en `apps/client/.next/` (standalone).
 
 **Este repo SÍ tiene CI** (`.github/workflows/ci.yml`): corre esos mismos pasos con un servicio Postgres. **El CI verde es el gate**; el humano mergea sobre CI verde. Nunca des un PR por listo sobre un run que saltaste o interrumpiste.
