@@ -127,7 +127,7 @@ export function LoginForm({ next }: { next: string }): React.JSX.Element {
         </Button>
 
         <p className="flex items-center justify-center gap-2 text-muted-foreground text-xs">
-          <ShieldCheck className="size-3.5 text-primary" />
+          <ShieldCheck className="size-3.5 text-brand-700" />
           ¿Olvidaste tu contraseña? Contacta a un administrador.
         </p>
       </form>

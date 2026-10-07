@@ -15,13 +15,13 @@
 @import "../css/border-variables.css";
 @import "../css/text-variables.css";
 
-/* La tipografía del prototipo. `layout.tsx` solo declaraba la variable de la
-   fuente y ningún CSS la consumía, así que la app venía renderizando con la
-   fuente del sistema. Definir `--font-sans` la aplica a todo, porque es la que
-   Tailwind usa por defecto en `html`. */
+/* La tipografía de Saba web (Antique Olive Std), cargada en `layout.tsx`.
+   Definir `--font-sans` la aplica a todo, porque es la que Tailwind usa por
+   defecto en `html`. */
 @theme {
   --font-sans:
-    var(--font-manrope), -apple-system, "Segoe UI", Arial, sans-serif;
+    var(--font-antique-olive), system-ui, -apple-system, "Segoe UI", Arial,
+    sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 

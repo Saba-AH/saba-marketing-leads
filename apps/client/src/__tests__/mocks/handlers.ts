@@ -10,5 +10,10 @@
 
 import { healthHandlers } from './handlers/health.mock';
 import { leadsHandlers } from './handlers/leads.mock';
+import { sessionHandlers } from './handlers/session.mock';
 
-export const handlers = [...healthHandlers, ...leadsHandlers];
+export const handlers = [
+  ...healthHandlers,
+  ...leadsHandlers,
+  ...sessionHandlers,
+];

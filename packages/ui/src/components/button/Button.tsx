@@ -28,12 +28,10 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // `bg-surface` es blanco y `text-primary-foreground` es casi blanco:
-        // la variante por defecto era letra blanca sobre fondo blanco. Un
-        // botón sin variante es la acción principal de su pantalla, así que
-        // va en el morado de marca, como en el prototipo.
+        // Un botón sin variante es la acción principal de su pantalla: casi
+        // negro, como en Saba web (`--primary`). El verde de marca es `cta`.
         [buttonVariantEnumObject.default]:
-          'bg-brand-solid txt-primary_on-brand shadow-xs hover:bg-brand-solid_hover',
+          'bg-primary text-primary-foreground shadow-xs hover:bg-primary/90',
         [buttonVariantEnumObject.destructive]:
           'bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60',
         [buttonVariantEnumObject.outline]:
