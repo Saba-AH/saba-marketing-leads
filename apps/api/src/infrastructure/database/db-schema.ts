@@ -15,3 +15,4 @@
 
 export * from '../../modules/leads/infrastructure/persistence/leads.schema';
 export * from '../../modules/mobileAppVersions/infrastructure/persistence/mobileAppVersions.schema';
+export * from '../../modules/whatsapp/infrastructure/persistence/whatsapp.schema';

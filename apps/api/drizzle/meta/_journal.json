@@ -29,6 +29,13 @@
       "when": 1791313679099,
       "tag": "0003_login_saba",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791397286613,
+      "tag": "0004_whatsapp_chats",
+      "breakpoints": true
     }
   ]
 }
