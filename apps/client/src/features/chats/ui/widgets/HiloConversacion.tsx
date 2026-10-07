@@ -1,7 +1,8 @@
 'use client';
 
+import { Button } from '@repo/ui/components/button';
 import { Skeleton } from '@repo/ui/components/skeleton';
-import { Clock, Lock } from 'lucide-react';
+import { ArrowLeft, Clock, Lock } from 'lucide-react';
 import React from 'react';
 import { ErrorState } from '@/shared/ui/components/ErrorState';
 import { useEnviarMensaje } from '../../application/mutations/useEnviarMensaje.mutation';
@@ -18,8 +19,11 @@ import { ComposerMensaje } from '../components/ComposerMensaje';
 
 export function HiloConversacion({
   conversacion,
+  onVolver,
 }: {
   conversacion: Conversacion;
+  /** En pantallas angostas el hilo tapa la lista: esto vuelve a ella. */
+  onVolver: () => void;
 }): React.JSX.Element {
   const { data: mensajes, isPending, error } = useMensajes(conversacion.id);
   const enviar = useEnviarMensaje(conversacion.id);
@@ -44,17 +48,30 @@ export function HiloConversacion({
       aria-label={`Chat con ${nombreVisible(conversacion)}`}
       className="flex min-h-0 flex-1 flex-col"
     >
-      <header className="border-b px-5 py-3">
-        <h2 className="font-semibold">{nombreVisible(conversacion)}</h2>
-        <p className="text-muted-foreground text-xs">
-          {telefono ? formatearTelefono(telefono) : 'Sin teléfono'}
-          {conversacion.contacto.vinculadoASaba
-            ? ' · Vinculado a Saba'
-            : ' · Sin vincular a Saba'}
-        </p>
+      <header className="flex items-center gap-2 border-b px-3 py-3 md:px-5">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="shrink-0 md:hidden"
+          aria-label="Volver a los chats"
+          onClick={onVolver}
+        >
+          <ArrowLeft aria-hidden="true" />
+        </Button>
+        <div className="min-w-0">
+          <h2 className="truncate font-semibold">
+            {nombreVisible(conversacion)}
+          </h2>
+          <p className="truncate text-muted-foreground text-xs">
+            {telefono ? formatearTelefono(telefono) : 'Sin teléfono'}
+            {conversacion.contacto.vinculadoASaba
+              ? ' · Vinculado a Saba'
+              : ' · Sin vincular a Saba'}
+          </p>
+        </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 md:px-5">
         {isPending && (
           <div className="flex flex-col gap-3">
             <Skeleton className="h-10 w-1/2" />
@@ -72,7 +89,7 @@ export function HiloConversacion({
         <div ref={finRef} />
       </div>
 
-      <footer className="border-t px-5 py-3">
+      <footer className="border-t px-3 py-3 md:px-5">
         {ventana.abierta && telefono ? (
           <div className="flex flex-col gap-2">
             <p className="flex items-center gap-1 text-muted-foreground text-xs">

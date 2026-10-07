@@ -38,7 +38,7 @@ export function BurbujaMensaje({
     <li className={cn('flex', saliente ? 'justify-end' : 'justify-start')}>
       <div
         className={cn(
-          'max-w-[75%] rounded-lg px-3 py-2 text-sm shadow-xs',
+          'max-w-[85%] rounded-lg px-3 py-2 text-sm shadow-xs md:max-w-[75%]',
           saliente
             ? 'bg-primary text-primary-foreground'
             : 'bg-muted text-foreground'

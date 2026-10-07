@@ -128,6 +128,26 @@ describe('ChatsPage', () => {
     expect(screen.queryByLabelText('Mensaje')).not.toBeInTheDocument();
   });
 
+  it('vuelve a la lista desde el hilo (pantallas angostas)', async () => {
+    const user = userEvent.setup();
+    render(<ChatsPage />);
+    await user.click(await screen.findByRole('button', { name: /Ana Pérez/ }));
+    expect(
+      await screen.findByRole('list', { name: 'Mensajes' })
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole('button', { name: 'Volver a los chats' })
+    );
+
+    expect(
+      screen.queryByRole('list', { name: 'Mensajes' })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText('Elige una conversación para ver los mensajes.')
+    ).toBeInTheDocument();
+  });
+
   it('no envía un mensaje vacío', async () => {
     let llamadas = 0;
     server.use(
