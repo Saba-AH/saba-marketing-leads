@@ -9,6 +9,12 @@ Todo módulo nuevo se registra acá antes o en el mismo PR que su implementació
 | `leads` | `leads` | — |
 | `mobileAppVersions` | `mobile_app_versions` | — |
 | `auth` | Ninguna propia. Lee `profiles` (Saba) y `auth.sessions` (GoTrue); lee y escribe `login_attempts` y `admin_login_lockouts` (compartidas con el login de staff de Saba) | `AuthGuard` global (`APP_GUARD`), `@CurrentUser()` |
+| `whatsapp` | `whatsapp_contacts`, `whatsapp_conversations`, `whatsapp_messages`, `whatsapp_webhook_events`, `whatsapp_accounts` | — |
+
+## `whatsapp`
+
+- Chats de WhatsApp Cloud API (`.scratch/whatsapp-chats/PLAN.md`). Por ahora solo el esquema.
+- `saba_profile_id`, `tomada_por` y `enviado_por` guardan ids de `profiles` de Saba **sin FK**: la tabla es de otro sistema. Las lecturas de `profiles` y `applications` van a ir por un puerto de salida propio (`IClienteSabaReader`) que provee el módulo `sabaClientes`, no por consultas directas.
 
 ## `auth`
 
