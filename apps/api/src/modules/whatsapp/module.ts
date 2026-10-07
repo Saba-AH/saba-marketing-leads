@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { SabaClientesModule } from '../sabaClientes/module';
 import { ProcesarWebhookEventoUseCase } from './application/use-cases/ProcesarWebhookEventoUseCase';
 import { RecibirWebhookUseCase } from './application/use-cases/RecibirWebhookUseCase';
 import { ReprocesarPendientesUseCase } from './application/use-cases/ReprocesarPendientesUseCase';
@@ -9,11 +10,13 @@ import { ReprocesadorWebhookService } from './infrastructure/bus/ReprocesadorWeb
 import { HmacWebhookSignatureVerifier } from './infrastructure/external/HmacWebhookSignatureVerifier';
 import { DrizzleInboxUnitOfWork } from './infrastructure/persistence/DrizzleInboxUnitOfWork';
 import { DrizzleWebhookEventRepository } from './infrastructure/persistence/DrizzleWebhookEventRepository';
+import { SabaClientesCandidatosAdapter } from './infrastructure/sabaClientes/SabaClientesCandidatosAdapter';
 import { WhatsAppWebhookController } from './infrastructure/web/WhatsAppWebhookController';
 import { loadWhatsAppConfig } from './infrastructure/whatsappConfig';
 import { WHATSAPP_TOKENS } from './tokens';
 
 @Module({
+  imports: [SabaClientesModule],
   controllers: [WhatsAppWebhookController],
   providers: [
     { provide: WHATSAPP_TOKENS.Config, useFactory: () => loadWhatsAppConfig() },
@@ -46,6 +49,10 @@ import { WHATSAPP_TOKENS } from './tokens';
     {
       provide: WHATSAPP_TOKENS.InboxUnitOfWork,
       useClass: DrizzleInboxUnitOfWork,
+    },
+    {
+      provide: WHATSAPP_TOKENS.ClienteSabaReader,
+      useClass: SabaClientesCandidatosAdapter,
     },
     ProcesarWebhookEventoUseCase,
     {

@@ -198,6 +198,13 @@ Agregar al glosario de `CONTEXT.md`: Contacto, Conversación, Ventana de atenci�
 
 ## Fase 5 — Módulo `sabaClientes` (solo lectura)
 
+**Hecha (2026-10-07), con estos ajustes:**
+- `buscarPorTelefono` no usa `LATERAL`: dos consultas (perfiles por variantes del teléfono, y solicitudes de esos perfiles con `inArray`) y se ordena en memoria. Solicitud activa = `approved`, `pending`, `date_scheduled` (los de Saba).
+- El vínculo automático (antes 4.4) se hace después del commit del evento y se reintenta en cada mensaje mientras el contacto no tenga vínculo; no pisa uno `auto` ni `manual`. Un contacto solo con `user_id` queda sin vincular hasta que se vincule a mano.
+- `buscar` compara el teléfono sin `58` ni `0` inicial.
+
+**Plan original:**
+
 **5.1** Esquema Drizzle mínimo de solo lectura para `profiles` (id, nombre, telefono, role) y `applications` (id, user_id, status, created_at) — solo columnas usadas; **no** generan migración (excluir del `drizzle.config` o declararlas fuera del agregador de migraciones; resolver en la tarea).
 
 **5.2** `SabaClienteReaderAdapter`:

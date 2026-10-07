@@ -22,9 +22,16 @@ export class ReprocesarPendientesUseCase implements ReprocesarPendientesPort {
     let procesados = 0;
     // Uno por uno y en orden de llegada: cada evento es su propia transacción
     // y los mensajes de un mismo chat no deben aplicarse desordenados.
+    let primerError: unknown;
     for (const id of ids) {
-      if ((await this.procesar.execute(id)) === 'procesado') procesados++;
+      try {
+        if ((await this.procesar.execute(id)) === 'procesado') procesados++;
+      } catch (error: unknown) {
+        // Un error de un evento no frena el resto del lote.
+        primerError ??= error;
+      }
     }
+    if (primerError !== undefined) throw primerError;
     return procesados;
   }
 }

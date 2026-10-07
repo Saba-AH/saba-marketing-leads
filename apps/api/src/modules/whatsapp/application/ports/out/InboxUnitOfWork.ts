@@ -5,6 +5,13 @@ import type {
   MensajeEntrante,
 } from '../../../domain/Inbox';
 
+export interface ContactoInbox {
+  id: string;
+  waId: string | null;
+  /** `null` si nunca se vinculó con un perfil de Saba. */
+  vinculoOrigen: 'auto' | 'manual' | null;
+}
+
 export interface EventoWebhookPendiente {
   id: string;
   campo: string;
@@ -16,11 +23,15 @@ export interface InboxTxScope {
   /** Bloquea el evento si sigue sin procesar; `null` si ya se procesó o lo tiene otra instancia. */
   tomarEvento(eventoId: string): Promise<EventoWebhookPendiente | null>;
   marcarProcesado(eventoId: string): Promise<void>;
-  /** Busca por `user_id` o por teléfono, completa lo que falte y devuelve el id. */
+  /** Busca por `user_id` o por teléfono y completa lo que falte. */
   asegurarContacto(
     identidad: IdentidadContacto,
     profileName: string | null
-  ): Promise<string>;
+  ): Promise<ContactoInbox>;
+  vincularAutomaticamente(
+    contactId: string,
+    sabaProfileId: string
+  ): Promise<void>;
   asegurarConversacion(contactId: string): Promise<string>;
   /** `false` si el `wamid` ya existía (Meta reenvía webhooks). */
   insertarMensajeEntrante(
