@@ -24,4 +24,6 @@ export interface ChatsRepositoryPort {
     detalle: string
   ): Promise<void>;
   marcarLeida(conversationId: string): Promise<boolean>;
+  /** `undefined` si el mensaje no existe; `null` si existe pero no tiene archivo. */
+  mediaIdDe(mensajeId: string): Promise<string | null | undefined>;
 }

@@ -6,6 +6,12 @@ export class ConversacionNoEncontradaException extends DomainException {
   }
 }
 
+export class MediaNoDisponibleException extends DomainException {
+  constructor(cause?: unknown) {
+    super('WHATSAPP_MEDIA_NO_DISPONIBLE', cause);
+  }
+}
+
 export class VentanaCerradaException extends DomainException {
   constructor(cause?: unknown) {
     super('WHATSAPP_VENTANA_CERRADA', cause);

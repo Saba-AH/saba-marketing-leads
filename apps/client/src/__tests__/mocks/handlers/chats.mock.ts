@@ -49,6 +49,7 @@ export const mensajesFixture: TMensajeChat[] = [
     cuerpo: '¿Tienen la moto en rojo?',
     estado: null,
     errorDetalle: null,
+    tieneMedia: false,
     waTimestamp: '2026-10-07T15:00:00.000Z',
   },
   {
@@ -59,6 +60,7 @@ export const mensajesFixture: TMensajeChat[] = [
     cuerpo: null,
     estado: null,
     errorDetalle: null,
+    tieneMedia: true,
     waTimestamp: '2026-10-07T15:01:00.000Z',
   },
 ];
@@ -86,6 +88,7 @@ export const chatsHandlers = [
           cuerpo,
           estado: 'enviado',
           errorDetalle: null,
+          tieneMedia: false,
           waTimestamp: new Date().toISOString(),
         } satisfies TMensajeChat,
       },

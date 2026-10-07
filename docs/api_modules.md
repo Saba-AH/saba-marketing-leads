@@ -26,6 +26,7 @@ Todo módulo nuevo se registra acá antes o en el mismo PR que su implementació
 - El guard verifica el JWT de Supabase Auth localmente (JWKS o HS256 legado) y, en una sola consulta, que la sesión siga viva en `auth.sessions` y que el perfil siga siendo staff y esté en `PANEL_ALLOWED_EMAILS` (`domain/panelAccess.ts`). Un logout o un rol quitado en Saba aplican en la petición siguiente.
 - El login es un port de `loginAdmin` de Saba (`saba/services/auth/portalLogin.js`): Turnstile, rate limit por IP, bloqueo al quinto fallo consecutivo (se desbloquea desde `/admin/users` de Saba) y "sin acceso" revelado solo con la contraseña correcta.
 - Las tablas de Saba y GoTrue se describen en `infrastructure/persistence/sabaAuthTables.ts`, que **no** se llama `*.schema.ts` para que `drizzle-kit` no genere migraciones de ellas. La copia local de las de login la crea `drizzle/0003_login_saba.sql` (no-op en Supabase).
+- Archivos de los mensajes: `GET /whatsapp/mensajes/:id/media` los pide a Meta en el momento (dos pasos con el token) y los pasa en stream, sin guardar copia. Solo tipos seguros se sirven `inline`; el resto como `attachment` con `CSP: sandbox`, porque el BFF los sirve en el mismo origen del panel.
 - Vínculo con Saba: `whatsapp` declara `ClienteSabaReaderPort` y lo cumple `SabaClientesCandidatosAdapter` sobre el lector de `sabaClientes`. Se intenta **después** de confirmar la transacción del evento, en cada mensaje mientras el contacto no tenga vínculo, y nunca pisa uno existente.
 
 ## `sabaClientes`

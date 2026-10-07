@@ -29,7 +29,7 @@ describe('ChatsPage', () => {
     expect(within(lista).getByText('+58 424 999 9999')).toBeInTheDocument();
   });
 
-  it('abre el hilo, avisa los mensajes que no son texto y lo marca leído', async () => {
+  it('abre el hilo, muestra la imagen del cliente y lo marca leído', async () => {
     let marcada: string | undefined;
     server.use(
       http.post(`${base}/:id/leida`, ({ params }) => {
@@ -47,8 +47,8 @@ describe('ChatsPage', () => {
       within(hilo).getByText('¿Tienen la moto en rojo?')
     ).toBeInTheDocument();
     expect(
-      within(hilo).getByText('📷 Imagen — ver en el celular')
-    ).toBeInTheDocument();
+      within(hilo).getByRole('img', { name: 'Imagen del cliente' })
+    ).toHaveAttribute('src', '/api/backend/v1/whatsapp/mensajes/m2/media');
     expect(
       screen.getByText(/Ventana de respuesta: quedan/)
     ).toBeInTheDocument();
@@ -71,6 +71,7 @@ describe('ChatsPage', () => {
               cuerpo: 'Sí, la tenemos',
               estado: 'enviado',
               errorDetalle: null,
+              tieneMedia: false,
               waTimestamp: new Date().toISOString(),
             },
           },

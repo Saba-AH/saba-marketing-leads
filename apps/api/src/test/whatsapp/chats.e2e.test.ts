@@ -17,7 +17,10 @@ import { DrizzleModule } from '../../infrastructure/database/drizzle.module';
 import { ErrorsModule } from '../../infrastructure/errors/ErrorsModule';
 import { LoggingModule } from '../../infrastructure/logging/LoggingModule';
 import type { AuthenticatedUser } from '../../modules/auth/domain/AuthSession';
-import { ErrorEnvioMeta } from '../../modules/whatsapp/domain/Chats';
+import {
+  type ArchivoMedia,
+  ErrorEnvioMeta,
+} from '../../modules/whatsapp/domain/Chats';
 import {
   whatsappContacts,
   whatsappConversations,
@@ -46,6 +49,21 @@ const AGENTE: AuthenticatedUser = {
 };
 
 const enviarTexto = vi.fn<(to: string, cuerpo: string) => Promise<string>>();
+const descargarMedia = vi.fn<(mediaId: string) => Promise<ArchivoMedia>>();
+
+function archivo(mimeType: string, contenido: string): ArchivoMedia {
+  const bytes = new TextEncoder().encode(contenido);
+  return {
+    mimeType,
+    tamano: bytes.length,
+    contenido: new ReadableStream({
+      start(controller) {
+        controller.enqueue(bytes);
+        controller.close();
+      },
+    }),
+  };
+}
 
 async function crearChat(datos: {
   waId?: string | null;
@@ -91,7 +109,7 @@ describe('chats de WhatsApp (API)', () => {
       ],
     })
       .overrideProvider(WHATSAPP_TOKENS.WhatsAppCloud)
-      .useValue({ enviarTexto })
+      .useValue({ enviarTexto, descargarMedia })
       .overrideProvider(WHATSAPP_TOKENS.Clock)
       .useValue({ now: () => AHORA })
       .compile();
@@ -120,6 +138,7 @@ describe('chats de WhatsApp (API)', () => {
   beforeEach(async () => {
     await resetDatabase();
     enviarTexto.mockReset();
+    descargarMedia.mockReset();
   });
 
   it('lista las conversaciones con la de actividad más reciente primero y su ventana', async () => {
@@ -300,5 +319,108 @@ describe('chats de WhatsApp (API)', () => {
       .from(whatsappConversations)
       .where(eq(whatsappConversations.id, id));
     expect(conversacion?.noLeidos).toBe(0);
+  });
+
+  describe('archivos de los mensajes', () => {
+    let contactos = 0;
+    async function mensajeConMedia(
+      tipo: string,
+      mediaId: string | null
+    ): Promise<string> {
+      contactos++;
+      const conversationId = await crearChat({
+        waId: `58414000${String(contactos).padStart(4, '0')}`,
+        ultimoEntranteAt: HACE_UNA_HORA,
+      });
+      const [mensaje] = await getTestDb()
+        .insert(whatsappMessages)
+        .values({
+          conversationId,
+          wamid: `w-${tipo}`,
+          direccion: 'entrante',
+          origen: 'cliente',
+          tipo,
+          mediaId,
+          waTimestamp: HACE_UNA_HORA,
+        })
+        .returning();
+      if (!mensaje) throw new Error('sin mensaje');
+      return mensaje.id;
+    }
+
+    it('marca qué mensajes tienen archivo', async () => {
+      const id = await mensajeConMedia('image', 'MEDIA1');
+      const [{ conversationId }] = await getTestDb()
+        .select({ conversationId: whatsappMessages.conversationId })
+        .from(whatsappMessages)
+        .where(eq(whatsappMessages.id, id));
+
+      const res = await request(app.getHttpServer()).get(
+        `/whatsapp/conversaciones/${conversationId}/mensajes`
+      );
+
+      expect(res.body.data[0]).toMatchObject({
+        tipo: 'image',
+        tieneMedia: true,
+      });
+    });
+
+    it('pasa la imagen de Meta tal cual, para mostrarla en el panel', async () => {
+      const id = await mensajeConMedia('image', 'MEDIA1');
+      descargarMedia.mockResolvedValue(
+        archivo('image/jpeg', 'bytes-de-la-foto')
+      );
+
+      const res = await request(app.getHttpServer())
+        .get(`/whatsapp/mensajes/${id}/media`)
+        .buffer(true)
+        .parse((r, done) => {
+          let datos = '';
+          r.on('data', (c: Buffer) => {
+            datos += c.toString();
+          });
+          r.on('end', () => done(null, datos));
+        });
+
+      expect(res.status).toBe(200);
+      expect(descargarMedia).toHaveBeenCalledWith('MEDIA1');
+      expect(res.headers['content-type']).toBe('image/jpeg');
+      expect(res.headers['content-disposition']).toBe('inline');
+      expect(res.headers['cache-control']).toBe('private, max-age=3600');
+      expect(res.body).toBe('bytes-de-la-foto');
+    });
+
+    it('sirve como descarga lo que podría ejecutar código en el navegador', async () => {
+      const id = await mensajeConMedia('document', 'MEDIA2');
+      descargarMedia.mockResolvedValue(
+        archivo('text/html', '<script>alert(1)</script>')
+      );
+
+      const res = await request(app.getHttpServer()).get(
+        `/whatsapp/mensajes/${id}/media`
+      );
+
+      expect(res.headers['content-disposition']).toBe('attachment');
+      expect(res.headers['content-security-policy']).toContain('sandbox');
+    });
+
+    it('responde 404 si el mensaje no tiene archivo o Meta ya no lo guarda', async () => {
+      const sinArchivo = await mensajeConMedia('text', null);
+      const vencido = await mensajeConMedia('image', 'MEDIA_VIEJO');
+      descargarMedia.mockRejectedValue(
+        new ErrorEnvioMeta(100, 'Unsupported get request')
+      );
+
+      const a = await request(app.getHttpServer()).get(
+        `/whatsapp/mensajes/${sinArchivo}/media`
+      );
+      const b = await request(app.getHttpServer()).get(
+        `/whatsapp/mensajes/${vencido}/media`
+      );
+
+      expect(a.status).toBe(404);
+      expect(b.status).toBe(404);
+      expect(b.body.code).toBe('WHATSAPP_MEDIA_NO_DISPONIBLE');
+    });
   });
 });

@@ -1,6 +1,11 @@
 import type { TConversacionResumen, TMensajeChat } from '@repo/schemas';
 import type { Conversacion, Mensaje } from '../domain/chat.model';
 
+/** El navegador lo pide al BFF, que agrega la sesión; nunca a Meta directo. */
+function urlMedia(mensajeId: string): string {
+  return `/api/backend/v1/whatsapp/mensajes/${encodeURIComponent(mensajeId)}/media`;
+}
+
 function fecha(iso: string | null): Date | null {
   return iso ? new Date(iso) : null;
 }
@@ -26,6 +31,7 @@ export function toMensajeDomain(dto: TMensajeChat): Mensaje {
     cuerpo: dto.cuerpo,
     estado: dto.estado,
     errorDetalle: dto.errorDetalle,
+    mediaUrl: dto.tieneMedia ? urlMedia(dto.id) : null,
     waTimestamp: new Date(dto.waTimestamp),
   };
 }

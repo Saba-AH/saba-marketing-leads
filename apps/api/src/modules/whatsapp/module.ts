@@ -3,6 +3,7 @@ import { SabaClientesModule } from '../sabaClientes/module';
 import { ListarConversacionesUseCase } from './application/use-cases/ListarConversacionesUseCase';
 import { ListarMensajesUseCase } from './application/use-cases/ListarMensajesUseCase';
 import { MarcarLeidaUseCase } from './application/use-cases/MarcarLeidaUseCase';
+import { ObtenerMediaUseCase } from './application/use-cases/ObtenerMediaUseCase';
 import { ProcesarWebhookEventoUseCase } from './application/use-cases/ProcesarWebhookEventoUseCase';
 import { RecibirWebhookUseCase } from './application/use-cases/RecibirWebhookUseCase';
 import { ReprocesarPendientesUseCase } from './application/use-cases/ReprocesarPendientesUseCase';
@@ -19,13 +20,14 @@ import { DrizzleInboxUnitOfWork } from './infrastructure/persistence/DrizzleInbo
 import { DrizzleWebhookEventRepository } from './infrastructure/persistence/DrizzleWebhookEventRepository';
 import { SabaClientesCandidatosAdapter } from './infrastructure/sabaClientes/SabaClientesCandidatosAdapter';
 import { ChatsController } from './infrastructure/web/ChatsController';
+import { MediaController } from './infrastructure/web/MediaController';
 import { WhatsAppWebhookController } from './infrastructure/web/WhatsAppWebhookController';
 import { loadWhatsAppConfig } from './infrastructure/whatsappConfig';
 import { WHATSAPP_TOKENS } from './tokens';
 
 @Module({
   imports: [SabaClientesModule],
-  controllers: [WhatsAppWebhookController, ChatsController],
+  controllers: [WhatsAppWebhookController, ChatsController, MediaController],
   providers: [
     { provide: WHATSAPP_TOKENS.Config, useFactory: () => loadWhatsAppConfig() },
     {
@@ -97,6 +99,8 @@ import { WHATSAPP_TOKENS } from './tokens';
       provide: WHATSAPP_TOKENS.ResponderConversacion,
       useExisting: ResponderConversacionUseCase,
     },
+    ObtenerMediaUseCase,
+    { provide: WHATSAPP_TOKENS.ObtenerMedia, useExisting: ObtenerMediaUseCase },
     MarcarLeidaUseCase,
     { provide: WHATSAPP_TOKENS.MarcarLeida, useExisting: MarcarLeidaUseCase },
     ReprocesadorWebhookService,

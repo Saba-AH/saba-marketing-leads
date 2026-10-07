@@ -22,7 +22,7 @@ Reemplaza a `whatsapp-meta-v1.md` (envío suelto desde Configuración, escrito p
 | Hilo | 1 conversación por contacto; `resuelta` → `abierta` al llegar mensaje nuevo |
 | Asignación | "Tomar" chat (`tomada_por`); otros pueden intervenir; reasignar con permiso |
 | Ventana 24 h | Solo la abren mensajes **entrantes en vivo** del cliente (no historial, no ecos del celular). Cerrada → compositor bloqueado + contador |
-| No-texto | Burbuja de aviso ("📷 Imagen recibida — ver en el celular") con caption; se guarda `tipo` y `media_id` |
+| No-texto | Archivos **bajo demanda, sin copia propia** (decidido 2026-10-07): `GET /whatsapp/mensajes/:id/media` pide el archivo a Meta con el token y lo pasa en stream. Imágenes y stickers se ven en la burbuja, audio y video con reproductor, documentos como descarga. Meta los guarda ~30 días; después vuelve el aviso "ver en el celular". Solo tipos seguros van `inline`; el resto `attachment` + `CSP: sandbox`. Guardar copia en Storage queda como opción si hace falta conservarlos |
 | Vínculo Saba | `regexp_replace(profiles.telefono,'\D','','g') = wa_id`; varios → sugerir el de solicitud activa más reciente, el agente puede corregir (`vinculo_origen='manual'`) |
 | Login | **Hecho** (rama `feat/auth-admin`): port del login de staff de Saba a `modules/auth`, BFF en Next con cookies `httpOnly`, `/login`. Ver `docs/api_modules.md` |
 | Permisos | Claves de permisos v2: `whatsapp_chats.view`, `.reply`, `.start`, `.take`, `.reassign`, `whatsapp.configure`. `.start` = nuevo chat y reabrir con plantilla (cuesta dinero y afecta la calidad del número), separado de `.reply`. `PermissionsGuard` + `@RequirePermissions`. Fase 1: resolver por constante (`angel.hernandez@sabatransporte.com` → todos); después adaptador `has_permission_v2` |

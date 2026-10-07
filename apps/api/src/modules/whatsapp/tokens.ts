@@ -17,4 +17,5 @@ export const WHATSAPP_TOKENS = {
   ListarMensajes: Symbol('ListarMensajesPort'),
   ResponderConversacion: Symbol('ResponderConversacionPort'),
   MarcarLeida: Symbol('MarcarLeidaPort'),
+  ObtenerMedia: Symbol('ObtenerMediaPort'),
 } as const;

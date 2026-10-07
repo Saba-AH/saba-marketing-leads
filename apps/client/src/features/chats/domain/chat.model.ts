@@ -28,6 +28,8 @@ export interface Mensaje {
   cuerpo: string | null;
   estado: EstadoMensaje | null;
   errorDetalle: string | null;
+  /** Dónde pedir el archivo (imagen, audio…); `null` si no tiene. */
+  mediaUrl: string | null;
   waTimestamp: Date;
 }
 
@@ -102,7 +104,25 @@ const AVISOS_SIN_TEXTO: Record<string, string> = {
   contacts: '👤 Contacto',
 };
 
-/** Lo que se muestra de un mensaje que no es texto (el panel no descarga archivos). */
+export type FormaMedia = 'imagen' | 'audio' | 'video' | 'documento';
+
+const FORMAS: Record<string, FormaMedia> = {
+  image: 'imagen',
+  sticker: 'imagen',
+  audio: 'audio',
+  video: 'video',
+  document: 'documento',
+};
+
+/** Cómo mostrar el archivo de un mensaje; `null` si no tiene o no se sabe mostrar. */
+export function formaMedia(mensaje: Mensaje): FormaMedia | null {
+  return mensaje.mediaUrl ? (FORMAS[mensaje.tipo] ?? null) : null;
+}
+
+/**
+ * Lo que se muestra de un mensaje que no es texto y no se puede ver en el
+ * panel (ubicación, contacto, o un archivo que Meta ya no conserva).
+ */
 export function avisoSinTexto(tipo: string): string | null {
   const etiqueta = AVISOS_SIN_TEXTO[tipo];
   if (tipo === 'text' || tipo === 'template') return null;

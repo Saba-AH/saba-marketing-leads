@@ -4,9 +4,11 @@ import React from 'react';
 import {
   avisoSinTexto,
   type EstadoMensaje,
+  formaMedia,
   formatearHora,
   type Mensaje,
 } from '../../domain/chat.model';
+import { AdjuntoMensaje } from './AdjuntoMensaje';
 
 const ESTADOS: Record<
   EstadoMensaje,
@@ -30,7 +32,8 @@ export function BurbujaMensaje({
   mensaje: Mensaje;
 }): React.JSX.Element {
   const saliente = mensaje.direccion === 'saliente';
-  const aviso = avisoSinTexto(mensaje.tipo);
+  const forma = formaMedia(mensaje);
+  const aviso = forma ? null : avisoSinTexto(mensaje.tipo);
   const estado = mensaje.estado ? ESTADOS[mensaje.estado] : null;
   const origen = ORIGENES[mensaje.origen];
 
@@ -45,6 +48,13 @@ export function BurbujaMensaje({
         )}
       >
         {origen && <p className="mb-1 text-xs opacity-70">{origen}</p>}
+        {forma && mensaje.mediaUrl && (
+          <AdjuntoMensaje
+            mensaje={mensaje}
+            forma={forma}
+            url={mensaje.mediaUrl}
+          />
+        )}
         {aviso && <p className="italic opacity-80">{aviso}</p>}
         {mensaje.cuerpo && (
           <p className="whitespace-pre-wrap break-words">{mensaje.cuerpo}</p>

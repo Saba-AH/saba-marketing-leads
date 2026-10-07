@@ -46,6 +46,8 @@ export const mensajeChatSchema = z.object({
   cuerpo: z.string().nullable(),
   estado: z.enum(estadosMensaje).nullable(),
   errorDetalle: z.string().nullable(),
+  /** Hay un archivo en Meta: se pide a `GET /whatsapp/mensajes/:id/media`. */
+  tieneMedia: z.boolean(),
   waTimestamp: z.string(),
 });
 export type TMensajeChat = z.infer<typeof mensajeChatSchema>;

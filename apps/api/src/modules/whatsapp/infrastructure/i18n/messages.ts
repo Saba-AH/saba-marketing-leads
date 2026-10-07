@@ -1,5 +1,7 @@
 export const whatsappMessages = {
   WHATSAPP_CONVERSACION_NO_ENCONTRADA: 'La conversación no existe.',
+  WHATSAPP_MEDIA_NO_DISPONIBLE:
+    'El archivo ya no está disponible en WhatsApp (Meta lo guarda unos 30 días).',
   WHATSAPP_VENTANA_CERRADA:
     'Pasaron más de 24 h desde el último mensaje del cliente. Solo se le puede escribir con una plantilla.',
   WHATSAPP_CONTACTO_SIN_TELEFONO:

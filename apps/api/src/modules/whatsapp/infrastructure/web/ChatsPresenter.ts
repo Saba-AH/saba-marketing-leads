@@ -37,6 +37,7 @@ function toMensaje(m: MensajeChat): TMensajeChat {
     cuerpo: m.cuerpo,
     estado: m.estado,
     errorDetalle: m.errorDetalle,
+    tieneMedia: m.tieneMedia,
     waTimestamp: m.waTimestamp.toISOString(),
   };
 }

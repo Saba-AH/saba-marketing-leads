@@ -86,4 +86,47 @@ describe('GraphWhatsAppCloudAdapter', () => {
     ).rejects.toBeInstanceOf(WhatsAppNoConfiguradoException);
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it('baja un archivo en dos pasos, los dos con el token', async () => {
+    const fetchMock = vi.fn(async (url: string) =>
+      url.endsWith('/MEDIA1')
+        ? respuesta(200, {
+            url: 'https://lookaside.fbsbx.com/whatsapp_business/attachments/?mid=1',
+            mime_type: 'image/jpeg',
+            file_size: 4,
+          })
+        : new Response('foto', { status: 200 })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const archivo = await new GraphWhatsAppCloudAdapter(CONFIG).descargarMedia(
+      'MEDIA1'
+    );
+
+    expect(archivo).toMatchObject({ mimeType: 'image/jpeg', tamano: 4 });
+    expect(await new Response(archivo.contenido).text()).toBe('foto');
+    const llamadas = fetchMock.mock.calls as unknown as [string, RequestInit][];
+    expect(llamadas.map(([url]) => url)).toEqual([
+      'https://graph.facebook.com/v26.0/MEDIA1',
+      'https://lookaside.fbsbx.com/whatsapp_business/attachments/?mid=1',
+    ]);
+    for (const [, init] of llamadas) {
+      expect(init.headers).toMatchObject({ Authorization: 'Bearer token' });
+    }
+  });
+
+  it('reporta el error de Meta si el archivo ya no existe', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        respuesta(400, {
+          error: { code: 100, message: 'Unsupported get request' },
+        })
+      )
+    );
+
+    await expect(
+      new GraphWhatsAppCloudAdapter(CONFIG).descargarMedia('MEDIA_VIEJO')
+    ).rejects.toMatchObject({ codigo: 100 });
+  });
 });

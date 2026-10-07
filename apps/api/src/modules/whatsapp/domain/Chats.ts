@@ -25,7 +25,39 @@ export interface MensajeChat {
   cuerpo: string | null;
   estado: EstadoMensaje | null;
   errorDetalle: string | null;
+  tieneMedia: boolean;
   waTimestamp: Date;
+}
+
+/** Un archivo que manda el cliente, tal como lo entrega Meta (en stream: un video pesa megas). */
+export interface ArchivoMedia {
+  mimeType: string;
+  tamano: number | null;
+  contenido: ReadableStream<Uint8Array>;
+}
+
+/**
+ * Tipos que se pueden mostrar dentro del panel sin riesgo. Cualquier otro
+ * (HTML, SVG…) se sirve como descarga: abierto en el mismo origen podría
+ * ejecutar código.
+ */
+const MIME_EN_LINEA = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'audio/ogg',
+  'audio/mpeg',
+  'audio/mp4',
+  'audio/aac',
+  'audio/amr',
+  'video/mp4',
+  'video/3gpp',
+  'application/pdf',
+]);
+
+export function seMuestraEnLinea(mimeType: string): boolean {
+  return MIME_EN_LINEA.has(mimeType.split(';')[0]?.trim().toLowerCase() ?? '');
 }
 
 /** La ventana de 24 h la abre el último mensaje del cliente, no el nuestro. */

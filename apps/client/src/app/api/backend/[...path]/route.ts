@@ -19,6 +19,15 @@ interface RouteContext {
 
 const BODYLESS_METHODS = new Set(['GET', 'HEAD']);
 
+/** Además del tipo, lo que necesita un archivo (adjuntos de WhatsApp) para servirse bien y seguro. */
+const RESPONSE_HEADERS = [
+  'content-disposition',
+  'content-length',
+  'cache-control',
+  'content-security-policy',
+  'x-content-type-options',
+] as const;
+
 /**
  * `/api/backend/v1/...` → API con el token de la cookie. Sin lógica de
  * negocio: solo pone el `Authorization` que el navegador no puede ver.
@@ -60,15 +69,16 @@ async function proxy(
     redirect: 'manual',
   });
 
+  const headers = new Headers({
+    'content-type': upstream.headers.get('content-type') ?? 'application/json',
+  });
+  for (const nombre of RESPONSE_HEADERS) {
+    const valor = upstream.headers.get(nombre);
+    if (valor) headers.set(nombre, valor);
+  }
   const response = new NextResponse(
     upstream.status === 204 ? null : upstream.body,
-    {
-      status: upstream.status,
-      headers: {
-        'content-type':
-          upstream.headers.get('content-type') ?? 'application/json',
-      },
-    }
+    { status: upstream.status, headers }
   );
   if (upstream.status === 401) clearSessionCookies(response.cookies);
   return response;

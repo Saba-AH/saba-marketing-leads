@@ -38,6 +38,7 @@ const columnasMensaje = {
   cuerpo: whatsappMessages.cuerpo,
   estado: whatsappMessages.estado,
   errorDetalle: whatsappMessages.errorDetalle,
+  tieneMedia: sql<boolean>`${whatsappMessages.mediaId} is not null`,
   waTimestamp: whatsappMessages.waTimestamp,
 };
 
@@ -175,6 +176,14 @@ export class DrizzleChatsRepository implements ChatsRepositoryPort {
         errorDetalle: detalle.slice(0, 2000),
       })
       .where(eq(whatsappMessages.id, mensajeId));
+  }
+
+  async mediaIdDe(mensajeId: string): Promise<string | null | undefined> {
+    const [fila] = await this.db
+      .select({ mediaId: whatsappMessages.mediaId })
+      .from(whatsappMessages)
+      .where(eq(whatsappMessages.id, mensajeId));
+    return fila ? fila.mediaId : undefined;
   }
 
   async marcarLeida(conversationId: string): Promise<boolean> {
