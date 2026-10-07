@@ -4,6 +4,7 @@ import { BACKEND_URL } from '@/__tests__/mocks/backendUrl';
 import { ChatsPage } from '@/features/chats/ui/pages/ChatsPage';
 import { server } from '../mocks/server';
 import {
+  fireEvent,
   render,
   screen,
   userEvent,
@@ -53,6 +54,37 @@ describe('ChatsPage', () => {
       screen.getByText(/Ventana de respuesta: quedan/)
     ).toBeInTheDocument();
     await waitFor(() => expect(marcada).toBe('conv-abierta'));
+  });
+
+  it('muestra un loader mientras la imagen baja y lo quita al terminar', async () => {
+    const user = userEvent.setup();
+    render(<ChatsPage />);
+    await user.click(await screen.findByRole('button', { name: /Ana Pérez/ }));
+
+    const imagen = await screen.findByRole('img', {
+      name: 'Imagen del cliente',
+    });
+    expect(screen.getByRole('status')).toHaveTextContent('Cargando imagen…');
+
+    fireEvent.load(imagen);
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('vuelve al aviso si Meta ya no tiene la imagen', async () => {
+    const user = userEvent.setup();
+    render(<ChatsPage />);
+    await user.click(await screen.findByRole('button', { name: /Ana Pérez/ }));
+
+    fireEvent.error(
+      await screen.findByRole('img', { name: 'Imagen del cliente' })
+    );
+
+    expect(
+      await screen.findByText(
+        '📷 Imagen — ver en el celular (ya no está en WhatsApp)'
+      )
+    ).toBeInTheDocument();
   });
 
   it('envía la respuesta y limpia el compositor', async () => {

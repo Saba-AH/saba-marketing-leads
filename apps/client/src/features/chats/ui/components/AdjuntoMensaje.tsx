@@ -7,6 +7,7 @@ import {
   type FormaMedia,
   type Mensaje,
 } from '../../domain/chat.model';
+import { ImagenAdjunta } from './ImagenAdjunta';
 
 /**
  * El archivo se pide recién al mostrarse (`loading="lazy"`, `preload="none"`).
@@ -35,19 +36,11 @@ export function AdjuntoMensaje({
   switch (forma) {
     case 'imagen':
       return (
-        <a href={url} target="_blank" rel="noopener" className="block">
-          <img
-            src={url}
-            alt={mensaje.tipo === 'sticker' ? 'Sticker' : 'Imagen del cliente'}
-            loading="lazy"
-            onError={marcarNoDisponible}
-            className={
-              mensaje.tipo === 'sticker'
-                ? 'size-32 object-contain'
-                : 'max-h-72 w-auto max-w-full rounded-md object-contain'
-            }
-          />
-        </a>
+        <ImagenAdjunta
+          url={url}
+          sticker={mensaje.tipo === 'sticker'}
+          onError={marcarNoDisponible}
+        />
       );
     case 'audio':
       return (
