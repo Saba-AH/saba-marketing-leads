@@ -80,7 +80,8 @@ export function startupBanner(input: StartupBannerInput): string {
       ? [
           {
             label: 'Login',
-            value: `${input.devLogin.correo} / ${input.devLogin.contrasena}`,
+            // Tras `db:sync:saba` el usuario es el de prod y la contraseña la real.
+            value: `${input.devLogin.correo} / ${input.devLogin.contrasena} (o la real si sincronizaste prod)`,
           },
         ]
       : []),

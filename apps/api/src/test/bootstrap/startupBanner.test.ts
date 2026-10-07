@@ -99,7 +99,7 @@ describe('startupBanner', () => {
     });
 
     expect(local).toMatch(/│ Auth\s+http:\/\/127\.0\.0\.1:54331/);
-    expect(local).toMatch(/│ Login\s+admin@saba\.com \/ 12345678/);
+    expect(local).toMatch(/│ Login\s+admin@saba\.com \/ 12345678 \(o la real/);
     expect(remoto).toMatch(/│ Auth\s+https:\/\/ref\.supabase\.co/);
     expect(remoto).not.toContain('12345678');
   });

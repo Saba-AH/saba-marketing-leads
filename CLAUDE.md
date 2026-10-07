@@ -62,6 +62,7 @@ Desde la raíz:
 | `npm run dev:supabase` | API y cliente contra el Supabase real (sin migrar). El destino lo elige el comando, no el `.env` |
 | `npm run db:up` / `db:down` / `db:status` | Stack local de Supabase |
 | `npm run db:setup` / `db:reset` | Migra y siembra / recrea el stack desde cero |
+| `npm run db:sync:saba` | Copia de prod (solo lectura) los usuarios de `apps/api/scripts/sync/sabaSyncUsers.ts` con sus solicitudes al Supabase local |
 | `npm -C apps/api run db:generate` | Genera una migración de Drizzle desde los `*.schema.ts` |
 | `npm -C apps/api run db:migrate` | Aplica migraciones sobre `DATABASE` (local o Supabase) |
 | `npm run build` | Compila todo; el cliente emite su servidor SSR en `apps/client/.next/` |

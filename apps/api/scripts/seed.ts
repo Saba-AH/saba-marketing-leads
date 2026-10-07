@@ -1,11 +1,11 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
+import { assertLocalDatabase } from '../src/infrastructure/database/databaseUrl';
 import * as schema from '../src/infrastructure/database/db-schema';
 import {
   createPool,
   databaseUrl,
 } from '../src/infrastructure/database/migrator';
 import {
-  assertLocalDatabase,
   DEV_ADMIN,
   seedDevAdmin,
 } from '../src/modules/auth/infrastructure/persistence/seedDevAdmin';
@@ -21,15 +21,20 @@ import {
  */
 async function main(): Promise<void> {
   const url = databaseUrl();
-  assertLocalDatabase(url);
+  assertLocalDatabase(url, 'el seed');
   const pool = createPool(url);
   const db = drizzle(pool, { schema });
 
   try {
-    await seedDevAdmin(db);
-    console.log(
-      `✓ admin de desarrollo: ${DEV_ADMIN.email} / ${DEV_ADMIN.password}`
-    );
+    if (await seedDevAdmin(db)) {
+      console.log(
+        `✓ admin de desarrollo: ${DEV_ADMIN.email} / ${DEV_ADMIN.password}`
+      );
+    } else {
+      console.log(
+        `✓ ${DEV_ADMIN.email} ya existe (sincronizado de prod): se entra con su contraseña real`
+      );
+    }
   } finally {
     await pool.end();
   }
