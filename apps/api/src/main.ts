@@ -1,5 +1,6 @@
 import { resolve } from 'node:path';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { config as loadEnv } from 'dotenv';
 import helmet from 'helmet';
@@ -17,6 +18,7 @@ import {
 } from './infrastructure/database/databaseUrl';
 import { registerUncaughtErrorHandlers } from './infrastructure/logging/registerUncaughtErrorHandlers';
 import { StructuredLogger } from './infrastructure/logging/StructuredLogger';
+import { DEV_ADMIN } from './modules/auth/infrastructure/persistence/seedDevAdmin';
 import { ZodValidationPipe } from './shared/pipes/zodValidationPipe';
 
 // `nest start` corre desde apps/api (cwd) o desde dist/; cubrimos ambos.
@@ -28,8 +30,14 @@ loadEnv({ path: resolve(__dirname, '../.env') });
 registerUncaughtErrorHandlers(new StructuredLogger());
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: true,
+  });
   app.useLogger(app.get(StructuredLogger));
+
+  // `request.ip` es la IP del cliente que reenvía el BFF, no la del BFF: el
+  // rate limit del login cuenta por IP (ver TRUST_PROXY_HOPS en .env.example).
+  app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS ?? 1));
 
   // El cliente usa baseURL .../api + paths /v1/... → /api/v1/health
   app.setGlobalPrefix('api/v1');
@@ -77,6 +85,8 @@ async function bootstrap() {
       explicitDatabase: Boolean(process.env.DATABASE),
       panelUrl: allowedOrigins()[0],
       studioUrl: process.env.SUPABASE_STUDIO_URL,
+      authUrl: process.env.SUPABASE_URL,
+      devLogin: { correo: DEV_ADMIN.email, contrasena: DEV_ADMIN.password },
       color: shouldColor(),
     })
   );

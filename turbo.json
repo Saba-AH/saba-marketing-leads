@@ -15,8 +15,17 @@
       "dependsOn": ["^build"],
       // `npm run dev:supabase` setea DB_TARGET en el shell, y
       // `scripts/localSupabase.mjs` exporta lo que lee de `supabase status`;
-      // en `envMode: strict`, sin esto no llegarían a la API.
-      "passThroughEnv": ["DB_TARGET", "DATABASE_LOCAL", "SUPABASE_STUDIO_URL"],
+      // en `envMode: strict`, sin esto no llegarían a la API. API_URL es la
+      // de NestJS para el BFF del cliente.
+      "passThroughEnv": [
+        "DB_TARGET",
+        "DATABASE_LOCAL",
+        "SUPABASE_STUDIO_URL",
+        "SUPABASE_URL",
+        "SUPABASE_PUBLISHABLE_KEY",
+        "SUPABASE_JWT_SECRET",
+        "API_URL"
+      ],
       "cache": false,
       "persistent": true
     },
@@ -24,7 +33,14 @@
     // aparece en el sidebar de la TUI junto a las tareas `dev`. Lee el mismo
     // entorno que la API, así que pasa las mismas variables.
     "dev:info": {
-      "passThroughEnv": ["DB_TARGET", "DATABASE_LOCAL", "SUPABASE_STUDIO_URL"],
+      "passThroughEnv": [
+        "DB_TARGET",
+        "DATABASE_LOCAL",
+        "SUPABASE_STUDIO_URL",
+        "SUPABASE_URL",
+        "SUPABASE_PUBLISHABLE_KEY",
+        "SUPABASE_JWT_SECRET"
+      ],
       "cache": false
     },
     "lint": {

@@ -9,6 +9,8 @@ import {
   dbTarget,
   resolveDatabaseUrl,
 } from '../src/infrastructure/database/databaseUrl';
+import { loadAuthConfig } from '../src/modules/auth/infrastructure/authConfig';
+import { DEV_ADMIN } from '../src/modules/auth/infrastructure/persistence/seedDevAdmin';
 
 /**
  * Tarea `@repo/api#dev:info` del sidebar de turbo: el mismo resumen que
@@ -26,6 +28,14 @@ try {
   warnings.push(error instanceof Error ? error.message : String(error));
 }
 
+// La API no arranca sin la config de auth: mejor verlo acá con el motivo.
+let authUrl: string | undefined;
+try {
+  authUrl = loadAuthConfig().supabaseUrl;
+} catch (error: unknown) {
+  warnings.push(error instanceof Error ? error.message : String(error));
+}
+
 console.log(
   startupBanner({
     port: Number(process.env.PORT) || 8080,
@@ -34,6 +44,8 @@ console.log(
     explicitDatabase: Boolean(process.env.DATABASE),
     panelUrl: allowedOrigins()[0],
     studioUrl: process.env.SUPABASE_STUDIO_URL,
+    authUrl,
+    devLogin: { correo: DEV_ADMIN.email, contrasena: DEV_ADMIN.password },
     warnings,
     // Turbo no le da una TTY a la tarea, pero su TUI muestra los colores.
     color: shouldColor(),

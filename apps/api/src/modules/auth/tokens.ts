@@ -1,0 +1,15 @@
+export const AUTH_TOKENS = {
+  Login: Symbol('LoginPort'),
+  RefreshSesion: Symbol('RefreshSesionPort'),
+  Logout: Symbol('LogoutPort'),
+  AuthenticateRequest: Symbol('AuthenticateRequestPort'),
+  AuthProvider: Symbol('AuthProviderPort'),
+  CaptchaVerifier: Symbol('CaptchaVerifierPort'),
+  StaffDirectory: Symbol('StaffDirectoryPort'),
+  LoginAttempts: Symbol('LoginAttemptsPort'),
+  AccessTokenVerifier: Symbol('AccessTokenVerifierPort'),
+  ActiveSessionReader: Symbol('ActiveSessionReaderPort'),
+  Clock: Symbol('ClockPort'),
+  PanelAllowedEmails: Symbol('PanelAllowedEmails'),
+  Config: Symbol('AuthConfig'),
+} as const;

@@ -1,7 +1,14 @@
 'use client';
 
+import { cn } from '@repo/ui/lib/utils';
 import { TriangleAlert, X } from 'lucide-react';
 import React from 'react';
+
+const VARIANTES = {
+  error: 'border-error-200 bg-error-100 text-error-600',
+  /** Algo que no es culpa de quien escribe (un bloqueo, esperar): amarillo. */
+  advertencia: 'border-warning-200 bg-warning-50 text-warning-700',
+} as const;
 
 /**
  * Banner de error en línea (`.alert-banner` del prototipo). Reemplaza al
@@ -10,14 +17,19 @@ import React from 'react';
  */
 export function AlertBanner({
   mensaje,
+  variante = 'error',
   onCerrar,
 }: {
   mensaje: string;
+  variante?: keyof typeof VARIANTES;
   onCerrar?: () => void;
 }): React.JSX.Element {
   return (
     <div
-      className="mb-2 flex items-start gap-2.5 rounded-md border border-error-200 bg-error-100 px-3.5 py-3 font-semibold text-[12.5px] text-error-600"
+      className={cn(
+        'mb-2 flex items-start gap-2.5 rounded-md border px-3.5 py-3 font-semibold text-[12.5px]',
+        VARIANTES[variante]
+      )}
       role="alert"
     >
       <TriangleAlert className="mt-px size-[17px] shrink-0" />

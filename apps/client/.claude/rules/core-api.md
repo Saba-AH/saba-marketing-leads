@@ -32,8 +32,8 @@ src/core/
 
 Un único wrapper de `fetch`. Responsabilidades:
 
-- `BASE_URL` desde `process.env.NEXT_PUBLIC_API_URL` con fallback local.
-- Adjunta el `Authorization: Bearer <token>` (token del proveedor de auth).
+- Base `/api/backend`: el proxy del BFF (`src/app/api/backend/[...path]/route.ts`).
+- El `Authorization` lo agrega el BFF desde la cookie `httpOnly`; el navegador nunca ve el token.
 - `Content-Type: application/json`; serializa el body.
 - Si `!response.ok`, lanza `Error` con el mensaje del backend ya normalizado
   (incluye el aplanado de errores Zod `{ formErrors, fieldErrors }`).

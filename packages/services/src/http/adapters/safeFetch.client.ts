@@ -1,5 +1,5 @@
 import type { Safe } from '@repo/utils';
-import { safeFetch } from '@repo/utils';
+import { safe } from '@repo/utils';
 import { prettifyError } from 'zod/v4';
 import { extractErrorFromRawResponse } from '../../lib/http/httpErrorFormatter';
 import {
@@ -32,11 +32,13 @@ export class SafeFetchClient implements HttpClient {
   private readonly baseUrl: string;
   private readonly token: TokenProvider;
   private readonly defaultHeaders: Record<string, string>;
+  private readonly onUnauthorized?: () => void;
 
   constructor(config: HttpClientConfig) {
     this.baseUrl = config.baseUrl.replace(/\/+$/, '');
     this.token = config.token;
     this.defaultHeaders = config.defaultHeaders ?? {};
+    this.onUnauthorized = config.onUnauthorized;
   }
 
   async get<T = unknown, TSchema extends ZodLikeSchema | undefined = undefined>(
@@ -175,9 +177,18 @@ export class SafeFetchClient implements HttpClient {
       ...(options?.cache ? { cache: options.cache } : {}),
     };
 
-    const response = await safeFetch(url, fetchOptions);
+    const raw = await safe(fetch(url, fetchOptions));
 
     // Network error - pass through
+    if (!raw.success) {
+      return raw as Safe<InferResponseType<T, TSchema>>;
+    }
+
+    if (raw.data.status === 401) {
+      this.onUnauthorized?.();
+    }
+
+    const response = await safe<unknown>(raw.data.json());
     if (!response.success) {
       return response as Safe<InferResponseType<T, TSchema>>;
     }
@@ -234,7 +245,9 @@ export class SafeFetchClient implements HttpClient {
    */
   private buildUrl(path: string, params?: QueryParams): URL {
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-    const url = new URL(`${this.baseUrl}${normalizedPath}`);
+    // Una base relativa (`/api/backend`) se resuelve contra la página actual:
+    // es como el panel habla con su propio BFF desde el navegador.
+    const url = new URL(`${this.baseUrl}${normalizedPath}`, currentPageUrl());
 
     if (params) {
       for (const [key, value] of Object.entries(params)) {
@@ -296,4 +309,9 @@ export class SafeFetchClient implements HttpClient {
     }
     return this.token;
   }
+}
+
+function currentPageUrl(): string | undefined {
+  const location = (globalThis as { location?: { href: string } }).location;
+  return location?.href;
 }

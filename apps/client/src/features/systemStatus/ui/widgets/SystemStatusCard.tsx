@@ -20,9 +20,7 @@ export function SystemStatusCard() {
     <Card className="w-full max-w-md">
       <CardHeader>
         <CardTitle>Estado del sistema</CardTitle>
-        <CardDescription>
-          {process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080'}
-        </CardDescription>
+        <CardDescription>API de NestJS, vía el BFF del panel</CardDescription>
       </CardHeader>
       <CardContent>
         {isPending && (

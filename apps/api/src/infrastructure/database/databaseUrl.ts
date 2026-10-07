@@ -5,7 +5,8 @@
  *
  * Precedencia:
  *   1. `DATABASE` — explícita, gana siempre (despliegue, CI, tests).
- *   2. `DB_TARGET` — `local` (default) o `supabase`, que eligen entre
+ *   2. `DB_TARGET` — `local` (default) o `supabase`; lo fija el comando
+ *      (`npm run dev:local` / `dev:supabase`), no el `.env`. Elige entre
  *      `DATABASE_LOCAL` y `DATABASE_SUPABASE`.
  *
  * No carga `.env`: eso lo hace quien llama, una sola vez.
@@ -44,7 +45,7 @@ export function resolveDatabaseUrl(): string {
   const supabase = process.env.DATABASE_SUPABASE;
   if (!supabase) {
     throw new Error(
-      'DB_TARGET=supabase pero DATABASE_SUPABASE está vacía (apps/api/.env).'
+      'destino supabase (`npm run dev:supabase` / `db:migrate:supabase`) pero DATABASE_SUPABASE está vacía en apps/api/.env'
     );
   }
   return supabase;

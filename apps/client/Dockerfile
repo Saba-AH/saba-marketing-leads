@@ -5,7 +5,10 @@
 # monorepo con `turbo prune` para copiar solo lo que @repo/client necesita.
 #
 #   docker build -f apps/client/Dockerfile \
-#     --build-arg NEXT_PUBLIC_API_URL=https://api.example.com .
+#     --build-arg NEXT_PUBLIC_TURNSTILE_SITE_KEY=<site key de Cloudflare> .
+#
+# La URL de la API NO va en el build: el navegador habla con el BFF de Next,
+# y el servidor de Next lee `API_URL` en runtime (`docker run -e API_URL=…`).
 
 ### Base
 FROM node:22-alpine AS base
@@ -28,11 +31,12 @@ COPY --from=builder /app/out/full/ .
 
 # NEXT_PUBLIC_* se embebe en el bundle del cliente en build time; llega como
 # build-arg (no como secreto: es config pública — la misma que apps/client/.env.example).
-ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY
+ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
 
-# Sin esta variable el bundle hornearía una URL vacía; mejor fallar el build.
-RUN test -n "$NEXT_PUBLIC_API_URL" || (echo "ERROR: falta --build-arg NEXT_PUBLIC_API_URL" >&2 && exit 1)
+# Sin la site key el bundle caería en la de prueba de Cloudflare, que la API de
+# producción rechaza: nadie podría iniciar sesión. Mejor fallar el build.
+RUN test -n "$NEXT_PUBLIC_TURNSTILE_SITE_KEY" || (echo "ERROR: falta --build-arg NEXT_PUBLIC_TURNSTILE_SITE_KEY" >&2 && exit 1)
 
 RUN npx turbo build --filter=@repo/client
 

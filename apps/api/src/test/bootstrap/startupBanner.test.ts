@@ -82,6 +82,28 @@ describe('startupBanner', () => {
     expect(remoto).toContain('\u001b[31m');
   });
 
+  it('muestra contra qué Auth valida y, solo en local, el usuario de prueba', () => {
+    const devLogin = { correo: 'admin@saba.com', contrasena: '12345678' };
+    const local = startupBanner({
+      ...BASE,
+      databaseUrl: LOCAL_DB,
+      authUrl: 'http://127.0.0.1:54331',
+      devLogin,
+    });
+    const remoto = startupBanner({
+      ...BASE,
+      dbTarget: 'supabase',
+      databaseUrl: REMOTE_DB,
+      authUrl: 'https://ref.supabase.co',
+      devLogin,
+    });
+
+    expect(local).toMatch(/│ Auth\s+http:\/\/127\.0\.0\.1:54331/);
+    expect(local).toMatch(/│ Login\s+admin@saba\.com \/ 12345678/);
+    expect(remoto).toMatch(/│ Auth\s+https:\/\/ref\.supabase\.co/);
+    expect(remoto).not.toContain('12345678');
+  });
+
   it('nombra el origen de la base cuando es una DATABASE explícita', () => {
     const banner = startupBanner({
       ...BASE,

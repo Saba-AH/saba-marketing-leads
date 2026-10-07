@@ -20,6 +20,11 @@ const FROM_STATUS = {
   DATABASE_LOCAL: 'DB_URL',
   // Solo para el banner de arranque de la API.
   SUPABASE_STUDIO_URL: 'STUDIO_URL',
+  // `modules/auth/infrastructure/authConfig.ts`. `API_URL` de Supabase se
+  // renombra: en el monorepo `API_URL` es la de NestJS (BFF del cliente).
+  SUPABASE_URL: 'API_URL',
+  SUPABASE_PUBLISHABLE_KEY: 'PUBLISHABLE_KEY',
+  SUPABASE_JWT_SECRET: 'JWT_SECRET',
 };
 
 const SHELL = process.platform === 'win32';

@@ -14,7 +14,8 @@ Solo la API:
 
 ```bash
 npm run db:up && npm run db:setup   # Supabase local, migraciones y seed
-npm run dev -w @repo/api
+# El wrapper exporta las SUPABASE_* y DATABASE_LOCAL de `supabase status`:
+node scripts/localSupabase.mjs exec npm run dev -w @repo/api
 ```
 
 Requiere `apps/api/.env` (copiar de `.env.example`).

@@ -9,10 +9,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  # Variable pública embebida en el bundle del cliente en build time; en CI solo
-  # tiene que ser una URL válida para que el build no falle.
-  NEXT_PUBLIC_API_URL: http://localhost:8080
 
 jobs:
   verify:
@@ -40,6 +36,11 @@ jobs:
       # migra. Studio y pg-meta no hacen falta en CI.
       - name: Supabase local
         run: npx supabase start -x studio,postgres-meta
+
+      # El e2e de auth inicia sesión de verdad contra GoTrue con el admin de
+      # desarrollo: migrar y sembrar la base del stack antes de los tests.
+      - name: Migraciones y seed
+        run: npm run db:setup
 
       - name: Formato y lint
         run: npm run format-and-lint

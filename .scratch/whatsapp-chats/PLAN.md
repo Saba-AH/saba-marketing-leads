@@ -22,7 +22,7 @@ Decisiones cerradas en sesión de grilling (2026-10-06). Este documento es el pl
 | Ventana 24 h | Solo la abren mensajes **entrantes en vivo** del cliente (no historial, no ecos del celular). Cerrada → compositor bloqueado + contador |
 | No-texto | Burbuja de aviso ("📷 Imagen recibida — ver en el celular") con caption; se guarda `tipo` y `media_id` |
 | Vínculo Saba | `regexp_replace(profiles.telefono,'\D','','g') = wa_id`; varios → sugerir el de solicitud activa más reciente, el agente puede corregir (`vinculo_origen='manual'`) |
-| Login | Supabase Auth (cuentas de Saba admin), página `/login`; la API valida el JWT |
+| Login | **Hecho** (rama `feat/auth-admin`): port del login de staff de Saba a `modules/auth`, BFF en Next con cookies `httpOnly`, `/login`. Ver `docs/api_modules.md` |
 | Permisos | Claves de permisos v2: `whatsapp_chats.view`, `.reply`, `.take`, `.reassign`, `whatsapp.configure`. `PermissionsGuard` + `@RequirePermissions`. Fase 1: resolver por constante (`angel.hernandez@sabatransporte.com` → todos); después adaptador `has_permission_v2` |
 | Refresco UI | Polling React Query: hilo abierto 3 s, lista 10–15 s |
 | Secretos | `.env`; `whatsapp_accounts` solo guarda estado de conexión |
@@ -31,9 +31,7 @@ Decisiones cerradas en sesión de grilling (2026-10-06). Este documento es el pl
 ## Variables de entorno nuevas (`apps/api/.env.example`)
 
 ```
-SUPABASE_URL=                     # ya reservada; JWKS para validar JWT
-SUPABASE_JWT_SECRET=              # ya reservada; solo si el proyecto firma con HS256 (ver tarea 1.1)
-CHATS_ALLOWED_EMAILS=angel.hernandez@sabatransporte.com   # o constante en código; ver tarea 1.3
+# SUPABASE_* y TURNSTILE_SECRET_KEY ya existen (auth, ver apps/api/.env.example)
 WHATSAPP_GRAPH_VERSION=v26.0
 WHATSAPP_ACCESS_TOKEN=            # token de usuario del sistema (sin vencimiento)
 WHATSAPP_APP_SECRET=              # firma X-Hub-Signature-256
@@ -44,7 +42,7 @@ WHATSAPP_APP_ID=                  # fase coexistencia (Embedded Signup)
 WHATSAPP_ES_CONFIG_ID=            # fase coexistencia
 ```
 
-Cliente: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (ya reservadas); `NEXT_PUBLIC_META_APP_ID`, `NEXT_PUBLIC_WHATSAPP_ES_CONFIG_ID` (fase coexistencia).
+Cliente: `NEXT_PUBLIC_META_APP_ID`, `NEXT_PUBLIC_WHATSAPP_ES_CONFIG_ID` (fase coexistencia).
 
 ## Mapa de módulos (registrar en `docs/api_modules.md`, que hoy no existe — crearlo)
 
@@ -68,24 +66,14 @@ Cliente: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (ya reserva
 
 ## Fase 1 — Auth y permisos (API + cliente)
 
-**1.1 Verificar cómo firma Supabase los JWT** del proyecto `nyitkxwjwatadayydhux` (JWKS asimétrico vs. secreto HS256 legado) y elegir `jose` con `createRemoteJWKSet` o verificación HS256.
+**Auth: hecha** fuera de este plan (sesión de grilling del 2026-10-06, rama `feat/auth-admin`). Difiere de lo que se planeó acá:
 
-**1.2 `SupabaseJwtGuard` global** (`modules/auth/infrastructure/web/`): extrae Bearer (`shared/http/extractBearerToken.ts` ya existe), verifica firma/`exp`/`aud=authenticated`, deja `{ userId, email }` en el request. Respeta `@Public()` (ya existe). Health y webhook de WhatsApp son `@Public()`.
+- El login **no** usa supabase-js en el navegador (lo prohíbe el `CLAUDE.md`): `POST /api/v1/auth/login` en la API, portado de `loginAdmin` de Saba (Turnstile, rate limit por IP, bloqueo al 5º fallo en las tablas compartidas `login_attempts`/`admin_login_lockouts`).
+- El cliente es un BFF: tokens en cookies `httpOnly`, `src/middleware.ts` exige y renueva la sesión, `/api/backend/*` reenvía a la API. No hay `NEXT_PUBLIC_SUPABASE_*`.
+- `AuthGuard` global (no `SupabaseJwtGuard`): JWT verificado local (JWKS o HS256 legado) + una consulta a `auth.sessions` y `profiles` por petición. Acceso al panel: rol staff **y** `PANEL_ALLOWED_EMAILS` (`modules/auth/domain/panelAccess.ts`), ya no `CHATS_ALLOWED_EMAILS`.
+- `GET /api/v1/me` devuelve `{ id, correo, nombre, rol }`, **sin permisos**.
 
-**1.3 Permisos:**
-- `domain/Permiso.ts`: catálogo cerrado (`whatsapp_chats.view|reply|take|reassign`, `whatsapp.configure`).
-- `application/ports/out/PermissionsResolverPort.ts`: `resolver(user) → Set<Permiso>`.
-- `infrastructure/ConstantePermissionsResolver.ts`: correo en lista permitida → todos; si no → vacío. Lista como constante exportada (un solo lugar).
-- `PermissionsGuard` global: lee metadata de `@RequirePermissions({ permissions, operator? })`; resuelve por petición (sin cachear en token); 403 si falta.
-- `@CurrentPermissions()` y `@CurrentUser()`.
-- `GET /api/v1/me/permissions` → `{ email, permisos: [...] }`.
-
-**1.4 Cliente:**
-- `src/app/login/page.tsx` (fuera del grupo `(app)`): correo + contraseña con supabase-js (`signInWithPassword`); guarda `access_token` donde ya lo lee `token-provider.ts`; refresco con `onAuthStateChange`.
-- Guard de rutas en `(app)/layout.tsx`: sin sesión → `/login`; 401 de la API → logout + `/login`; 403 en `/me/permissions` → pantalla "Sin acceso".
-- Hook `usePermisos()` sobre `/me/permissions` para ocultar acciones.
-
-**Tests:** guard con JWT válido/expirado/firma mala; permisos con correo permitido/no permitido; `@Public()` pasa sin token.
+**Pendiente para Chats — permisos (antes 1.3):** catálogo cerrado (`whatsapp_chats.view|reply|take|reassign`, `whatsapp.configure`), `PermissionsResolverPort` (por constante primero, `has_permission_v2` después), `PermissionsGuard` + `@RequirePermissions`, `@CurrentPermissions()`, y sumar `permisos` a `/me`. En el cliente, `usePermisos()` sobre `/me` y pantalla "Sin acceso" ante 403.
 
 ## Fase 2 — Esquema y migración
 

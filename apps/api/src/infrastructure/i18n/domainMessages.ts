@@ -1,3 +1,4 @@
+import { authMessages } from '../../modules/auth/infrastructure/i18n/messages';
 import { leadsMessages } from '../../modules/leads/infrastructure/i18n/messages';
 
 /**
@@ -6,9 +7,12 @@ import { leadsMessages } from '../../modules/leads/infrastructure/i18n/messages'
  * acá en el mismo PR que sus excepciones, junto con su estado HTTP en
  * `DomainToHttpMapper`.
  */
-export type DomainErrorCode = keyof typeof leadsMessages;
+export type DomainErrorCode =
+  | keyof typeof authMessages
+  | keyof typeof leadsMessages;
 
 export const domainMessages: Record<DomainErrorCode, string> = {
+  ...authMessages,
   ...leadsMessages,
 };
 
