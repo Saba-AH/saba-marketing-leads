@@ -32,7 +32,11 @@ registerUncaughtErrorHandlers(new StructuredLogger());
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
+    // El webhook de WhatsApp firma los bytes exactos del cuerpo.
+    rawBody: true,
   });
+  // Meta manda el historial de chats en lotes que pasan el límite de 100 kb.
+  app.useBodyParser('json', { limit: '5mb' });
   app.useLogger(app.get(StructuredLogger));
 
   // `request.ip` es la IP del cliente que reenvía el BFF, no la del BFF: el

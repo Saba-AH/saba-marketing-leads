@@ -1,5 +1,6 @@
 import { authMessages } from '../../modules/auth/infrastructure/i18n/messages';
 import { leadsMessages } from '../../modules/leads/infrastructure/i18n/messages';
+import { whatsappMessages } from '../../modules/whatsapp/infrastructure/i18n/messages';
 
 /**
  * Catálogo único de mensajes de dominio, en español. Un módulo nuevo agrega su
@@ -9,11 +10,13 @@ import { leadsMessages } from '../../modules/leads/infrastructure/i18n/messages'
  */
 export type DomainErrorCode =
   | keyof typeof authMessages
-  | keyof typeof leadsMessages;
+  | keyof typeof leadsMessages
+  | keyof typeof whatsappMessages;
 
 export const domainMessages: Record<DomainErrorCode, string> = {
   ...authMessages,
   ...leadsMessages,
+  ...whatsappMessages,
 };
 
 export function resolveDomainMessage(code: string): string | undefined {

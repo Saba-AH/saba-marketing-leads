@@ -14,6 +14,8 @@ export const domainErrorHttpStatus: Record<DomainErrorCode, HttpStatus> = {
   AUTH_SIN_ACCESO: HttpStatus.FORBIDDEN,
   AUTH_SESION_INVALIDA: HttpStatus.UNAUTHORIZED,
   LEADS_CORREO_DUPLICADO: HttpStatus.CONFLICT,
+  WHATSAPP_FIRMA_WEBHOOK_INVALIDA: HttpStatus.UNAUTHORIZED,
+  WHATSAPP_SUSCRIPCION_WEBHOOK_RECHAZADA: HttpStatus.FORBIDDEN,
 };
 
 export function mapDomainErrorToHttpStatus(code: string): HttpStatus {
