@@ -294,7 +294,7 @@ describe('chats de WhatsApp (API)', () => {
       `/whatsapp/conversaciones/${id}/leida`
     );
 
-    expect(res.status).toBe(204);
+    expect(res.status).toBe(200);
     const [conversacion] = await getTestDb()
       .select()
       .from(whatsappConversations)

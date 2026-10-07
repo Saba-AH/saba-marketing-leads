@@ -8,11 +8,13 @@
  * Un handler puntual se sobreescribe en el test con `server.use(...)`.
  */
 
+import { chatsHandlers } from './handlers/chats.mock';
 import { healthHandlers } from './handlers/health.mock';
 import { leadsHandlers } from './handlers/leads.mock';
 import { sessionHandlers } from './handlers/session.mock';
 
 export const handlers = [
+  ...chatsHandlers,
   ...healthHandlers,
   ...leadsHandlers,
   ...sessionHandlers,

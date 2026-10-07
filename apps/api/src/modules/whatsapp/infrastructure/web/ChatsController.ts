@@ -15,9 +15,11 @@ import {
   enviarMensajeSchema,
   mensajeResponseSchema,
   mensajesResponseSchema,
+  sinDatosResponseSchema,
   type TConversacionesResponse,
   type TMensajeResponse,
   type TMensajesResponse,
+  type TSinDatosResponse,
 } from '@repo/schemas';
 import {
   ZodApiBody,
@@ -96,9 +98,13 @@ export class ChatsController {
   }
 
   @Post(':id/leida')
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Marca la conversación como leída' })
-  async leida(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+  @ZodApiResponse(HttpStatus.OK, sinDatosResponseSchema)
+  async leida(
+    @Param('id', ParseUUIDPipe) id: string
+  ): Promise<TSinDatosResponse> {
     await this.marcarLeida.execute(id);
+    return { success: true, data: null };
   }
 }

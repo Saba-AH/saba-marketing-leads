@@ -216,6 +216,11 @@ Agregar al glosario de `CONTEXT.md`: Contacto, Conversación, Ventana de atenci�
 
 ## Fase 6 — Envío y acciones (API)
 
+**Primer tramo hecho (2026-10-07), junto con la Fase 7:** `GET /whatsapp/conversaciones`, `GET …/:id/mensajes`, `POST …/:id/mensajes` (texto libre con ventana abierta) y `POST …/:id/leida` (200 con `data: null`, porque el cliente HTTP compartido siempre lee JSON). Errores de Meta en español (424 en vez de 5xx para que el mensaje llegue al agente). **Permisos pospuestos:** por ahora basta con acceso al panel (`AuthGuard`); la Fase 1 de permisos sigue pendiente. Sin teléfono (solo `user_id`) no se puede responder: Meta todavía no documenta el envío por BSUID.
+
+**Pendiente de este tramo:** reintentar, tomar/liberar/reasignar, resolver/reabrir, vínculo manual con Saba, plantillas (nuevo chat y reabrir), configuración.
+
+
 **6.1** `WhatsAppCloudPort` (out) + `GraphWhatsAppCloudAdapter` (`fetch` a `https://graph.facebook.com/{v}/{PHONE_NUMBER_ID}/messages`, `{ messaging_product:'whatsapp', to, type:'text', text:{ body, preview_url:false } }`). Mapear errores de Graph a excepciones de dominio con mensaje en español (tabla de `whatsapp-meta-v1.md` §6.1: 131047, 131030, 131026, 132000, 132001, 100, 190, 131056/130429/80007). El puerto también expone `sendTemplate(to, nombre, idioma, variables)` y `listApprovedTemplates()`.
 
 **6.1b** Plantillas: `GET /{WABA_ID}/message_templates?status=APPROVED&fields=name,language,status,category,parameter_format,components` siguiendo `paging.next`. Soportada = tiene `BODY`; `HEADER` solo `TEXT` sin variables; botones sin parámetros (`QUICK_REPLY`, `PHONE_NUMBER`, `URL` fija). Variables del cuerpo con `/\{\{\s*(\w+)\s*\}\}/g` sin repetir; `POSITIONAL` o `NAMED` (con `parameter_name`). Caché en memoria 60 s. Validación: todas las variables no vacías, ≤ 1024 caracteres, sin saltos de línea ni tabs.
@@ -257,6 +262,9 @@ Agregar al glosario de `CONTEXT.md`: Contacto, Conversación, Ventana de atenci�
 Nombres de quién tomó/envió: resolver `tomada_por`/`enviado_por` contra `profiles` vía `sabaClientes` (o devolver email desde `auth.users`) — decidir en la tarea; la UI solo necesita un nombre.
 
 ## Fase 7 — UI `/chats` (cliente)
+
+**Primer tramo hecho (2026-10-07):** lista (polling 10 s) + hilo (polling 3 s) + compositor con contador de ventana; bloqueado con aviso si la ventana está cerrada o el contacto no tiene teléfono; abrir el chat lo marca leído; avisos para mensajes que no son texto; error de envío visible y el texto se conserva para reintentar. Sin pestañas, sin panel de Saba y sin plantillas todavía.
+
 
 `src/features/chats/{domain,application/{queries,mutations},infrastructure,ui/{components,pages,widgets}}` siguiendo `features/leads`; ruta `src/app/(app)/chats/page.tsx`; link "Chats" en `(app)/layout.tsx` visible solo con `whatsapp_chats.view`.
 

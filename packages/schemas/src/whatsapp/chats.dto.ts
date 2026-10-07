@@ -58,6 +58,10 @@ export type TMensajesResponse = z.infer<typeof mensajesResponseSchema>;
 export const mensajeResponseSchema = buildSafeResponseSchema(mensajeChatSchema);
 export type TMensajeResponse = z.infer<typeof mensajeResponseSchema>;
 
+/** Respuesta de las acciones que no devuelven datos (`POST …/leida`). */
+export const sinDatosResponseSchema = buildSafeResponseSchema(z.null());
+export type TSinDatosResponse = z.infer<typeof sinDatosResponseSchema>;
+
 /** Body de `POST /whatsapp/conversaciones/:id/mensajes`. */
 export const enviarMensajeSchema = z.object({
   cuerpo: z
