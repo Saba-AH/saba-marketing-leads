@@ -162,10 +162,13 @@ Meta necesita una **URL pública con HTTPS** que llegue a la API.
 
 ### 7.1 La URL
 
-- **Desarrollo:** un túnel hacia la API local (puerto 8080).
-  - Rápido, sin cuenta: `cloudflared tunnel --url http://localhost:8080` → da `https://algo.trycloudflare.com`. **Cambia en cada reinicio**: hay que volver a ponerla en Meta.
-  - Fijo (pendiente): túnel con nombre `wa-dev.sabatransporte.com`. Requiere acceso a la cuenta de Cloudflare donde está el DNS de `sabatransporte.com` (la cuenta personal no muestra ese dominio). En *Public Hostname*: subdominio `wa-dev`, dominio `sabatransporte.com`, servicio **HTTP** (no HTTPS) `localhost:8080`.
-- **Producción:** el dominio fijo de la API, por ejemplo `https://api.sabatransporte.com`.
+- **Desarrollo:** túnel rápido hacia la API local (puerto 8080), sin cuenta: `cloudflared tunnel --url http://localhost:8080` → da `https://algo.trycloudflare.com`. **Cambia en cada reinicio**: hay que volver a ponerla en Meta. Es lo que se usa hoy.
+- **Producción:** túnel con nombre **`wa-dev.sabatransporte.com`**, **ya creado** en la cuenta de Cloudflare de Saba (donde está el DNS de `sabatransporte.com`) y **todavía sin integrar**: se conecta cuando la API esté desplegada. Configuración en *Public Hostname*: subdominio `wa-dev`, dominio `sabatransporte.com`, servicio **HTTP** (no HTTPS) hacia el puerto de la API.
+  - **Por qué un túnel con nombre y no el rápido:**
+    - **URL fija.** El túnel rápido cambia de dirección en cada reinicio y el webhook deja de llegar hasta que alguien la actualiza a mano en Meta. Con el túnel con nombre la URL no cambia nunca: se registra una vez.
+    - **Dominio de la empresa.** Queda bajo `sabatransporte.com`, con HTTPS que pone Cloudflare, en vez de un `trycloudflare.com` al azar que Cloudflare puede cortar sin aviso (es solo para pruebas).
+    - **Sin abrir puertos.** El servidor de la API sale hacia Cloudflare; no hace falta exponerlo a Internet ni manejar certificados.
+    - **Reglas de Cloudflare.** Se pueden aplicar WAF, límites o logs al subdominio.
 
 La URL completa siempre termina en **`/api/v1/whatsapp/webhook`**. Antes de pegarla en Meta, abrir `…/api/v1/health/live` en el navegador: debe responder `success: true`.
 
@@ -288,6 +291,7 @@ Las mismas del paso 6, con el `WHATSAPP_PHONE_NUMBER_ID` y el `WHATSAPP_WABA_ID`
 | Número de prueba | `+1 555 634 6598` · Phone Number ID `1014761568397246` |
 | Usuario del sistema | `saba-chat-api`, token permanente generado |
 | Webhook | Funciona de punta a punta por túnel rápido (`trycloudflare.com`), versión v26.0 |
+| Túnel de producción | `wa-dev.sabatransporte.com` creado en Cloudflare, **sin integrar** (espera el despliegue de la API) |
 | App conectada a la WABA | Sí (`subscribed_apps`) |
 
 ### Pendientes
@@ -296,6 +300,6 @@ Las mismas del paso 6, con el `WHATSAPP_PHONE_NUMBER_ID` y el `WHATSAPP_WABA_ID`
 - [ ] Decidir número de producción: nuevo dedicado o coexistencia.
 - [ ] Tarjeta internacional en Billing Hub (**por confirmar** si la LLC tiene).
 - [ ] Hosting de la API con dominio HTTPS fijo para el webhook de producción.
-- [ ] Acceso a la cuenta de Cloudflare de `sabatransporte.com` para el túnel fijo `wa-dev`.
+- [ ] Integrar el túnel `wa-dev.sabatransporte.com` (ya creado) con la API desplegada y registrarlo como webhook en Meta.
 - [ ] **Identificar la app "Saba" (`3027254144127246`)**, que también está conectada a la WABA de prueba y recibe sus mensajes. No es ninguna de las apps conocidas; desconectarla si nadie la reconoce, y que no se conecte a la WABA real.
 - [ ] Crear las plantillas `seguimiento_solicitud` (UTILITY) y `contacto_lead` (MARKETING) en la WABA que corresponda.
