@@ -13,12 +13,14 @@ import {
   type Conversacion,
   estadoVentana,
   formatearTelefono,
+  imagenesDelChat,
   nombreVisible,
 } from '../../domain/chat.model';
 import { AvatarIniciales } from '../components/AvatarIniciales';
 import { BotonIrAlFinal } from '../components/BotonIrAlFinal';
 import { BurbujaMensaje } from '../components/BurbujaMensaje';
 import { ComposerMensaje } from '../components/ComposerMensaje';
+import { VisorImagenes } from '../components/VisorImagenes';
 import { useScrollAlFinal } from '../hooks/useScrollAlFinal';
 import { DetalleContacto } from './DetalleContacto';
 
@@ -45,6 +47,18 @@ export function HiloConversacion({
 
   const scroll = useScrollAlFinal(mensajes?.length ?? 0);
   const [detalleAbierto, setDetalleAbierto] = React.useState(false);
+  const imagenes = React.useMemo(
+    () => imagenesDelChat(mensajes ?? []),
+    [mensajes]
+  );
+  const [imagenVisor, setImagenVisor] = React.useState<number | null>(null);
+  const abrirImagen = React.useCallback(
+    (mensajeId: string) => {
+      const indice = imagenes.findIndex((i) => i.mensajeId === mensajeId);
+      if (indice >= 0) setImagenVisor(indice);
+    },
+    [imagenes]
+  );
 
   return (
     <div className="flex min-h-0 flex-1">
@@ -96,7 +110,11 @@ export function HiloConversacion({
             {mensajes && (
               <ol aria-label="Mensajes" className="flex flex-col gap-2">
                 {mensajes.map((mensaje) => (
-                  <BurbujaMensaje key={mensaje.id} mensaje={mensaje} />
+                  <BurbujaMensaje
+                    key={mensaje.id}
+                    mensaje={mensaje}
+                    onAbrirImagen={abrirImagen}
+                  />
                 ))}
               </ol>
             )}
@@ -144,6 +162,12 @@ export function HiloConversacion({
           )}
         </footer>
       </section>
+      <VisorImagenes
+        imagenes={imagenes}
+        indice={imagenVisor}
+        onCambiar={setImagenVisor}
+        onCerrar={() => setImagenVisor(null)}
+      />
       <DetalleContacto
         conversacion={conversacion}
         abierto={detalleAbierto}

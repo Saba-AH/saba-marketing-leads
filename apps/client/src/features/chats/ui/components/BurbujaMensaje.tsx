@@ -28,8 +28,10 @@ const ORIGENES: Partial<Record<Mensaje['origen'], string>> = {
 
 export function BurbujaMensaje({
   mensaje,
+  onAbrirImagen,
 }: {
   mensaje: Mensaje;
+  onAbrirImagen?: (mensajeId: string) => void;
 }): React.JSX.Element {
   const saliente = mensaje.direccion === 'saliente';
   const forma = formaMedia(mensaje);
@@ -53,6 +55,7 @@ export function BurbujaMensaje({
             mensaje={mensaje}
             forma={forma}
             url={mensaje.mediaUrl}
+            onAbrirImagen={onAbrirImagen}
           />
         )}
         {aviso && <p className="italic opacity-80">{aviso}</p>}

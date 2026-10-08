@@ -88,6 +88,65 @@ describe('ChatsPage', () => {
     ).toBeInTheDocument();
   });
 
+  it('abre las fotos en un visor de la misma página y las recorre con flechas', async () => {
+    const foto = (id: string, cuerpo: string | null) => ({
+      id,
+      direccion: 'entrante' as const,
+      origen: 'cliente' as const,
+      tipo: 'image',
+      cuerpo,
+      estado: null,
+      errorDetalle: null,
+      tieneMedia: true,
+      waTimestamp: '2026-10-07T15:00:00.000Z',
+    });
+    server.use(
+      http.get(`${base}/:id/mensajes`, () =>
+        HttpResponse.json({
+          success: true,
+          data: [foto('f1', 'la moto por delante'), foto('f2', 'y por detrás')],
+        })
+      )
+    );
+    const user = userEvent.setup();
+    render(<ChatsPage />);
+    await user.click(await screen.findByRole('button', { name: /Ana Pérez/ }));
+
+    const [primera] = await screen.findAllByRole('button', {
+      name: 'Ver imagen en grande',
+    });
+    if (!primera) throw new Error('sin fotos');
+    await user.click(primera);
+
+    const visor = await screen.findByRole('dialog', { name: 'Imagen 1 de 2' });
+    expect(
+      within(visor).getByRole('img', { name: 'la moto por delante' })
+    ).toHaveAttribute('src', '/api/backend/v1/whatsapp/mensajes/f1/media');
+    expect(
+      within(visor).queryByRole('button', { name: 'Imagen anterior' })
+    ).not.toBeInTheDocument();
+
+    await user.click(
+      within(visor).getByRole('button', { name: 'Imagen siguiente' })
+    );
+    expect(
+      await screen.findByRole('dialog', { name: 'Imagen 2 de 2' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', { name: 'y por detrás' })
+    ).toBeInTheDocument();
+
+    await user.keyboard('{ArrowLeft}');
+    expect(
+      await screen.findByRole('dialog', { name: 'Imagen 1 de 2' })
+    ).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    );
+  });
+
   it('envía la respuesta y limpia el compositor', async () => {
     let enviado: unknown;
     server.use(

@@ -137,3 +137,27 @@ export function iniciales(nombre: string): string | null {
   const ultima = resto.at(-1);
   return `${primera[0]}${ultima?.[0] ?? ''}`.toUpperCase();
 }
+
+export interface ImagenChat {
+  mensajeId: string;
+  url: string;
+  waTimestamp: Date;
+  /** El caption que mandó el cliente con la foto, si hubo. */
+  descripcion: string | null;
+}
+
+/** Las fotos del hilo, en orden, para recorrerlas en el visor (los stickers no entran). */
+export function imagenesDelChat(mensajes: Mensaje[]): ImagenChat[] {
+  return mensajes.flatMap((m) =>
+    m.tipo === 'image' && m.mediaUrl
+      ? [
+          {
+            mensajeId: m.id,
+            url: m.mediaUrl,
+            waTimestamp: m.waTimestamp,
+            descripcion: m.cuerpo,
+          },
+        ]
+      : []
+  );
+}

@@ -12,12 +12,16 @@ export function ImagenAdjunta({
   url,
   sticker,
   onError,
+  onAbrir,
 }: {
   url: string;
   sticker: boolean;
   onError: () => void;
+  /** Abre el visor; sin esto (stickers) la imagen no es clickeable. */
+  onAbrir?: () => void;
 }): React.JSX.Element {
   const [cargando, setCargando] = React.useState(true);
+  const Contenedor = onAbrir ? 'button' : 'div';
   const imgRef = React.useRef<HTMLImageElement>(null);
 
   // Si ya estaba en caché, el navegador puede terminar antes de que React
@@ -29,13 +33,18 @@ export function ImagenAdjunta({
   }, []);
 
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener"
+    <Contenedor
+      {...(onAbrir
+        ? {
+            type: 'button' as const,
+            onClick: onAbrir,
+            'aria-label': 'Ver imagen en grande',
+          }
+        : {})}
       aria-busy={cargando}
       className={cn(
         'relative block',
+        onAbrir && 'cursor-zoom-in',
         cargando && (sticker ? 'size-32' : 'h-56 w-56 max-w-full')
       )}
     >
@@ -62,6 +71,6 @@ export function ImagenAdjunta({
           cargando && 'absolute inset-0 opacity-0'
         )}
       />
-    </a>
+    </Contenedor>
   );
 }

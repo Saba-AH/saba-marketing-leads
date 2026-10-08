@@ -17,10 +17,12 @@ export function AdjuntoMensaje({
   mensaje,
   forma,
   url,
+  onAbrirImagen,
 }: {
   mensaje: Mensaje;
   forma: FormaMedia;
   url: string;
+  onAbrirImagen?: (mensajeId: string) => void;
 }): React.JSX.Element {
   const [noDisponible, setNoDisponible] = React.useState(false);
   const marcarNoDisponible = (): void => setNoDisponible(true);
@@ -40,6 +42,11 @@ export function AdjuntoMensaje({
           url={url}
           sticker={mensaje.tipo === 'sticker'}
           onError={marcarNoDisponible}
+          onAbrir={
+            mensaje.tipo === 'image' && onAbrirImagen
+              ? () => onAbrirImagen(mensaje.id)
+              : undefined
+          }
         />
       );
     case 'audio':
