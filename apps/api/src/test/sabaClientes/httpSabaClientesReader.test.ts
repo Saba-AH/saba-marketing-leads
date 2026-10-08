@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   SabaNoDisponibleException,
+  SabaSesionNoReconocidaException,
   SabaSinPermisoException,
 } from '../../modules/sabaClientes/domain/exceptions/sabaClientesExceptions';
 import { HttpSabaClientesReader } from '../../modules/sabaClientes/infrastructure/external/HttpSabaClientesReader';
@@ -63,19 +64,19 @@ describe('HttpSabaClientesReader', () => {
     expect(clientes[0]?.cedula).toBe('V12345678');
   });
 
-  it.each([401, 403])(
-    'traduce un %i de Saba a falta de permiso',
-    async (status) => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(async () => responder(status, { ok: false }))
-      );
+  it.each([
+    [401, SabaSesionNoReconocidaException],
+    [403, SabaSinPermisoException],
+  ])('distingue un %i de Saba', async (status, excepcion) => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => responder(status, { ok: false }))
+    );
 
-      await expect(
-        new HttpSabaClientesReader(CONFIG).buscarPorTelefono('5841', 't')
-      ).rejects.toBeInstanceOf(SabaSinPermisoException);
-    }
-  );
+    await expect(
+      new HttpSabaClientesReader(CONFIG).buscarPorTelefono('5841', 't')
+    ).rejects.toBeInstanceOf(excepcion);
+  });
 
   it('avisa que Saba no está disponible si falla, cambia la respuesta o no está configurado', async () => {
     vi.stubGlobal(

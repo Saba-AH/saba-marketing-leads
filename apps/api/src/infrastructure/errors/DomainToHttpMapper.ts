@@ -17,6 +17,8 @@ export const domainErrorHttpStatus: Record<DomainErrorCode, HttpStatus> = {
   // 424 y no 5xx: el panel tiene que poder decir que el problema es Saba.
   SABA_CLIENTES_NO_DISPONIBLE: HttpStatus.FAILED_DEPENDENCY,
   SABA_CLIENTES_SIN_PERMISO: HttpStatus.FORBIDDEN,
+  // No 401: el BFF del panel lo tomaría como sesión vencida y cerraría la sesión de marketing.
+  SABA_CLIENTES_SESION_NO_RECONOCIDA: HttpStatus.FAILED_DEPENDENCY,
   WHATSAPP_FIRMA_WEBHOOK_INVALIDA: HttpStatus.UNAUTHORIZED,
   WHATSAPP_CONVERSACION_NO_ENCONTRADA: HttpStatus.NOT_FOUND,
   WHATSAPP_VENTANA_CERRADA: HttpStatus.CONFLICT,

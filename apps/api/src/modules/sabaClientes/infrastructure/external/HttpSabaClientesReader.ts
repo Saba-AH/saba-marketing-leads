@@ -4,6 +4,7 @@ import type { SabaClientesReaderPort } from '../../application/ports/SabaCliente
 import type { ClienteSaba } from '../../domain/ClienteSaba';
 import {
   SabaNoDisponibleException,
+  SabaSesionNoReconocidaException,
   SabaSinPermisoException,
 } from '../../domain/exceptions/sabaClientesExceptions';
 import { SABA_CLIENTES_TOKENS } from '../../tokens';
@@ -70,8 +71,11 @@ export class HttpSabaClientesReader implements SabaClientesReaderPort {
       throw new SabaNoDisponibleException(error);
     }
 
-    if (respuesta.status === 401 || respuesta.status === 403) {
-      throw new SabaSinPermisoException(`HTTP ${respuesta.status}`);
+    if (respuesta.status === 401) {
+      throw new SabaSesionNoReconocidaException('HTTP 401');
+    }
+    if (respuesta.status === 403) {
+      throw new SabaSinPermisoException('HTTP 403');
     }
     if (!respuesta.ok) {
       throw new SabaNoDisponibleException(`HTTP ${respuesta.status}`);
