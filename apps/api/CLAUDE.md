@@ -27,6 +27,7 @@ Los estándares del backend viven por tema (se cargan por referencia):
 @.claude/rules/permissions.md
 @.claude/rules/errors.md
 @.claude/rules/nestjs-and-tests.md
+@.claude/rules/english-naming.md
 
 ## Estado actual
 
