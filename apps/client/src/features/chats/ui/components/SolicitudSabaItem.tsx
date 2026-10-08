@@ -24,11 +24,16 @@ export function SolicitudSabaItem({
   const monto = formatearMonto(solicitud.montoFinanciado);
   const cuota = formatearCuota(solicitud);
   return (
-    <li className="flex flex-col gap-1 rounded-md border p-3 text-sm">
-      <div className="flex items-center justify-between gap-2">
-        <span className="truncate font-medium">
-          {solicitud.producto ?? 'Producto sin nombre'}
-        </span>
+    <li className="flex flex-col gap-2 rounded-md bg-muted/50 p-3">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="truncate font-medium text-sm">
+            {solicitud.producto ?? 'Producto sin nombre'}
+          </p>
+          <p className="text-muted-foreground text-xs">
+            Creada el {formatearFecha(solicitud.creadaAt)}
+          </p>
+        </div>
         <span
           className={cn(
             'shrink-0 rounded-full px-2 py-0.5 font-medium text-xs',
@@ -38,11 +43,22 @@ export function SolicitudSabaItem({
           {solicitud.estadoEtiqueta}
         </span>
       </div>
-      <p className="text-muted-foreground text-xs">
-        {formatearFecha(solicitud.creadaAt)}
-        {monto && ` · Financiado ${monto}`}
-        {cuota && ` · Cuota ${cuota}`}
-      </p>
+      {(monto || cuota) && (
+        <dl className="grid grid-cols-2 gap-2 text-sm">
+          {monto && (
+            <div>
+              <dt className="text-muted-foreground text-xs">Financiado</dt>
+              <dd className="font-medium">{monto}</dd>
+            </div>
+          )}
+          {cuota && (
+            <div>
+              <dt className="text-muted-foreground text-xs">Cuota</dt>
+              <dd className="font-medium">{cuota}</dd>
+            </div>
+          )}
+        </dl>
+      )}
     </li>
   );
 }

@@ -1,3 +1,5 @@
+import { formatearTelefono } from './chat.model';
+
 export interface SolicitudSaba {
   id: string;
   estado: string;
@@ -71,4 +73,22 @@ export function formatearFecha(fecha: Date): string {
     month: '2-digit',
     year: 'numeric',
   });
+}
+
+/** "2026-09-18" → "sept. de 2026": para "Cliente desde". */
+export function formatearMesAnio(fecha: Date): string {
+  return fecha.toLocaleDateString('es-VE', {
+    timeZone: 'America/Caracas',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+/** Saba guarda `+58…`, `0414…` o `414…`: se muestra siempre como `+58 414 123 4567`. */
+export function formatearTelefonoSaba(telefono: string): string {
+  const digitos = telefono.replace(/\D/g, '');
+  if (/^0\d{10}$/.test(digitos))
+    return formatearTelefono(`58${digitos.slice(1)}`);
+  if (/^4\d{9}$/.test(digitos)) return formatearTelefono(`58${digitos}`);
+  return digitos ? formatearTelefono(digitos) : telefono;
 }

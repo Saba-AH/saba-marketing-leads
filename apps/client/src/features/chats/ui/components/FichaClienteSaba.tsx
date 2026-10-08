@@ -1,10 +1,12 @@
+import { IdCard, Mail, MapPin, Megaphone, Phone } from 'lucide-react';
 import React from 'react';
 import { BotonCopiar } from '@/shared/ui/components/BotonCopiar';
 import {
   type ClienteSaba,
-  formatearFecha,
+  formatearTelefonoSaba,
 } from '../../domain/clienteSaba.model';
 import { DatoCliente } from './DatoCliente';
+import { SeccionFicha } from './SeccionFicha';
 import { SolicitudSabaItem } from './SolicitudSabaItem';
 
 export function FichaClienteSaba({
@@ -13,34 +15,51 @@ export function FichaClienteSaba({
   cliente: ClienteSaba;
 }): React.JSX.Element {
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h3 className="font-semibold">{cliente.nombre || 'Sin nombre'}</h3>
+    <div className="flex flex-col gap-3">
+      <SeccionFicha titulo="Identificación">
         {cliente.cedula ? (
-          <div className="flex items-center gap-1 text-sm">
-            <span>Cédula {cliente.cedula}</span>
-            <BotonCopiar valor={cliente.cedula} etiqueta="Copiar cédula" />
-          </div>
+          <DatoCliente
+            icono={IdCard}
+            etiqueta="Cédula"
+            valor={cliente.cedula}
+            accion={
+              <BotonCopiar valor={cliente.cedula} etiqueta="Copiar cédula" />
+            }
+          />
         ) : (
           <p className="text-muted-foreground text-sm">Sin cédula registrada</p>
         )}
-      </div>
+      </SeccionFicha>
 
-      <dl className="grid gap-2">
-        <DatoCliente etiqueta="Correo" valor={cliente.correo} />
-        <DatoCliente etiqueta="Teléfono en Saba" valor={cliente.telefono} />
-        <DatoCliente etiqueta="Ciudad" valor={cliente.ciudad} />
-        <DatoCliente
-          etiqueta="Cliente desde"
-          valor={
-            cliente.clienteDesde ? formatearFecha(cliente.clienteDesde) : null
-          }
-        />
-        <DatoCliente etiqueta="Origen" valor={cliente.origen} />
-      </dl>
+      {(cliente.correo || cliente.telefono) && (
+        <SeccionFicha titulo="Contacto">
+          <DatoCliente icono={Mail} etiqueta="Correo" valor={cliente.correo} />
+          <DatoCliente
+            icono={Phone}
+            etiqueta="Teléfono en Saba"
+            valor={
+              cliente.telefono ? formatearTelefonoSaba(cliente.telefono) : null
+            }
+          />
+        </SeccionFicha>
+      )}
 
-      <section aria-label="Solicitudes" className="flex flex-col gap-2">
-        <h4 className="font-medium text-sm">Solicitudes</h4>
+      {(cliente.ciudad || cliente.origen) && (
+        <SeccionFicha titulo="Perfil">
+          <DatoCliente
+            icono={MapPin}
+            etiqueta="Ciudad"
+            valor={cliente.ciudad}
+          />
+          <DatoCliente
+            icono={Megaphone}
+            etiqueta="Origen"
+            valor={cliente.origen}
+          />
+        </SeccionFicha>
+      )}
+
+      <SeccionFicha titulo={`Solicitudes (${cliente.solicitudes.length})`}>
         {cliente.solicitudes.length === 0 ? (
           <p className="text-muted-foreground text-sm">
             Todavía no tiene solicitudes.
@@ -52,7 +71,7 @@ export function FichaClienteSaba({
             ))}
           </ul>
         )}
-      </section>
+      </SeccionFicha>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import {
   formatearMomento,
   nombreVisible,
 } from '../../domain/chat.model';
+import { AvatarIniciales } from './AvatarIniciales';
 
 export function ConversacionItem({
   conversacion,
@@ -25,39 +26,42 @@ export function ConversacionItem({
       aria-current={seleccionada ? 'true' : undefined}
       onClick={() => onSeleccionar(conversacion.id)}
       className={cn(
-        'flex w-full flex-col gap-1 border-b px-4 py-3 text-left transition-colors hover:bg-accent',
+        'flex w-full items-center gap-3 border-b px-4 py-3 text-left transition-colors hover:bg-accent',
         seleccionada && 'bg-accent'
       )}
     >
-      <div className="flex items-center gap-2">
-        <span className="min-w-0 flex-1 truncate font-semibold text-sm">
-          {nombre}
-        </span>
-        {conversacion.contacto.vinculadoASaba && (
-          <Link2
-            aria-label="Vinculado a Saba"
-            className="size-3.5 shrink-0 text-muted-foreground"
-          />
-        )}
-        {conversacion.ultimoMensajeAt && (
-          <span className="shrink-0 text-muted-foreground text-xs">
-            {formatearMomento(conversacion.ultimoMensajeAt, ahora)}
+      <AvatarIniciales nombre={nombre} />
+      <span className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="flex items-center gap-2">
+          <span className="min-w-0 flex-1 truncate font-semibold text-sm">
+            {nombre}
           </span>
-        )}
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="min-w-0 flex-1 truncate text-muted-foreground text-sm">
-          {conversacion.ultimoMensajePreview ?? 'Sin mensajes'}
+          {conversacion.contacto.vinculadoASaba && (
+            <Link2
+              aria-label="Vinculado a Saba"
+              className="size-3.5 shrink-0 text-muted-foreground"
+            />
+          )}
+          {conversacion.ultimoMensajeAt && (
+            <span className="shrink-0 text-muted-foreground text-xs">
+              {formatearMomento(conversacion.ultimoMensajeAt, ahora)}
+            </span>
+          )}
         </span>
-        {conversacion.noLeidos > 0 && (
-          <span
-            aria-label={`${conversacion.noLeidos} sin leer`}
-            className="shrink-0 rounded-full bg-primary px-2 py-0.5 font-semibold text-primary-foreground text-xs"
-          >
-            {conversacion.noLeidos}
+        <span className="flex items-center gap-2">
+          <span className="min-w-0 flex-1 truncate text-muted-foreground text-sm">
+            {conversacion.ultimoMensajePreview ?? 'Sin mensajes'}
           </span>
-        )}
-      </div>
+          {conversacion.noLeidos > 0 && (
+            <span
+              aria-label={`${conversacion.noLeidos} sin leer`}
+              className="shrink-0 rounded-full bg-primary px-2 py-0.5 font-semibold text-primary-foreground text-xs"
+            >
+              {conversacion.noLeidos}
+            </span>
+          )}
+        </span>
+      </span>
     </button>
   );
 }

@@ -235,27 +235,58 @@ describe('ChatsPage', () => {
     ).toBeInTheDocument();
   });
 
-  describe('cliente en Saba', () => {
-    async function abrirChatDeAna(): Promise<HTMLElement> {
+  describe('detalle del contacto', () => {
+    /** Abre el chat de Ana y su detalle desde el encabezado (sin matchMedia en jsdom: panel deslizable). */
+    async function abrirDetalleDeAna(): Promise<HTMLElement> {
       const user = userEvent.setup();
       render(<ChatsPage />);
       await user.click(
         await screen.findByRole('button', { name: /Ana Pérez/ })
       );
-      return screen.getByRole('complementary', { name: 'Cliente en Saba' });
+      await user.click(
+        await screen.findByRole('button', { name: 'Ver detalle de Ana Pérez' })
+      );
+      return screen.findByRole('dialog', { name: 'Info. del contacto' });
     }
 
-    it('muestra quién es en Saba y sus solicitudes al abrir el chat', async () => {
-      const panel = await abrirChatDeAna();
+    it('no se muestra hasta tocar el encabezado del chat', async () => {
+      const user = userEvent.setup();
+      render(<ChatsPage />);
+      await user.click(
+        await screen.findByRole('button', { name: /Ana Pérez/ })
+      );
+      await screen.findByRole('list', { name: 'Mensajes' });
+
+      expect(
+        screen.queryByRole('dialog', { name: 'Info. del contacto' })
+      ).not.toBeInTheDocument();
+    });
+
+    it('muestra quién es en Saba, organizado por secciones', async () => {
+      const panel = await abrirDetalleDeAna();
 
       expect(
         await within(panel).findByText('Ana María González')
       ).toBeInTheDocument();
-      expect(within(panel).getByText('Cédula V12345678')).toBeInTheDocument();
-      expect(within(panel).getByText('CF 450MT')).toBeInTheDocument();
-      expect(within(panel).getByText('Cita agendada')).toBeInTheDocument();
       expect(
-        within(panel).getByText(/Cuota \$40,00 semanal/)
+        within(panel).getByText('+58 414 123 4567', { selector: 'p' })
+      ).toBeInTheDocument();
+      expect(
+        within(panel).getByText(/Cliente de Saba desde/)
+      ).toBeInTheDocument();
+      const identificacion = within(panel).getByRole('region', {
+        name: 'Identificación',
+      });
+      expect(within(identificacion).getByText('V12345678')).toBeInTheDocument();
+      const solicitudes = within(panel).getByRole('region', {
+        name: 'Solicitudes (1)',
+      });
+      expect(within(solicitudes).getByText('CF 450MT')).toBeInTheDocument();
+      expect(
+        within(solicitudes).getByText('Cita agendada')
+      ).toBeInTheDocument();
+      expect(
+        within(solicitudes).getByText('$40,00 semanal')
       ).toBeInTheDocument();
     });
 
@@ -267,8 +298,11 @@ describe('ChatsPage', () => {
       await user.click(
         await screen.findByRole('button', { name: /Ana Pérez/ })
       );
-      const panel = screen.getByRole('complementary', {
-        name: 'Cliente en Saba',
+      await user.click(
+        await screen.findByRole('button', { name: 'Ver detalle de Ana Pérez' })
+      );
+      const panel = await screen.findByRole('dialog', {
+        name: 'Info. del contacto',
       });
 
       await user.click(
@@ -301,23 +335,16 @@ describe('ChatsPage', () => {
           })
         )
       );
-      const user = userEvent.setup();
-      render(<ChatsPage />);
-      await user.click(
-        await screen.findByRole('button', { name: /Ana Pérez/ })
-      );
-      const panel = screen.getByRole('complementary', {
-        name: 'Cliente en Saba',
-      });
+      const panel = await abrirDetalleDeAna();
 
       expect(
         await within(panel).findByText('Hay 2 perfiles con este número:')
       ).toBeInTheDocument();
-      await user.click(
-        within(panel).getByRole('button', { name: 'José González' })
-      );
+      await userEvent
+        .setup()
+        .click(within(panel).getByRole('button', { name: 'José González' }));
 
-      expect(within(panel).getByText('Cédula V87654321')).toBeInTheDocument();
+      expect(within(panel).getByText('V87654321')).toBeInTheDocument();
     });
 
     it('avisa cuando el número no está en Saba', async () => {
@@ -329,11 +356,13 @@ describe('ChatsPage', () => {
           })
         )
       );
-      const panel = await abrirChatDeAna();
+      const panel = await abrirDetalleDeAna();
 
       expect(
         await within(panel).findByText('No está registrado en Saba')
       ).toBeInTheDocument();
+      // Igual muestra el contacto de WhatsApp arriba.
+      expect(within(panel).getByText('Ana Pérez')).toBeInTheDocument();
     });
 
     it('muestra el error de Saba y deja reintentar sin afectar el chat', async () => {
@@ -352,14 +381,7 @@ describe('ChatsPage', () => {
           );
         })
       );
-      const user = userEvent.setup();
-      render(<ChatsPage />);
-      await user.click(
-        await screen.findByRole('button', { name: /Ana Pérez/ })
-      );
-      const panel = screen.getByRole('complementary', {
-        name: 'Cliente en Saba',
-      });
+      const panel = await abrirDetalleDeAna();
 
       expect(
         await within(panel).findByText(
@@ -368,13 +390,14 @@ describe('ChatsPage', () => {
           { timeout: 3000 }
         )
       ).toBeInTheDocument();
+      // El panel deslizable es modal: deja el hilo oculto para lectores, pero sigue ahí.
       expect(
-        screen.getByRole('list', { name: 'Mensajes' })
+        screen.getByRole('list', { name: 'Mensajes', hidden: true })
       ).toBeInTheDocument();
       const antes = intentos;
-      await user.click(
-        within(panel).getByRole('button', { name: 'Reintentar' })
-      );
+      await userEvent
+        .setup()
+        .click(within(panel).getByRole('button', { name: 'Reintentar' }));
       await waitFor(() => expect(intentos).toBeGreaterThan(antes));
     });
   });

@@ -128,3 +128,12 @@ export function avisoSinTexto(tipo: string): string | null {
   if (tipo === 'text' || tipo === 'template') return null;
   return `${etiqueta ?? 'Mensaje no compatible'} — ver en el celular`;
 }
+
+/** "Ana María Pérez" → "AP"; `null` si no hay letras (p. ej. solo un teléfono). */
+export function iniciales(nombre: string): string | null {
+  const palabras = nombre.match(/\p{L}+/gu) ?? [];
+  const [primera, ...resto] = palabras;
+  if (!primera) return null;
+  const ultima = resto.at(-1);
+  return `${primera[0]}${ultima?.[0] ?? ''}`.toUpperCase();
+}

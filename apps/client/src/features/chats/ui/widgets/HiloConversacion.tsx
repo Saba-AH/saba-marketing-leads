@@ -1,15 +1,8 @@
 'use client';
 
 import { Button } from '@repo/ui/components/button';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@repo/ui/components/sheet';
 import { Skeleton } from '@repo/ui/components/skeleton';
-import { ArrowLeft, Clock, Lock, UserRound } from 'lucide-react';
+import { ArrowLeft, Clock, Lock } from 'lucide-react';
 import React from 'react';
 import { ErrorState } from '@/shared/ui/components/ErrorState';
 import { useAvisoEscribiendo } from '../../application/mutations/useAvisoEscribiendo.mutation';
@@ -22,11 +15,12 @@ import {
   formatearTelefono,
   nombreVisible,
 } from '../../domain/chat.model';
+import { AvatarIniciales } from '../components/AvatarIniciales';
 import { BotonIrAlFinal } from '../components/BotonIrAlFinal';
 import { BurbujaMensaje } from '../components/BurbujaMensaje';
 import { ComposerMensaje } from '../components/ComposerMensaje';
 import { useScrollAlFinal } from '../hooks/useScrollAlFinal';
-import { PanelClienteSaba } from './PanelClienteSaba';
+import { DetalleContacto } from './DetalleContacto';
 
 export function HiloConversacion({
   conversacion,
@@ -50,6 +44,7 @@ export function HiloConversacion({
   }, [conversacion.id, conversacion.noLeidos, marcar]);
 
   const scroll = useScrollAlFinal(mensajes?.length ?? 0);
+  const [detalleAbierto, setDetalleAbierto] = React.useState(false);
 
   return (
     <div className="flex min-h-0 flex-1">
@@ -67,34 +62,22 @@ export function HiloConversacion({
           >
             <ArrowLeft aria-hidden="true" />
           </Button>
-          <div className="min-w-0 flex-1">
-            <h2 className="truncate font-semibold">
-              {nombreVisible(conversacion)}
-            </h2>
-            <p className="truncate text-muted-foreground text-xs">
-              {telefono ? formatearTelefono(telefono) : 'Sin teléfono'}
-            </p>
-          </div>
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="shrink-0 xl:hidden"
-              >
-                <UserRound aria-hidden="true" />
-                Ver cliente
-              </Button>
-            </SheetTrigger>
-            <SheetContent className="overflow-y-auto">
-              <SheetHeader>
-                <SheetTitle>Cliente en Saba</SheetTitle>
-              </SheetHeader>
-              <div className="px-4 pb-4">
-                <PanelClienteSaba conversationId={conversacion.id} />
-              </div>
-            </SheetContent>
-          </Sheet>
+          <button
+            type="button"
+            onClick={() => setDetalleAbierto(true)}
+            aria-label={`Ver detalle de ${nombreVisible(conversacion)}`}
+            className="flex min-w-0 flex-1 items-center gap-3 rounded-md p-1 text-left transition-colors hover:bg-accent"
+          >
+            <AvatarIniciales nombre={nombreVisible(conversacion)} />
+            <span className="min-w-0">
+              <span className="block truncate font-semibold">
+                {nombreVisible(conversacion)}
+              </span>
+              <span className="block truncate text-muted-foreground text-xs">
+                {telefono ? formatearTelefono(telefono) : 'Sin teléfono'}
+              </span>
+            </span>
+          </button>
         </header>
 
         <div className="relative flex min-h-0 flex-1 flex-col">
@@ -161,15 +144,11 @@ export function HiloConversacion({
           )}
         </footer>
       </section>
-      <aside
-        aria-label="Cliente en Saba"
-        className="hidden w-80 shrink-0 flex-col gap-3 overflow-y-auto border-l p-4 xl:flex"
-      >
-        <h2 className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">
-          Cliente en Saba
-        </h2>
-        <PanelClienteSaba conversationId={conversacion.id} />
-      </aside>
+      <DetalleContacto
+        conversacion={conversacion}
+        abierto={detalleAbierto}
+        onCerrar={() => setDetalleAbierto(false)}
+      />
     </div>
   );
 }
