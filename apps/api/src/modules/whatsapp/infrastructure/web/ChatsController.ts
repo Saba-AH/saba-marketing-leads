@@ -28,6 +28,7 @@ import {
 import { createZodDto } from '../../../../shared/utils/createZodDto';
 import type { AuthenticatedUser } from '../../../auth/domain/AuthSession';
 import { CurrentUser } from '../../../auth/infrastructure/web/CurrentUser';
+import type { IndicarEscribiendoPort } from '../../application/ports/in/IndicarEscribiendoPort';
 import type { ListarConversacionesPort } from '../../application/ports/in/ListarConversacionesPort';
 import type { ListarMensajesPort } from '../../application/ports/in/ListarMensajesPort';
 import type { MarcarLeidaPort } from '../../application/ports/in/MarcarLeidaPort';
@@ -54,7 +55,9 @@ export class ChatsController {
     @Inject(WHATSAPP_TOKENS.ResponderConversacion)
     private readonly responder: ResponderConversacionPort,
     @Inject(WHATSAPP_TOKENS.MarcarLeida)
-    private readonly marcarLeida: MarcarLeidaPort
+    private readonly marcarLeida: MarcarLeidaPort,
+    @Inject(WHATSAPP_TOKENS.IndicarEscribiendo)
+    private readonly indicarEscribiendo: IndicarEscribiendoPort
   ) {}
 
   @Get()
@@ -105,6 +108,22 @@ export class ChatsController {
     @Param('id', ParseUUIDPipe) id: string
   ): Promise<TSinDatosResponse> {
     await this.marcarLeida.execute(id);
+    return { success: true, data: null };
+  }
+
+  @Post(':id/escribiendo')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Muestra "escribiendo…" al cliente y marca leído su último mensaje',
+    description:
+      'Best effort: con la ventana cerrada, sin mensajes del cliente o si Meta lo rechaza, responde igual 200 sin hacer nada.',
+  })
+  @ZodApiResponse(HttpStatus.OK, sinDatosResponseSchema)
+  async escribiendo(
+    @Param('id', ParseUUIDPipe) id: string
+  ): Promise<TSinDatosResponse> {
+    await this.indicarEscribiendo.execute(id);
     return { success: true, data: null };
   }
 }

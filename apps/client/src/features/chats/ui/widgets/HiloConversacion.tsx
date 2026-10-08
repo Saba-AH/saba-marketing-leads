@@ -5,6 +5,7 @@ import { Skeleton } from '@repo/ui/components/skeleton';
 import { ArrowLeft, Clock, Lock } from 'lucide-react';
 import React from 'react';
 import { ErrorState } from '@/shared/ui/components/ErrorState';
+import { useAvisoEscribiendo } from '../../application/mutations/useAvisoEscribiendo.mutation';
 import { useEnviarMensaje } from '../../application/mutations/useEnviarMensaje.mutation';
 import { useMarcarLeida } from '../../application/mutations/useMarcarLeida.mutation';
 import { useMensajes } from '../../application/queries/useMensajes.query';
@@ -30,6 +31,7 @@ export function HiloConversacion({
   const { data: mensajes, isPending, error } = useMensajes(conversacion.id);
   const enviar = useEnviarMensaje(conversacion.id);
   const marcarLeida = useMarcarLeida();
+  const avisarEscribiendo = useAvisoEscribiendo(conversacion.id);
   const ventana = estadoVentana(conversacion.ventanaExpiraAt, new Date());
   const { telefono } = conversacion.contacto;
 
@@ -106,6 +108,7 @@ export function HiloConversacion({
               Ventana de respuesta: quedan {ventana.restante}
             </p>
             <ComposerMensaje
+              onEscribiendo={avisarEscribiendo}
               onEnviar={async (datos) => {
                 try {
                   await enviar.mutateAsync(datos);

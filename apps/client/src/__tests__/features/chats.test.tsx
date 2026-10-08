@@ -123,6 +123,26 @@ describe('ChatsPage', () => {
     await waitFor(() => expect(caja).toHaveValue(''));
   });
 
+  it('le avisa a Meta que se está escribiendo, una sola vez por ráfaga de teclas', async () => {
+    const avisos: string[] = [];
+    server.use(
+      http.post(`${base}/:id/escribiendo`, ({ params }) => {
+        avisos.push(String(params.id));
+        return HttpResponse.json({ success: true, data: null });
+      })
+    );
+    const user = userEvent.setup();
+    render(<ChatsPage />);
+    await user.click(await screen.findByRole('button', { name: /Ana Pérez/ }));
+
+    await user.type(
+      await screen.findByLabelText('Mensaje'),
+      'Hola, ¿cómo estás?'
+    );
+
+    await waitFor(() => expect(avisos).toEqual(['conv-abierta']));
+  });
+
   it('muestra el error de la API si WhatsApp rechaza el envío', async () => {
     server.use(
       http.post(`${base}/:id/mensajes`, () =>

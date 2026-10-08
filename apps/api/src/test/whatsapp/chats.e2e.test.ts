@@ -50,6 +50,7 @@ const AGENTE: AuthenticatedUser = {
 
 const enviarTexto = vi.fn<(to: string, cuerpo: string) => Promise<string>>();
 const descargarMedia = vi.fn<(mediaId: string) => Promise<ArchivoMedia>>();
+const indicarEscribiendo = vi.fn<(wamid: string) => Promise<void>>();
 
 function archivo(mimeType: string, contenido: string): ArchivoMedia {
   const bytes = new TextEncoder().encode(contenido);
@@ -109,7 +110,7 @@ describe('chats de WhatsApp (API)', () => {
       ],
     })
       .overrideProvider(WHATSAPP_TOKENS.WhatsAppCloud)
-      .useValue({ enviarTexto, descargarMedia })
+      .useValue({ enviarTexto, descargarMedia, indicarEscribiendo })
       .overrideProvider(WHATSAPP_TOKENS.Clock)
       .useValue({ now: () => AHORA })
       .compile();
@@ -139,6 +140,7 @@ describe('chats de WhatsApp (API)', () => {
     await resetDatabase();
     enviarTexto.mockReset();
     descargarMedia.mockReset();
+    indicarEscribiendo.mockReset();
   });
 
   it('lista las conversaciones con la de actividad más reciente primero y su ventana', async () => {
@@ -421,6 +423,64 @@ describe('chats de WhatsApp (API)', () => {
       expect(a.status).toBe(404);
       expect(b.status).toBe(404);
       expect(b.body.code).toBe('WHATSAPP_MEDIA_NO_DISPONIBLE');
+    });
+  });
+
+  describe('indicador de escribiendo', () => {
+    async function entrante(
+      conversationId: string,
+      wamid: string,
+      cuando: Date
+    ): Promise<void> {
+      await getTestDb().insert(whatsappMessages).values({
+        conversationId,
+        wamid,
+        direccion: 'entrante',
+        origen: 'cliente',
+        tipo: 'text',
+        cuerpo: 'hola',
+        waTimestamp: cuando,
+      });
+    }
+
+    it('lo manda a Meta con el último mensaje del cliente', async () => {
+      const id = await crearChat({ ultimoEntranteAt: HACE_UNA_HORA });
+      await entrante(id, 'wamid.viejo', HACE_DOS_DIAS);
+      await entrante(id, 'wamid.ultimo', HACE_UNA_HORA);
+      indicarEscribiendo.mockResolvedValue();
+
+      const res = await request(app.getHttpServer()).post(
+        `/whatsapp/conversaciones/${id}/escribiendo`
+      );
+
+      expect(res.status).toBe(200);
+      expect(indicarEscribiendo).toHaveBeenCalledWith('wamid.ultimo');
+    });
+
+    it('no hace nada con la ventana cerrada', async () => {
+      const id = await crearChat({ ultimoEntranteAt: HACE_DOS_DIAS });
+      await entrante(id, 'wamid.viejo', HACE_DOS_DIAS);
+
+      const res = await request(app.getHttpServer()).post(
+        `/whatsapp/conversaciones/${id}/escribiendo`
+      );
+
+      expect(res.status).toBe(200);
+      expect(indicarEscribiendo).not.toHaveBeenCalled();
+    });
+
+    it('responde 200 aunque Meta lo rechace: es solo cortesía', async () => {
+      const id = await crearChat({ ultimoEntranteAt: HACE_UNA_HORA });
+      await entrante(id, 'wamid.ultimo', HACE_UNA_HORA);
+      indicarEscribiendo.mockRejectedValue(
+        new ErrorEnvioMeta(100, 'Invalid parameter')
+      );
+
+      const res = await request(app.getHttpServer()).post(
+        `/whatsapp/conversaciones/${id}/escribiendo`
+      );
+
+      expect(res.status).toBe(200);
     });
   });
 });

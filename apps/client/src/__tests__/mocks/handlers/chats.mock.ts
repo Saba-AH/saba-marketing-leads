@@ -75,6 +75,9 @@ export const chatsHandlers = [
   http.post(`${base}/:id/leida`, () =>
     HttpResponse.json({ success: true, data: null })
   ),
+  http.post(`${base}/:id/escribiendo`, () =>
+    HttpResponse.json({ success: true, data: null })
+  ),
   http.post(`${base}/:id/mensajes`, async ({ request }) => {
     const { cuerpo } = (await request.json()) as { cuerpo: string };
     return HttpResponse.json(

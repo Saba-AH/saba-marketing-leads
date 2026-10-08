@@ -129,4 +129,25 @@ describe('GraphWhatsAppCloudAdapter', () => {
       new GraphWhatsAppCloudAdapter(CONFIG).descargarMedia('MEDIA_VIEJO')
     ).rejects.toMatchObject({ codigo: 100 });
   });
+
+  it('manda el indicador de escribiendo atado al mensaje del cliente', async () => {
+    const fetchMock = vi.fn(async () => respuesta(200, { success: true }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await new GraphWhatsAppCloudAdapter(CONFIG).indicarEscribiendo('wamid.IN');
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(url).toBe(
+      'https://graph.facebook.com/v26.0/1014761568397246/messages'
+    );
+    expect(JSON.parse(String(init.body))).toEqual({
+      messaging_product: 'whatsapp',
+      status: 'read',
+      message_id: 'wamid.IN',
+      typing_indicator: { type: 'text' },
+    });
+  });
 });

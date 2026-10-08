@@ -17,6 +17,7 @@ export function ChatsPage(): React.JSX.Element {
     null
   );
   const { data: conversaciones } = useConversaciones();
+  console.log("🚀 ~ ChatsPage ~ conversaciones:", conversaciones)
   const seleccionada =
     conversaciones?.find((c) => c.id === seleccionadaId) ?? null;
 

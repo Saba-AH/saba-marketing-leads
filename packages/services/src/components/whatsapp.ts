@@ -65,4 +65,17 @@ export class WhatsAppService {
       sinDatosResponseSchema
     );
   }
+
+  async indicarEscribiendo(
+    conversationId: string,
+    options?: HttpRequestOptions
+  ): Promise<Safe<null>> {
+    return await this.httpClient.post(
+      `${this.basePath}/${encodeURIComponent(conversationId)}/escribiendo`,
+      undefined,
+      undefined,
+      options,
+      sinDatosResponseSchema
+    );
+  }
 }

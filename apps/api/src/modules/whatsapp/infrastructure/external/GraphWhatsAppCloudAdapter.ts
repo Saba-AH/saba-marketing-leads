@@ -111,6 +111,36 @@ export class GraphWhatsAppCloudAdapter implements WhatsAppCloudPort {
     };
   }
 
+  async indicarEscribiendo(wamidEntrante: string): Promise<void> {
+    const { accessToken, phoneNumberId, graphVersion } = this.config;
+    if (!accessToken || !phoneNumberId) {
+      throw new WhatsAppNoConfiguradoException();
+    }
+    const respuesta = await fetch(
+      `https://graph.facebook.com/${graphVersion}/${phoneNumberId}/messages`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          status: 'read',
+          message_id: wamidEntrante,
+          typing_indicator: { type: 'text' },
+        }),
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      }
+    );
+    if (!respuesta.ok) {
+      throw this.errorDeMeta(
+        await respuesta.json().catch(() => null),
+        respuesta.status
+      );
+    }
+  }
+
   private errorDeMeta(json: unknown, status: number): ErrorEnvioMeta {
     const error = respuestaErrorSchema.safeParse(json);
     return new ErrorEnvioMeta(

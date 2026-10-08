@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, isNotNull, sql } from 'drizzle-orm';
 import {
   type ApiDb,
   DRIZZLE_CLIENT,
@@ -184,6 +184,22 @@ export class DrizzleChatsRepository implements ChatsRepositoryPort {
       .from(whatsappMessages)
       .where(eq(whatsappMessages.id, mensajeId));
     return fila ? fila.mediaId : undefined;
+  }
+
+  async ultimoWamidEntrante(conversationId: string): Promise<string | null> {
+    const [fila] = await this.db
+      .select({ wamid: whatsappMessages.wamid })
+      .from(whatsappMessages)
+      .where(
+        and(
+          eq(whatsappMessages.conversationId, conversationId),
+          eq(whatsappMessages.direccion, 'entrante'),
+          isNotNull(whatsappMessages.wamid)
+        )
+      )
+      .orderBy(desc(whatsappMessages.waTimestamp))
+      .limit(1);
+    return fila?.wamid ?? null;
   }
 
   async marcarLeida(conversationId: string): Promise<boolean> {

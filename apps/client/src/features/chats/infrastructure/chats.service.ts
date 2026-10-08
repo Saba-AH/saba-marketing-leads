@@ -36,4 +36,8 @@ export class ChatsServiceClass {
   async marcarLeida(conversationId: string): Promise<void> {
     datos(await this.chatsApi.marcarLeida(conversationId));
   }
+
+  async indicarEscribiendo(conversationId: string): Promise<void> {
+    datos(await this.chatsApi.indicarEscribiendo(conversationId));
+  }
 }

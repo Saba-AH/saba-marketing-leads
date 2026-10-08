@@ -14,4 +14,5 @@ export interface ChatsApi {
     datos: TEnviarMensaje
   ): Promise<Safe<TMensajeChat>>;
   marcarLeida(conversationId: string): Promise<Safe<null>>;
+  indicarEscribiendo(conversationId: string): Promise<Safe<null>>;
 }

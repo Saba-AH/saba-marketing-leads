@@ -24,6 +24,8 @@ export interface ChatsRepositoryPort {
     detalle: string
   ): Promise<void>;
   marcarLeida(conversationId: string): Promise<boolean>;
+  /** `wamid` del último mensaje que mandó el cliente; `null` si nunca escribió. */
+  ultimoWamidEntrante(conversationId: string): Promise<string | null>;
   /** `undefined` si el mensaje no existe; `null` si existe pero no tiene archivo. */
   mediaIdDe(mensajeId: string): Promise<string | null | undefined>;
 }

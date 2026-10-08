@@ -21,9 +21,11 @@ type ComposerInput = z.input<typeof enviarMensajeSchema>;
 
 export function ComposerMensaje({
   onEnviar,
+  onEscribiendo,
 }: {
   /** `true` si se envió; si falló, el texto queda para reintentar. */
   onEnviar: (datos: TEnviarMensaje) => Promise<boolean>;
+  onEscribiendo?: () => void;
 }): React.JSX.Element {
   const form = useForm<ComposerInput, unknown, TEnviarMensaje>({
     resolver: zodResolver(enviarMensajeSchema),
@@ -52,6 +54,10 @@ export function ComposerMensaje({
                   className="max-h-40"
                   rows={1}
                   {...field}
+                  onChange={(evento) => {
+                    field.onChange(evento);
+                    onEscribiendo?.();
+                  }}
                   onKeyDown={(evento) => {
                     if (evento.key === 'Enter' && !evento.shiftKey) {
                       evento.preventDefault();

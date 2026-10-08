@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { SabaClientesModule } from '../sabaClientes/module';
+import { IndicarEscribiendoUseCase } from './application/use-cases/IndicarEscribiendoUseCase';
 import { ListarConversacionesUseCase } from './application/use-cases/ListarConversacionesUseCase';
 import { ListarMensajesUseCase } from './application/use-cases/ListarMensajesUseCase';
 import { MarcarLeidaUseCase } from './application/use-cases/MarcarLeidaUseCase';
@@ -103,6 +104,11 @@ import { WHATSAPP_TOKENS } from './tokens';
     { provide: WHATSAPP_TOKENS.ObtenerMedia, useExisting: ObtenerMediaUseCase },
     MarcarLeidaUseCase,
     { provide: WHATSAPP_TOKENS.MarcarLeida, useExisting: MarcarLeidaUseCase },
+    IndicarEscribiendoUseCase,
+    {
+      provide: WHATSAPP_TOKENS.IndicarEscribiendo,
+      useExisting: IndicarEscribiendoUseCase,
+    },
     ReprocesadorWebhookService,
   ],
 })
