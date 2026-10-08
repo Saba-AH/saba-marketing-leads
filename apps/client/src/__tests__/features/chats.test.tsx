@@ -161,6 +161,39 @@ describe('ChatsPage', () => {
     expect(screen.queryByLabelText('Mensaje')).not.toBeInTheDocument();
   });
 
+  it('muestra la flecha para bajar solo si subiste a leer, y baja al tocarla', async () => {
+    const user = userEvent.setup();
+    render(<ChatsPage />);
+    await user.click(await screen.findByRole('button', { name: /Ana Pérez/ }));
+    const lista = await screen.findByRole('list', { name: 'Mensajes' });
+    const contenedor = lista.parentElement as HTMLElement;
+    expect(
+      screen.queryByRole('button', { name: /Ir a los mensajes más nuevos/ })
+    ).not.toBeInTheDocument();
+
+    // jsdom no hace layout: se simula haber subido 600 px en un hilo de 1000.
+    Object.defineProperty(contenedor, 'scrollHeight', {
+      configurable: true,
+      value: 1000,
+    });
+    Object.defineProperty(contenedor, 'clientHeight', {
+      configurable: true,
+      value: 300,
+    });
+    contenedor.scrollTop = 100;
+    fireEvent.scroll(contenedor);
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: /Ir a los mensajes más nuevos/,
+      })
+    );
+
+    expect(
+      screen.queryByRole('button', { name: /Ir a los mensajes más nuevos/ })
+    ).not.toBeInTheDocument();
+  });
+
   it('vuelve a la lista desde el hilo (pantallas angostas)', async () => {
     const user = userEvent.setup();
     render(<ChatsPage />);

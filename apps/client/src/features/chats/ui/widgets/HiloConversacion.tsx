@@ -14,8 +14,10 @@ import {
   formatearTelefono,
   nombreVisible,
 } from '../../domain/chat.model';
+import { BotonIrAlFinal } from '../components/BotonIrAlFinal';
 import { BurbujaMensaje } from '../components/BurbujaMensaje';
 import { ComposerMensaje } from '../components/ComposerMensaje';
+import { useScrollAlFinal } from '../hooks/useScrollAlFinal';
 
 export function HiloConversacion({
   conversacion,
@@ -28,7 +30,6 @@ export function HiloConversacion({
   const { data: mensajes, isPending, error } = useMensajes(conversacion.id);
   const enviar = useEnviarMensaje(conversacion.id);
   const marcarLeida = useMarcarLeida();
-  const finRef = React.useRef<HTMLDivElement>(null);
   const ventana = estadoVentana(conversacion.ventanaExpiraAt, new Date());
   const { telefono } = conversacion.contacto;
 
@@ -38,10 +39,7 @@ export function HiloConversacion({
     if (conversacion.noLeidos > 0) marcar(conversacion.id);
   }, [conversacion.id, conversacion.noLeidos, marcar]);
 
-  const cantidad = mensajes?.length ?? 0;
-  React.useEffect(() => {
-    if (cantidad > 0) finRef.current?.scrollIntoView?.({ block: 'end' });
-  }, [cantidad]);
+  const scroll = useScrollAlFinal(mensajes?.length ?? 0);
 
   return (
     <section
@@ -71,22 +69,33 @@ export function HiloConversacion({
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 md:px-5">
-        {isPending && (
-          <div className="flex flex-col gap-3">
-            <Skeleton className="h-10 w-1/2" />
-            <Skeleton className="ml-auto h-10 w-1/2" />
-          </div>
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <div
+          ref={scroll.contenedorRef}
+          onScroll={scroll.onScroll}
+          className="min-h-0 flex-1 overflow-y-auto px-3 py-4 md:px-5"
+        >
+          {isPending && (
+            <div className="flex flex-col gap-3">
+              <Skeleton className="h-10 w-1/2" />
+              <Skeleton className="ml-auto h-10 w-1/2" />
+            </div>
+          )}
+          {error && <ErrorState error={error} />}
+          {mensajes && (
+            <ol aria-label="Mensajes" className="flex flex-col gap-2">
+              {mensajes.map((mensaje) => (
+                <BurbujaMensaje key={mensaje.id} mensaje={mensaje} />
+              ))}
+            </ol>
+          )}
+        </div>
+        {!scroll.alFinal && (
+          <BotonIrAlFinal
+            nuevos={scroll.nuevos}
+            onClick={() => scroll.irAlFinal()}
+          />
         )}
-        {error && <ErrorState error={error} />}
-        {mensajes && (
-          <ol aria-label="Mensajes" className="flex flex-col gap-2">
-            {mensajes.map((mensaje) => (
-              <BurbujaMensaje key={mensaje.id} mensaje={mensaje} />
-            ))}
-          </ol>
-        )}
-        <div ref={finRef} />
       </div>
 
       <footer className="border-t px-3 py-3 md:px-5">
