@@ -13,7 +13,9 @@ import {
 import { formatearMesAnio } from '../../domain/clienteSaba.model';
 import { AvatarIniciales } from '../components/AvatarIniciales';
 import { AvisoPanel } from '../components/AvisoPanel';
+import { AvisoVerificacion } from '../components/AvisoVerificacion';
 import { FichaClienteSaba } from '../components/FichaClienteSaba';
+import { SinRegistroSaba } from '../components/SinRegistroSaba';
 
 /**
  * "Info. del contacto": quién es en WhatsApp y, debajo, quién es en Saba. Si
@@ -32,8 +34,10 @@ export function PanelClienteSaba({
   const nombre = cliente?.nombre || nombreVisible(conversacion);
   const { telefono } = conversacion.contacto;
 
+  if (data && !data.sinTelefono && !cliente) return <SinRegistroSaba />;
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-1 flex-col gap-4">
       <div className="flex flex-col items-center gap-1 text-center">
         <AvatarIniciales nombre={nombre} tamano="lg" />
         <p className="mt-2 font-semibold text-lg">{nombre}</p>
@@ -81,15 +85,6 @@ export function PanelClienteSaba({
         </AvisoPanel>
       )}
 
-      {data && !data.sinTelefono && !cliente && (
-        <AvisoPanel>
-          <p className="font-medium text-foreground">
-            No está registrado en Saba
-          </p>
-          <p>Ningún perfil de Saba tiene este número: es un lead nuevo.</p>
-        </AvisoPanel>
-      )}
-
       {data && data.clientes.length > 1 && (
         <div className="flex flex-col gap-2 rounded-md bg-muted p-3 text-sm">
           <p>Hay {data.clientes.length} perfiles con este número:</p>
@@ -114,7 +109,12 @@ export function PanelClienteSaba({
         </div>
       )}
 
-      {cliente && <FichaClienteSaba cliente={cliente} />}
+      {cliente && (
+        <>
+          <AvisoVerificacion />
+          <FichaClienteSaba cliente={cliente} />
+        </>
+      )}
     </div>
   );
 }

@@ -34,7 +34,7 @@ export function DetalleContacto({
           <SheetHeader>
             <SheetTitle>{TITULO}</SheetTitle>
           </SheetHeader>
-          <div className="px-4 pb-4">
+          <div className="flex flex-1 flex-col px-4 pb-4">
             <PanelClienteSaba conversacion={conversacion} />
           </div>
         </SheetContent>
@@ -60,7 +60,7 @@ export function DetalleContacto({
         </Button>
         <h2 className="font-semibold">{TITULO}</h2>
       </header>
-      <div className="p-4">
+      <div className="flex flex-1 flex-col p-4">
         <PanelClienteSaba conversacion={conversacion} />
       </div>
     </aside>

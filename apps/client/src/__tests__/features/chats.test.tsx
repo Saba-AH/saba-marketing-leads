@@ -278,6 +278,9 @@ describe('ChatsPage', () => {
         name: 'Identificación',
       });
       expect(within(identificacion).getByText('V12345678')).toBeInTheDocument();
+      expect(within(panel).getByRole('note')).toHaveTextContent(
+        /solo por teléfono.*cédula.*correo/
+      );
       const solicitudes = within(panel).getByRole('region', {
         name: 'Solicitudes (1)',
       });
@@ -361,8 +364,11 @@ describe('ChatsPage', () => {
       expect(
         await within(panel).findByText('No está registrado en Saba')
       ).toBeInTheDocument();
-      // Igual muestra el contacto de WhatsApp arriba.
-      expect(within(panel).getByText('Ana Pérez')).toBeInTheDocument();
+      // Solo el mensaje: sin la cabecera del contacto, y con la sugerencia de validar.
+      expect(within(panel).queryByText('Ana Pérez')).not.toBeInTheDocument();
+      expect(
+        within(panel).getByText(/puede estar escribiendo desde otro teléfono/)
+      ).toBeInTheDocument();
     });
 
     it('muestra el error de Saba y deja reintentar sin afectar el chat', async () => {
