@@ -1,2 +1,2 @@
 export * from './chats.dto';
-export * from './clienteSaba.dto';
+export * from './sabaCustomer.dto';

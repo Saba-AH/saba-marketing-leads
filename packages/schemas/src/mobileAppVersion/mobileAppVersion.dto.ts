@@ -1,17 +1,17 @@
 import { z } from 'zod';
 import { buildSafeResponseSchema } from '../utils';
 
-/** Mismo dominio que el CHECK `mobile_app_versions_platform_check`. */
+/** Same domain as the `mobile_app_versions_platform_check` CHECK. */
 export const mobilePlatforms = ['ios', 'android'] as const;
 export const mobilePlatformSchema = z.enum(mobilePlatforms);
 export type TMobilePlatform = z.infer<typeof mobilePlatformSchema>;
 
-/** Versión publicada de la app móvil en una tienda. */
+/** Mobile app version published in a store. */
 export const mobileAppVersionSchema = z.object({
   id: z.string(),
   platform: mobilePlatformSchema,
   latestVersion: z.string(),
-  /** Por debajo de esta versión la app debe forzar la actualización. */
+  /** Below this version the app must force an update. */
   minSupportedVersion: z.string().nullable(),
   storeUrl: z.string(),
   isActive: z.boolean(),
@@ -26,10 +26,10 @@ export type TMobileAppVersionsResponse = z.infer<
   typeof mobileAppVersionsResponseSchema
 >;
 
-/** Query de `GET /mobile-app-versions`. */
-export const listarMobileAppVersionsQuerySchema = z.object({
+/** Query of `GET /mobile-app-versions`. */
+export const listMobileAppVersionsQuerySchema = z.object({
   platform: mobilePlatformSchema.optional(),
 });
-export type TListarMobileAppVersionsQuery = z.infer<
-  typeof listarMobileAppVersionsQuerySchema
+export type TListMobileAppVersionsQuery = z.infer<
+  typeof listMobileAppVersionsQuerySchema
 >;

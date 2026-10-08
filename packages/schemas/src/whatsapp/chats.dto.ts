@@ -1,78 +1,78 @@
 import { z } from 'zod';
 import { buildSafeResponseSchema } from '../utils';
 
-/** Límite de Meta para el cuerpo de un mensaje de texto. */
-export const LARGO_MAXIMO_MENSAJE = 4096;
+/** Meta's limit for the body of a text message. */
+export const MAX_MESSAGE_LENGTH = 4096;
 
-export const estadosConversacion = ['abierta', 'resuelta'] as const;
-export const estadosMensaje = [
-  'pendiente',
-  'enviado',
-  'entregado',
-  'leido',
-  'fallido',
+export const conversationStatuses = ['open', 'resolved'] as const;
+export const messageStatuses = [
+  'pending',
+  'sent',
+  'delivered',
+  'read',
+  'failed',
 ] as const;
 
-export const conversacionResumenSchema = z.object({
+export const conversationSummarySchema = z.object({
   id: z.string(),
-  contacto: z.object({
+  contact: z.object({
     id: z.string(),
-    /** Teléfono en dígitos; `null` si el cliente solo comparte su nombre de usuario. */
-    telefono: z.string().nullable(),
-    nombreWhatsApp: z.string().nullable(),
-    vinculadoASaba: z.boolean(),
+    /** Phone as digits; `null` if the customer only shares their username. */
+    phone: z.string().nullable(),
+    whatsAppName: z.string().nullable(),
+    linkedToSaba: z.boolean(),
   }),
-  estado: z.enum(estadosConversacion),
-  noLeidos: z.number().int(),
-  ultimoMensajeAt: z.string().nullable(),
-  ultimoMensajePreview: z.string().nullable(),
-  /** Hasta cuándo se puede responder con texto libre; `null` si el cliente nunca escribió. */
-  ventanaExpiraAt: z.string().nullable(),
+  status: z.enum(conversationStatuses),
+  unreadCount: z.number().int(),
+  lastMessageAt: z.string().nullable(),
+  lastMessagePreview: z.string().nullable(),
+  /** Until when free text replies are possible; `null` if the customer never wrote. */
+  windowExpiresAt: z.string().nullable(),
 });
-export type TConversacionResumen = z.infer<typeof conversacionResumenSchema>;
+export type TConversationSummary = z.infer<typeof conversationSummarySchema>;
 
-export const conversacionesResponseSchema = buildSafeResponseSchema(
-  z.array(conversacionResumenSchema)
+export const conversationsResponseSchema = buildSafeResponseSchema(
+  z.array(conversationSummarySchema)
 );
-export type TConversacionesResponse = z.infer<
-  typeof conversacionesResponseSchema
+export type TConversationsResponse = z.infer<
+  typeof conversationsResponseSchema
 >;
 
-export const mensajeChatSchema = z.object({
+export const chatMessageSchema = z.object({
   id: z.string(),
-  direccion: z.enum(['entrante', 'saliente']),
-  origen: z.enum(['cliente', 'sistema', 'celular', 'historial']),
-  tipo: z.string(),
-  cuerpo: z.string().nullable(),
-  estado: z.enum(estadosMensaje).nullable(),
-  errorDetalle: z.string().nullable(),
-  /** Hay un archivo en Meta: se pide a `GET /whatsapp/mensajes/:id/media`. */
-  tieneMedia: z.boolean(),
+  direction: z.enum(['inbound', 'outbound']),
+  source: z.enum(['customer', 'system', 'phone', 'history']),
+  type: z.string(),
+  body: z.string().nullable(),
+  status: z.enum(messageStatuses).nullable(),
+  errorDetail: z.string().nullable(),
+  /** There is a file in Meta: it is requested from `GET /whatsapp/messages/:id/media`. */
+  hasMedia: z.boolean(),
   waTimestamp: z.string(),
 });
-export type TMensajeChat = z.infer<typeof mensajeChatSchema>;
+export type TChatMessage = z.infer<typeof chatMessageSchema>;
 
-export const mensajesResponseSchema = buildSafeResponseSchema(
-  z.array(mensajeChatSchema)
+export const messagesResponseSchema = buildSafeResponseSchema(
+  z.array(chatMessageSchema)
 );
-export type TMensajesResponse = z.infer<typeof mensajesResponseSchema>;
+export type TMessagesResponse = z.infer<typeof messagesResponseSchema>;
 
-export const mensajeResponseSchema = buildSafeResponseSchema(mensajeChatSchema);
-export type TMensajeResponse = z.infer<typeof mensajeResponseSchema>;
+export const messageResponseSchema = buildSafeResponseSchema(chatMessageSchema);
+export type TMessageResponse = z.infer<typeof messageResponseSchema>;
 
-/** Respuesta de las acciones que no devuelven datos (`POST …/leida`). */
-export const sinDatosResponseSchema = buildSafeResponseSchema(z.null());
-export type TSinDatosResponse = z.infer<typeof sinDatosResponseSchema>;
+/** Response of the actions that return no data (`POST …/read`). */
+export const emptyResponseSchema = buildSafeResponseSchema(z.null());
+export type TEmptyResponse = z.infer<typeof emptyResponseSchema>;
 
-/** Body de `POST /whatsapp/conversaciones/:id/mensajes`. */
-export const enviarMensajeSchema = z.object({
-  cuerpo: z
+/** Body of `POST /whatsapp/conversations/:id/messages`. */
+export const sendMessageSchema = z.object({
+  body: z
     .string()
     .trim()
     .min(1, 'Escribe un mensaje.')
     .max(
-      LARGO_MAXIMO_MENSAJE,
-      `El mensaje no puede pasar de ${LARGO_MAXIMO_MENSAJE} caracteres.`
+      MAX_MESSAGE_LENGTH,
+      `El mensaje no puede pasar de ${MAX_MESSAGE_LENGTH} caracteres.`
     ),
 });
-export type TEnviarMensaje = z.infer<typeof enviarMensajeSchema>;
+export type TSendMessage = z.infer<typeof sendMessageSchema>;

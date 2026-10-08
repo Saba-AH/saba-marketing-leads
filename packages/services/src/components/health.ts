@@ -3,9 +3,9 @@ import type { Safe } from '@repo/utils';
 import type { HttpClient, HttpRequestOptions } from '../http';
 
 /**
- * HealthService — estado de la API.
+ * HealthService — API status.
  *
- * No lleva token: es el único endpoint que el cliente consulta antes de autenticarse.
+ * It carries no token: it is the only endpoint the client queries before authenticating.
  */
 export class HealthService {
   private readonly basePath = '/v1/health';

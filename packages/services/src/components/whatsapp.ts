@@ -1,95 +1,95 @@
 import {
-  clienteSabaChatResponseSchema,
-  conversacionesResponseSchema,
-  mensajeResponseSchema,
-  mensajesResponseSchema,
-  sinDatosResponseSchema,
-  type TClienteSabaChat,
-  type TConversacionResumen,
-  type TEnviarMensaje,
-  type TMensajeChat,
+  chatSabaCustomersResponseSchema,
+  conversationsResponseSchema,
+  emptyResponseSchema,
+  messageResponseSchema,
+  messagesResponseSchema,
+  type TChatMessage,
+  type TChatSabaCustomers,
+  type TConversationSummary,
+  type TSendMessage,
 } from '@repo/schemas';
 import type { Safe } from '@repo/utils';
 import type { HttpClient, HttpRequestOptions } from '../http';
 
-/** WhatsAppService — chats de WhatsApp: conversaciones, mensajes y respuestas. */
+/** WhatsAppService — WhatsApp chats: conversations, messages and replies. */
 export class WhatsAppService {
-  private readonly basePath = '/v1/whatsapp/conversaciones';
+  private readonly basePath = '/v1/whatsapp/conversations';
 
   constructor(private readonly httpClient: HttpClient) {}
 
-  async listarConversaciones(
+  async listConversations(
     options?: HttpRequestOptions
-  ): Promise<Safe<TConversacionResumen[]>> {
+  ): Promise<Safe<TConversationSummary[]>> {
     return await this.httpClient.get(
       this.basePath,
       undefined,
       options,
-      conversacionesResponseSchema
+      conversationsResponseSchema
     );
   }
 
-  async listarMensajes(
+  async listMessages(
     conversationId: string,
     options?: HttpRequestOptions
-  ): Promise<Safe<TMensajeChat[]>> {
+  ): Promise<Safe<TChatMessage[]>> {
     return await this.httpClient.get(
-      `${this.basePath}/${encodeURIComponent(conversationId)}/mensajes`,
+      `${this.basePath}/${encodeURIComponent(conversationId)}/messages`,
       undefined,
       options,
-      mensajesResponseSchema
+      messagesResponseSchema
     );
   }
 
-  async enviarMensaje(
+  async sendMessage(
     conversationId: string,
-    datos: TEnviarMensaje,
+    data: TSendMessage,
     options?: HttpRequestOptions
-  ): Promise<Safe<TMensajeChat>> {
+  ): Promise<Safe<TChatMessage>> {
     return await this.httpClient.post(
-      `${this.basePath}/${encodeURIComponent(conversationId)}/mensajes`,
-      datos,
+      `${this.basePath}/${encodeURIComponent(conversationId)}/messages`,
+      data,
       undefined,
       options,
-      mensajeResponseSchema
+      messageResponseSchema
     );
   }
 
-  async marcarLeida(
+  async markAsRead(
     conversationId: string,
     options?: HttpRequestOptions
   ): Promise<Safe<null>> {
     return await this.httpClient.post(
-      `${this.basePath}/${encodeURIComponent(conversationId)}/leida`,
+      `${this.basePath}/${encodeURIComponent(conversationId)}/read`,
       undefined,
       undefined,
       options,
-      sinDatosResponseSchema
+      emptyResponseSchema
     );
   }
 
-  async indicarEscribiendo(
+  async sendTypingIndicator(
     conversationId: string,
     options?: HttpRequestOptions
   ): Promise<Safe<null>> {
     return await this.httpClient.post(
-      `${this.basePath}/${encodeURIComponent(conversationId)}/escribiendo`,
+      `${this.basePath}/${encodeURIComponent(conversationId)}/typing`,
       undefined,
       undefined,
       options,
-      sinDatosResponseSchema
+      emptyResponseSchema
     );
   }
 
-  async obtenerClienteSaba(
+  async getSabaCustomer(
     conversationId: string,
     options?: HttpRequestOptions
-  ): Promise<Safe<TClienteSabaChat>> {
+  ): Promise<Safe<TChatSabaCustomers>> {
     return await this.httpClient.get(
-      `${this.basePath}/${encodeURIComponent(conversationId)}/cliente-saba`,
+      `${this.basePath}/${encodeURIComponent(conversationId)}/saba-customer`,
       undefined,
       options,
-      clienteSabaChatResponseSchema
+      chatSabaCustomersResponseSchema
     );
   }
 }

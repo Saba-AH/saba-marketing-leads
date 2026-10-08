@@ -4,9 +4,9 @@ import { cn } from '@repo/ui/lib/utils';
 import * as React from 'react';
 
 /**
- * El contenedor con `overflow-x-auto` es parte del componente: una tabla con
- * más columnas que ancho disponible debe scrollear ella sola, sin empujar el
- * scroll horizontal a la página.
+ * The `overflow-x-auto` container is part of the component: a table with more
+ * columns than available width must scroll on its own, without pushing
+ * horizontal scroll onto the page.
  */
 export default function Table({
   className,

@@ -23,11 +23,11 @@ import { safe } from './safe-functions';
  * };
  * ```
  */
-// `RequestInfo` no siempre existe como global ambiental — depende de la
-// combinación exacta de versiones de @types/node/undici-types resueltas por
-// npm (varía entre un install completo y uno pruneado por `turbo prune`,
-// como el que arma cada Dockerfile). Derivarlo de la firma real de `fetch`
-// evita depender de ese nombre.
+// `RequestInfo` does not always exist as an ambient global — it depends on the
+// exact combination of @types/node/undici-types versions npm resolves (it
+// varies between a full install and one pruned by `turbo prune`, like the one
+// each Dockerfile builds). Deriving it from `fetch`'s real signature avoids
+// depending on that name.
 type FetchInput = Parameters<typeof fetch>[0];
 
 export async function safeFetch(input: FetchInput | URL, init?: RequestInit) {

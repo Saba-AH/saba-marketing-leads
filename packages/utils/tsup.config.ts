@@ -6,8 +6,8 @@ export default defineConfig((options) => ({
   sourcemap: true,
   minify: true,
   splitting: false,
-  // En `--watch` no se limpia: borrar dist/ al arrancar deja a `nest start
-  // --watch` compilando sin los .d.ts del package y falla el primer build.
+  // Not cleaned in `--watch`: deleting dist/ at startup leaves `nest start
+  // --watch` compiling without the package's .d.ts and the first build fails.
   clean: !options.watch,
   format: ['cjs', 'esm'],
   outDir: 'dist',
