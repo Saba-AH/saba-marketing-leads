@@ -29,12 +29,14 @@ Cuenta personal de Facebook (tú)              ← identidad: con ella entras a 
 
 | Término | Qué es | Dónde se ve |
 |---|---|---|
-| **Portafolio comercial** (Business portfolio) | La empresa en Meta. Es **dueño** de la app, la WABA, el número y la facturación. Se verifica con documentos legales. | business.facebook.com |
-| **App** | Lo que nuestro código usa para autenticarse ante la Graph API. La **crea una persona**, pero **pertenece a un portafolio**. | developers.facebook.com → Mis apps |
-| **WABA** (WhatsApp Business Account) | Cuenta de WhatsApp de la empresa. Contiene números y plantillas. Nada que ver con "Saba": es una sigla de Meta. | WhatsApp Manager / Configuración del negocio → Cuentas de WhatsApp |
-| **Phone Number ID** | ID interno del número. La API **envía usando este ID**, no el número visible. | Developers → WhatsApp → Configuración de la API |
-| **Usuario del sistema** | Usuario del portafolio que no es una persona. Su token **no vence** y no depende de que alguien siga en la empresa. | business.facebook.com → Usuarios → Usuarios del sistema |
-| **Webhook** | URL de nuestra API a la que Meta avisa cada mensaje entrante y cada cambio de estado. | Developers → WhatsApp → Configuración |
+| **Portafolio comercial** (Business portfolio) | La empresa en Meta. Es **dueño** de la app, la WABA, el número y la facturación. Se verifica con documentos legales. | [Configuración del negocio](https://business.facebook.com/settings) (elegir *Saba Global Services LLC* en el selector de arriba a la izquierda) |
+| **App** | Lo que nuestro código usa para autenticarse ante la Graph API. La **crea una persona**, pero **pertenece a un portafolio**. | [Mis apps](https://developers.facebook.com/apps/) · [Saba-Chat](https://developers.facebook.com/apps/2332812997518690/) |
+| **WABA** (WhatsApp Business Account) | Cuenta de WhatsApp de la empresa. Contiene números y plantillas. Nada que ver con "Saba": es una sigla de Meta. | [WhatsApp Manager](https://business.facebook.com/wa/manage/home/) · [Configuración del negocio → Cuentas de WhatsApp](https://business.facebook.com/settings/whatsapp-business-accounts) |
+| **Phone Number ID** | ID interno del número. La API **envía usando este ID**, no el número visible. | [Saba-Chat → WhatsApp → Configuración de la API](https://developers.facebook.com/apps/2332812997518690/whatsapp-business/wa-dev-console/) |
+| **Usuario del sistema** | Usuario del portafolio que no es una persona. Su token **no vence** y no depende de que alguien siga en la empresa. | [Configuración del negocio → Usuarios del sistema](https://business.facebook.com/settings/system-users) |
+| **Webhook** | URL de nuestra API a la que Meta avisa cada mensaje entrante y cada cambio de estado. | [Saba-Chat → WhatsApp → Configuración](https://developers.facebook.com/apps/2332812997518690/whatsapp-business/wa-settings/) |
+
+Los enlaces de *developers.facebook.com* llevan el ID de Saba-Chat (`2332812997518690`): para otra app, cambiar ese número. Si Meta redirige a otra pantalla, buscar la sección por nombre en el menú izquierdo.
 
 **Regla de oro:** todo (app, WABA, número, usuario del sistema) tiene que estar en el **mismo portafolio**. Un usuario del sistema solo puede recibir activos de su propio portafolio.
 
