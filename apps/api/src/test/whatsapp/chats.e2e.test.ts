@@ -17,6 +17,9 @@ import { DrizzleModule } from '../../infrastructure/database/drizzle.module';
 import { ErrorsModule } from '../../infrastructure/errors/ErrorsModule';
 import { LoggingModule } from '../../infrastructure/logging/LoggingModule';
 import type { AuthenticatedUser } from '../../modules/auth/domain/AuthSession';
+import type { ClienteSaba } from '../../modules/sabaClientes/domain/ClienteSaba';
+import { SabaSinPermisoException } from '../../modules/sabaClientes/domain/exceptions/sabaClientesExceptions';
+import { SABA_CLIENTES_TOKENS } from '../../modules/sabaClientes/tokens';
 import {
   type ArchivoMedia,
   ErrorEnvioMeta,
@@ -51,6 +54,8 @@ const AGENTE: AuthenticatedUser = {
 const enviarTexto = vi.fn<(to: string, cuerpo: string) => Promise<string>>();
 const descargarMedia = vi.fn<(mediaId: string) => Promise<ArchivoMedia>>();
 const indicarEscribiendo = vi.fn<(wamid: string) => Promise<void>>();
+const buscarPorTelefono =
+  vi.fn<(telefono: string, credencial: string) => Promise<ClienteSaba[]>>();
 
 function archivo(mimeType: string, contenido: string): ArchivoMedia {
   const bytes = new TextEncoder().encode(contenido);
@@ -111,6 +116,8 @@ describe('chats de WhatsApp (API)', () => {
     })
       .overrideProvider(WHATSAPP_TOKENS.WhatsAppCloud)
       .useValue({ enviarTexto, descargarMedia, indicarEscribiendo })
+      .overrideProvider(SABA_CLIENTES_TOKENS.Reader)
+      .useValue({ buscarPorTelefono })
       .overrideProvider(WHATSAPP_TOKENS.Clock)
       .useValue({ now: () => AHORA })
       .compile();
@@ -141,6 +148,7 @@ describe('chats de WhatsApp (API)', () => {
     enviarTexto.mockReset();
     descargarMedia.mockReset();
     indicarEscribiendo.mockReset();
+    buscarPorTelefono.mockReset();
   });
 
   it('lista las conversaciones con la de actividad más reciente primero y su ventana', async () => {
@@ -481,6 +489,63 @@ describe('chats de WhatsApp (API)', () => {
       );
 
       expect(res.status).toBe(200);
+    });
+  });
+
+  describe('cliente de Saba del chat', () => {
+    const ana: ClienteSaba = {
+      id: 'p1',
+      nombre: 'Ana Pérez',
+      cedula: 'V12345678',
+      correo: null,
+      telefono: '04140000001',
+      ciudad: 'Caracas',
+      origen: 'web',
+      clienteDesde: '2026-01-01T00:00:00Z',
+      solicitudes: [],
+    };
+
+    it('busca en Saba con el teléfono del chat y la sesión del agente', async () => {
+      const id = await crearChat({ ultimoEntranteAt: HACE_UNA_HORA });
+      buscarPorTelefono.mockResolvedValue([ana]);
+
+      const res = await request(app.getHttpServer())
+        .get(`/whatsapp/conversaciones/${id}/cliente-saba`)
+        .set('Authorization', 'Bearer token-del-agente');
+
+      expect(res.status).toBe(200);
+      expect(buscarPorTelefono).toHaveBeenCalledWith(
+        '584140000001',
+        'token-del-agente'
+      );
+      expect(res.body.data).toEqual({ sinTelefono: false, clientes: [ana] });
+    });
+
+    it('no consulta Saba si el contacto solo comparte su nombre de usuario', async () => {
+      const id = await crearChat({
+        waId: null,
+        userId: 'VE.1',
+        ultimoEntranteAt: HACE_UNA_HORA,
+      });
+
+      const res = await request(app.getHttpServer())
+        .get(`/whatsapp/conversaciones/${id}/cliente-saba`)
+        .set('Authorization', 'Bearer t');
+
+      expect(res.body.data).toEqual({ sinTelefono: true, clientes: [] });
+      expect(buscarPorTelefono).not.toHaveBeenCalled();
+    });
+
+    it('explica cuando Saba no le da permiso al agente', async () => {
+      const id = await crearChat({ ultimoEntranteAt: HACE_UNA_HORA });
+      buscarPorTelefono.mockRejectedValue(new SabaSinPermisoException());
+
+      const res = await request(app.getHttpServer())
+        .get(`/whatsapp/conversaciones/${id}/cliente-saba`)
+        .set('Authorization', 'Bearer t');
+
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('SABA_CLIENTES_SIN_PERMISO');
     });
   });
 });

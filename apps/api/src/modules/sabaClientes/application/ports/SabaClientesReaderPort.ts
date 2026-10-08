@@ -1,10 +1,13 @@
-import type { ClienteSaba, ResumenClienteSaba } from '../../domain/ClienteSaba';
+import type { ClienteSaba } from '../../domain/ClienteSaba';
 
-/** Fachada de solo lectura sobre `profiles` y `applications` de Saba. */
+/** Fachada sobre el servidor de Saba: este repo ya no lee las tablas de Saba. */
 export interface SabaClientesReaderPort {
-  /** Perfiles cuyo teléfono coincide con el `wa_id`, el mejor candidato primero. */
-  buscarPorTelefono(waId: string): Promise<ClienteSaba[]>;
-  obtenerResumen(profileId: string): Promise<ResumenClienteSaba | null>;
-  /** Por nombre, apellido, cédula o teléfono; hasta 20 resultados. */
-  buscar(texto: string): Promise<ClienteSaba[]>;
+  /**
+   * Perfiles de Saba con ese teléfono, el más probable primero (máx. 5).
+   * `credencial` es el token de sesión del agente: Saba valida quién pregunta.
+   */
+  buscarPorTelefono(
+    telefono: string,
+    credencial: string
+  ): Promise<ClienteSaba[]>;
 }

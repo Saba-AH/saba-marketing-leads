@@ -1,6 +1,5 @@
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
-import { DrizzleSabaClientesReader } from '../../modules/sabaClientes/infrastructure/persistence/DrizzleSabaClientesReader';
 import { ProcesarWebhookEventoUseCase } from '../../modules/whatsapp/application/use-cases/ProcesarWebhookEventoUseCase';
 import {
   MAX_INTENTOS,
@@ -15,22 +14,13 @@ import {
   whatsappMessages,
   whatsappWebhookEvents,
 } from '../../modules/whatsapp/infrastructure/persistence/whatsapp.schema';
-import { SabaClientesCandidatosAdapter } from '../../modules/whatsapp/infrastructure/sabaClientes/SabaClientesCandidatosAdapter';
 import mensajeTextoEntrante from '../fixtures/whatsapp/mensajeTextoEntrante.json';
-import {
-  crearPerfilSaba,
-  crearSolicitudSaba,
-} from '../support/sabaClientesSeed';
 import { closeTestDb, getTestDb, resetDatabase } from '../support/testDatabase';
 
 const db = () => getTestDb();
 const eventos = () => new DrizzleWebhookEventRepository(db());
 const procesar = () =>
-  new ProcesarWebhookEventoUseCase(
-    new DrizzleInboxUnitOfWork(db()),
-    eventos(),
-    new SabaClientesCandidatosAdapter(new DrizzleSabaClientesReader(db()))
-  );
+  new ProcesarWebhookEventoUseCase(new DrizzleInboxUnitOfWork(db()), eventos());
 
 async function guardarEvento(campo: string, payload: unknown): Promise<string> {
   const [id] = await eventos().guardar([{ campo, payload }]);
@@ -247,116 +237,6 @@ describe('ProcesarWebhookEventoUseCase (contra Postgres)', () => {
     expect(evento).toMatchObject({ procesadoAt: null, intentos: 1 });
     expect(evento?.error).toContain('WHATSAPP_PAYLOAD_WEBHOOK_INVALIDO');
     expect(await db().select().from(whatsappContacts)).toEqual([]);
-  });
-});
-
-describe('vínculo con Saba al procesar (contra Postgres)', () => {
-  afterAll(async () => {
-    await closeTestDb();
-  });
-
-  beforeEach(async () => {
-    await resetDatabase();
-  });
-
-  async function contacto() {
-    const [fila] = await db().select().from(whatsappContacts);
-    return fila;
-  }
-
-  it('vincula al perfil de Saba con ese teléfono, prefiriendo el de solicitud activa', async () => {
-    await crearPerfilSaba(db(), {
-      nombre: 'Sin solicitud',
-      telefono: '+584140000001',
-    });
-    const activo = await crearPerfilSaba(db(), {
-      nombre: 'Activo',
-      telefono: '0414-0000001',
-    });
-    await crearSolicitudSaba(db(), activo, 'approved', new Date('2026-09-01'));
-
-    await procesar().execute(await guardarFixture());
-
-    expect(await contacto()).toMatchObject({
-      sabaProfileId: activo,
-      vinculoOrigen: 'auto',
-    });
-  });
-
-  it('vincula en un mensaje posterior a un lead que se registró en Saba después', async () => {
-    await procesar().execute(
-      await guardarEvento(
-        'messages',
-        mensajeDeTexto('wamid.1', T0, { from: '584140000001' })
-      )
-    );
-    expect(await contacto()).toMatchObject({
-      sabaProfileId: null,
-      vinculoOrigen: null,
-    });
-
-    const perfil = await crearPerfilSaba(db(), {
-      nombre: 'Nuevo',
-      telefono: '04140000001',
-    });
-    await procesar().execute(
-      await guardarEvento(
-        'messages',
-        mensajeDeTexto('wamid.2', T0 + 60, { from: '584140000001' })
-      )
-    );
-
-    expect(await contacto()).toMatchObject({
-      sabaProfileId: perfil,
-      vinculoOrigen: 'auto',
-    });
-  });
-
-  it('no pisa un vínculo que el agente corrigió a mano', async () => {
-    await procesar().execute(
-      await guardarEvento(
-        'messages',
-        mensajeDeTexto('wamid.1', T0, { from: '584140000001' })
-      )
-    );
-    await db()
-      .update(whatsappContacts)
-      .set({ vinculoOrigen: 'manual', sabaProfileId: null });
-    await crearPerfilSaba(db(), {
-      nombre: 'Coincide',
-      telefono: '04140000001',
-    });
-
-    await procesar().execute(
-      await guardarEvento(
-        'messages',
-        mensajeDeTexto('wamid.2', T0 + 60, { from: '584140000001' })
-      )
-    );
-
-    expect(await contacto()).toMatchObject({
-      sabaProfileId: null,
-      vinculoOrigen: 'manual',
-    });
-  });
-
-  it('deja sin vincular a un cliente que solo comparte su user_id', async () => {
-    await crearPerfilSaba(db(), {
-      nombre: 'Cualquiera',
-      telefono: '04140000001',
-    });
-
-    await procesar().execute(
-      await guardarEvento(
-        'messages',
-        mensajeDeTexto('wamid.1', T0, { from_user_id: 'VE.1' })
-      )
-    );
-
-    expect(await contacto()).toMatchObject({
-      userId: 'VE.1',
-      sabaProfileId: null,
-    });
   });
 });
 

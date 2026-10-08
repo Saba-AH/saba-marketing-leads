@@ -1,5 +1,6 @@
 import { authMessages } from '../../modules/auth/infrastructure/i18n/messages';
 import { leadsMessages } from '../../modules/leads/infrastructure/i18n/messages';
+import { sabaClientesMessages } from '../../modules/sabaClientes/infrastructure/i18n/messages';
 import { whatsappMessages } from '../../modules/whatsapp/infrastructure/i18n/messages';
 
 /**
@@ -11,11 +12,13 @@ import { whatsappMessages } from '../../modules/whatsapp/infrastructure/i18n/mes
 export type DomainErrorCode =
   | keyof typeof authMessages
   | keyof typeof leadsMessages
+  | keyof typeof sabaClientesMessages
   | keyof typeof whatsappMessages;
 
 export const domainMessages: Record<DomainErrorCode, string> = {
   ...authMessages,
   ...leadsMessages,
+  ...sabaClientesMessages,
   ...whatsappMessages,
 };
 

@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { SabaClientesModule } from '../sabaClientes/module';
+import { SABA_CLIENTES_TOKENS } from '../sabaClientes/tokens';
 import { IndicarEscribiendoUseCase } from './application/use-cases/IndicarEscribiendoUseCase';
 import { ListarConversacionesUseCase } from './application/use-cases/ListarConversacionesUseCase';
 import { ListarMensajesUseCase } from './application/use-cases/ListarMensajesUseCase';
 import { MarcarLeidaUseCase } from './application/use-cases/MarcarLeidaUseCase';
+import { ObtenerClienteSabaUseCase } from './application/use-cases/ObtenerClienteSabaUseCase';
 import { ObtenerMediaUseCase } from './application/use-cases/ObtenerMediaUseCase';
 import { ProcesarWebhookEventoUseCase } from './application/use-cases/ProcesarWebhookEventoUseCase';
 import { RecibirWebhookUseCase } from './application/use-cases/RecibirWebhookUseCase';
@@ -19,7 +21,6 @@ import { SystemClock } from './infrastructure/external/SystemClock';
 import { DrizzleChatsRepository } from './infrastructure/persistence/DrizzleChatsRepository';
 import { DrizzleInboxUnitOfWork } from './infrastructure/persistence/DrizzleInboxUnitOfWork';
 import { DrizzleWebhookEventRepository } from './infrastructure/persistence/DrizzleWebhookEventRepository';
-import { SabaClientesCandidatosAdapter } from './infrastructure/sabaClientes/SabaClientesCandidatosAdapter';
 import { ChatsController } from './infrastructure/web/ChatsController';
 import { MediaController } from './infrastructure/web/MediaController';
 import { WhatsAppWebhookController } from './infrastructure/web/WhatsAppWebhookController';
@@ -62,8 +63,13 @@ import { WHATSAPP_TOKENS } from './tokens';
       useClass: DrizzleInboxUnitOfWork,
     },
     {
-      provide: WHATSAPP_TOKENS.ClienteSabaReader,
-      useClass: SabaClientesCandidatosAdapter,
+      provide: WHATSAPP_TOKENS.ClientesSaba,
+      useExisting: SABA_CLIENTES_TOKENS.Reader,
+    },
+    ObtenerClienteSabaUseCase,
+    {
+      provide: WHATSAPP_TOKENS.ObtenerClienteSaba,
+      useExisting: ObtenerClienteSabaUseCase,
     },
     ProcesarWebhookEventoUseCase,
     {

@@ -1,10 +1,12 @@
 import type {
+  TClienteSabaChatResponse,
   TConversacionesResponse,
   TConversacionResumen,
   TMensajeChat,
   TMensajeResponse,
   TMensajesResponse,
 } from '@repo/schemas';
+import type { ClienteSabaDelChat } from '../../application/ports/in/ObtenerClienteSabaPort';
 import {
   type ConversacionResumen,
   type MensajeChat,
@@ -54,4 +56,10 @@ export function toMensajesResponse(mensajes: MensajeChat[]): TMensajesResponse {
 
 export function toMensajeResponse(mensaje: MensajeChat): TMensajeResponse {
   return { success: true, data: toMensaje(mensaje) };
+}
+
+export function toClienteSabaChatResponse(
+  resultado: ClienteSabaDelChat
+): TClienteSabaChatResponse {
+  return { success: true, data: resultado };
 }

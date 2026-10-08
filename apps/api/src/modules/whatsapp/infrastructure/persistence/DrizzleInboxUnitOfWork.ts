@@ -5,7 +5,6 @@ import {
   DRIZZLE_CLIENT,
 } from '../../../../infrastructure/database/drizzle.module';
 import type {
-  ContactoInbox,
   EventoWebhookPendiente,
   InboxTxScope,
   InboxUnitOfWork,
@@ -56,7 +55,7 @@ class DrizzleInboxScope implements InboxTxScope {
   async asegurarContacto(
     { waId, userId }: IdentidadContacto,
     profileName: string | null
-  ): Promise<ContactoInbox> {
+  ): Promise<string> {
     const coincidencias: SQL[] = [];
     if (userId) coincidencias.push(eq(whatsappContacts.userId, userId));
     if (waId) coincidencias.push(eq(whatsappContacts.waId, waId));
@@ -66,7 +65,6 @@ class DrizzleInboxScope implements InboxTxScope {
         id: whatsappContacts.id,
         waId: whatsappContacts.waId,
         userId: whatsappContacts.userId,
-        vinculoOrigen: whatsappContacts.vinculoOrigen,
       })
       .from(whatsappContacts)
       .where(or(...coincidencias))
@@ -78,7 +76,7 @@ class DrizzleInboxScope implements InboxTxScope {
         .values({ waId, userId, profileName })
         .returning({ id: whatsappContacts.id });
       if (!creado) throw new Error('no se creó el contacto');
-      return { id: creado.id, waId, vinculoOrigen: null };
+      return creado.id;
     }
 
     // Si el teléfono y el user_id caen en contactos distintos, se usa el del
@@ -97,27 +95,7 @@ class DrizzleInboxScope implements InboxTxScope {
         updatedAt: new Date(),
       })
       .where(eq(whatsappContacts.id, contacto.id));
-    return {
-      id: contacto.id,
-      waId: contacto.waId ?? (completar ? waId : null),
-      vinculoOrigen: contacto.vinculoOrigen,
-    };
-  }
-
-  async vincularAutomaticamente(
-    contactId: string,
-    sabaProfileId: string
-  ): Promise<void> {
-    // Nunca pisa un vínculo existente: el agente pudo corregirlo a mano.
-    await this.tx
-      .update(whatsappContacts)
-      .set({ sabaProfileId, vinculoOrigen: 'auto', updatedAt: new Date() })
-      .where(
-        and(
-          eq(whatsappContacts.id, contactId),
-          isNull(whatsappContacts.vinculoOrigen)
-        )
-      );
+    return contacto.id;
   }
 
   async asegurarConversacion(contactId: string): Promise<string> {

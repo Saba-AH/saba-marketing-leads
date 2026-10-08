@@ -7,7 +7,7 @@ export const WHATSAPP_TOKENS = {
   VerificarSuscripcionWebhook: Symbol('VerificarSuscripcionWebhookPort'),
   RecibirWebhook: Symbol('RecibirWebhookPort'),
   InboxUnitOfWork: Symbol('InboxUnitOfWork'),
-  ClienteSabaReader: Symbol('ClienteSabaReaderPort'),
+  ClientesSaba: Symbol('ClientesSabaPort'),
   ProcesarWebhookEvento: Symbol('ProcesarWebhookEventoPort'),
   ReprocesarPendientes: Symbol('ReprocesarPendientesPort'),
   ChatsRepository: Symbol('ChatsRepositoryPort'),
@@ -19,4 +19,5 @@ export const WHATSAPP_TOKENS = {
   MarcarLeida: Symbol('MarcarLeidaPort'),
   ObtenerMedia: Symbol('ObtenerMediaPort'),
   IndicarEscribiendo: Symbol('IndicarEscribiendoPort'),
+  ObtenerClienteSaba: Symbol('ObtenerClienteSabaPort'),
 } as const;
