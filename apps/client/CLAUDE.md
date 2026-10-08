@@ -104,6 +104,7 @@ Estándares específicos del cliente (se cargan por referencia):
 @.claude/rules/react-query.md
 @.claude/rules/shadcn-tokens.md
 @.claude/rules/components.md
+@.claude/rules/english-naming.md
 
 
 ---
