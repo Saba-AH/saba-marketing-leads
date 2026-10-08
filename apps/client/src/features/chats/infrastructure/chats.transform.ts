@@ -1,55 +1,57 @@
 import type {
-  TClienteSabaChat,
-  TConversacionResumen,
-  TMensajeChat,
+  TChatMessage,
+  TChatSabaCustomers,
+  TConversationSummary,
 } from '@repo/schemas';
-import type { Conversacion, Mensaje } from '../domain/chat.model';
-import type { ClienteSabaDelChat } from '../domain/clienteSaba.model';
+import type { Conversation, Message } from '../domain/chat.model';
+import type { ChatSabaCustomers } from '../domain/sabaCustomer.model';
 
-/** El navegador lo pide al BFF, que agrega la sesión; nunca a Meta directo. */
-function urlMedia(mensajeId: string): string {
-  return `/api/backend/v1/whatsapp/mensajes/${encodeURIComponent(mensajeId)}/media`;
+/** The browser requests it from the BFF, which adds the session; never from Meta directly. */
+function urlMedia(messageId: string): string {
+  return `/api/backend/v1/whatsapp/messages/${encodeURIComponent(messageId)}/media`;
 }
 
-function fecha(iso: string | null): Date | null {
+function date(iso: string | null): Date | null {
   return iso ? new Date(iso) : null;
 }
 
-export function toConversacionDomain(dto: TConversacionResumen): Conversacion {
+export function toConversationDomain(dto: TConversationSummary): Conversation {
   return {
     id: dto.id,
-    contacto: { ...dto.contacto },
-    estado: dto.estado,
-    noLeidos: dto.noLeidos,
-    ultimoMensajeAt: fecha(dto.ultimoMensajeAt),
-    ultimoMensajePreview: dto.ultimoMensajePreview,
-    ventanaExpiraAt: fecha(dto.ventanaExpiraAt),
+    contact: { ...dto.contact },
+    status: dto.status,
+    unreadCount: dto.unreadCount,
+    lastMessageAt: date(dto.lastMessageAt),
+    lastMessagePreview: dto.lastMessagePreview,
+    windowExpiresAt: date(dto.windowExpiresAt),
   };
 }
 
-export function toMensajeDomain(dto: TMensajeChat): Mensaje {
+export function toMessageDomain(dto: TChatMessage): Message {
   return {
     id: dto.id,
-    direccion: dto.direccion,
-    origen: dto.origen,
-    tipo: dto.tipo,
-    cuerpo: dto.cuerpo,
-    estado: dto.estado,
-    errorDetalle: dto.errorDetalle,
-    mediaUrl: dto.tieneMedia ? urlMedia(dto.id) : null,
+    direction: dto.direction,
+    source: dto.source,
+    type: dto.type,
+    body: dto.body,
+    status: dto.status,
+    errorDetail: dto.errorDetail,
+    mediaUrl: dto.hasMedia ? urlMedia(dto.id) : null,
     waTimestamp: new Date(dto.waTimestamp),
   };
 }
 
-export function toClienteSabaDomain(dto: TClienteSabaChat): ClienteSabaDelChat {
+export function toSabaCustomerDomain(
+  dto: TChatSabaCustomers
+): ChatSabaCustomers {
   return {
-    sinTelefono: dto.sinTelefono,
-    clientes: dto.clientes.map((c) => ({
+    noPhone: dto.noPhone,
+    customers: dto.customers.map((c) => ({
       ...c,
-      clienteDesde: fecha(c.clienteDesde),
-      solicitudes: c.solicitudes.map((s) => ({
+      customerSince: date(c.customerSince),
+      applications: c.applications.map((s) => ({
         ...s,
-        creadaAt: new Date(s.creadaAt),
+        createdAt: new Date(s.createdAt),
       })),
     })),
   };

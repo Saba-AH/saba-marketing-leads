@@ -1,6 +1,6 @@
 import React from 'react';
 
-/** Nombre principal de una fila (`.dt-name`). */
+/** A row's main name (`.dt-name`). */
 export function DataTableName({
   children,
 }: {

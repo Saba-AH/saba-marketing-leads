@@ -8,8 +8,8 @@ const createJestConfig = nextJest({
 });
 
 /**
- * Paquetes que se publican solo como ESM y que Jest tiene que transformar.
- * MSW 2 arrastra varios; sin esto, `import`/`export` explotan al cargarlos.
+ * Packages published as ESM only that Jest has to transform. MSW 2 pulls in
+ * several; without this, `import`/`export` blow up when loading them.
  */
 const ESM_ONLY_PACKAGES = [
   '@repo/ui',
@@ -23,25 +23,25 @@ const config = {
   coverageProvider: 'v8',
   testEnvironment: 'jsdom',
   /**
-   * Los 5 s de Jest se quedan cortos con los modales: un formulario con el
-   * catálogo de países (99 opciones, y dos bloques en el caso internacional)
-   * más una decena de interacciones de `userEvent` los supera cuando Turbo
-   * corre las suites en paralelo con las del API. Pasaban aislados y fallaban
-   * en la corrida completa — el flake que se venía viendo en `clienteModal`.
+   * Jest's 5 s fall short with modals: a form with the country catalog (99
+   * options, and two blocks in the international case) plus a dozen `userEvent`
+   * interactions exceeds them when Turbo runs the suites in parallel with the
+   * API ones. They passed in isolation and failed in the full run — the flake
+   * that kept showing up in `clienteModal`.
    */
   testTimeout: 15_000,
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   testMatch: ['**/__tests__/**/*.(test|spec).[jt]s?(x)'],
-  // El build SSR (`output: 'standalone'`) emite un package.json anidado en
-  // .next/; sin esto, jest-haste-map lo colisiona con el del workspace.
+  // The SSR build (`output: 'standalone'`) emits a nested package.json in .next/;
+  // without this, jest-haste-map collides it with the workspace one.
   modulePathIgnorePatterns: ['<rootDir>/.next/'],
-  // Mismo alias que tsconfig: `@/` es siempre `src/`.
+  // Same alias as tsconfig: `@/` is always `src/`.
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   setupFiles: ['<rootDir>/jest.polyfills.ts'],
   testEnvironmentOptions: {
-    // Requerido por msw/node dentro de jsdom.
+    // Required by msw/node inside jsdom.
     customExportConditions: [''],
   },
 };
@@ -49,9 +49,9 @@ const config = {
 const nextConfigFactory = createJestConfig(config);
 
 /**
- * next/jest **antepone** su propio patrón de `node_modules`, así que declarar
- * `transformIgnorePatterns` en la config de arriba no tendría efecto: hay que
- * reemplazarlo después de que next/jest arme la configuración.
+ * next/jest **prepends** its own `node_modules` pattern, so declaring
+ * `transformIgnorePatterns` in the config above would have no effect: it has
+ * to be replaced after next/jest builds the configuration.
  */
 export default async function jestConfig() {
   const resolved = await nextConfigFactory();

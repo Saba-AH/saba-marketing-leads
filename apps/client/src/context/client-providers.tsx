@@ -8,8 +8,7 @@ interface ClientProvidersProps {
 }
 
 /**
- * Providers de navegador. El estado de servidor lo administra React Query desde
- * el cliente.
+ * Browser providers. Server state is managed by React Query from the client.
  */
 export function ClientProviders({ children }: ClientProvidersProps) {
   return (

@@ -27,32 +27,32 @@ src/shared/ui/components/
 │   ├── DataTableSub.tsx
 │   ├── dataTableContext.ts
 │   └── index.ts            # exporta todos los sub-componentes del grupo
-├── form/                   # primitivos de formulario (Campo, RadioRow, etc.)
-│   ├── Campo.tsx
+├── form/                   # primitivos de formulario (Field, RadioRow, etc.)
+│   ├── Field.tsx
 │   ├── RadioRow.tsx
 │   ├── RadioOpt.tsx
 │   ├── BrandChip.tsx
 │   ├── AlertBanner.tsx
-│   ├── BotonAgregarBloque.tsx
-│   ├── campoClases.ts
+│   ├── AddBlockButton.tsx
+│   ├── fieldClasses.ts
 │   └── index.ts
-├── EstadoPill.tsx          # componentes sin sub-estructura propia
+├── ActiveStatusPill.tsx          # componentes sin sub-estructura propia
 ├── Pill.tsx
 ├── SearchBox.tsx
-├── Paginacion.tsx
+├── TablePagination.tsx
 ├── FiltersRow.tsx
-├── FiltroSelect.tsx
-├── FiltroChips.tsx
+├── SelectFilter.tsx
+├── ChipsFilter.tsx
 ├── FilterChip.tsx
-├── LimpiarFiltros.tsx
-├── CampoDeChips.tsx
-├── CampoHint.tsx
+├── ClearFilters.tsx
+├── ChipsField.tsx
+├── FieldHint.tsx
 ├── EmptyState.tsx
 ├── ErrorState.tsx
 ├── PageHeader.tsx
 ├── PageShell.tsx
 ├── ModalFooter.tsx
-├── Proximamente.tsx
+├── ComingSoon.tsx
 └── index.ts                # barrel raíz: re-exporta todo
 ```
 
@@ -83,7 +83,7 @@ export { DataTableContext } from './dataTableContext';
 // src/shared/ui/components/index.ts
 export * from './dataTable';
 export * from './form';
-export { EstadoPill } from './EstadoPill';
+export { ActiveStatusPill } from './ActiveStatusPill';
 export { Pill } from './Pill';
 export { SearchBox } from './SearchBox';
 // ... una línea por componente raíz
@@ -93,7 +93,7 @@ Los imports en features y pages siempre vienen del barrel raíz:
 
 ```tsx
 // ✅ OBLIGATORIO
-import { DataTable, DataTableHead, Campo } from '@/shared/ui/components';
+import { DataTable, DataTableHead, Field } from '@/shared/ui/components';
 
 // ❌ PROHIBIDO — import profundo saltándose el barrel
 import { DataTable } from '@/shared/ui/components/dataTable/DataTable';
@@ -109,11 +109,11 @@ componente nuevo. No es opcional.
 | Categoría | Ejemplos existentes | Qué más puede ir |
 |-----------|---------------------|-----------------|
 | **Tablas** | `DataTable` y sub-componentes | columnas genéricas |
-| **Formularios** | `Campo`, `RadioRow`, `BrandChip` | formularios con RHF (ver abajo) |
-| **Filtros** | `SearchBox`, `FiltroSelect`, `FiltersRow`, `FilterChip` | cualquier filtro nuevo |
-| **Estado / feedback** | `EmptyState`, `ErrorState`, `EstadoPill`, `Pill` | loaders, toasts |
+| **Formularios** | `Field`, `RadioRow`, `BrandChip` | formularios con RHF (ver abajo) |
+| **Filtros** | `SearchBox`, `SelectFilter`, `FiltersRow`, `FilterChip` | cualquier filtro nuevo |
+| **Estado / feedback** | `EmptyState`, `ErrorState`, `ActiveStatusPill`, `Pill` | loaders, toasts |
 | **Layout** | `PageHeader`, `PageShell`, `ModalFooter` | secciones, sidebars |
-| **Utilidades** | `Paginacion`, `Proximamente`, `LimpiarFiltros` | — |
+| **Utilidades** | `TablePagination`, `ComingSoon`, `ClearFilters` | — |
 
 ---
 
@@ -327,7 +327,7 @@ export function UnidadForm({
             <FormItem>
               <FormLabel>Nombre de la unidad</FormLabel>
               <FormControl>
-                <input className={CONTROL_CAMPO} placeholder="Ej. Producto" {...field} />
+                <input className={FIELD_CONTROL} placeholder="Ej. Producto" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

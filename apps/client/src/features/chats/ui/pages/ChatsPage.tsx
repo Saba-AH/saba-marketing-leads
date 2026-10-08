@@ -3,29 +3,26 @@
 import { cn } from '@repo/ui/lib/utils';
 import { MessageSquare } from 'lucide-react';
 import React from 'react';
-import { useConversaciones } from '../../application/queries/useConversaciones.query';
-import { HiloConversacion } from '../widgets/HiloConversacion';
-import { ListaConversaciones } from '../widgets/ListaConversaciones';
+import { useConversations } from '../../application/queries/useConversations.query';
+import { ConversationList } from '../widgets/ConversationList';
+import { ConversationThread } from '../widgets/ConversationThread';
 
 /**
- * Desde `md`: lista a la izquierda e hilo a la derecha. Más angosto: una cosa a
- * la vez, como WhatsApp (la lista, o el hilo con su botón de volver). Ocupa el
- * alto bajo la barra superior (h-12).
+ * From `md`: list on the left and thread on the right. Narrower: one thing at
+ * a time, like WhatsApp (the list, or the thread with its back button). It
+ * takes the height below the top bar (h-12).
  */
 export function ChatsPage(): React.JSX.Element {
-  const [seleccionadaId, setSeleccionadaId] = React.useState<string | null>(
-    null
-  );
-  const { data: conversaciones } = useConversaciones();
-  const seleccionada =
-    conversaciones?.find((c) => c.id === seleccionadaId) ?? null;
+  const [selectedId, setSelectedId] = React.useState<string | null>(null);
+  const { data: conversations } = useConversations();
+  const selected = conversations?.find((c) => c.id === selectedId) ?? null;
 
   return (
     <div className="grid h-[calc(100svh-3rem)] grid-cols-1 md:grid-cols-[minmax(16rem,22rem)_1fr]">
       <aside
         className={cn(
           'min-h-0 flex-col md:flex md:border-r',
-          seleccionada ? 'hidden' : 'flex'
+          selected ? 'hidden' : 'flex'
         )}
       >
         <header className="border-b px-4 py-3">
@@ -34,16 +31,13 @@ export function ChatsPage(): React.JSX.Element {
             Conversaciones de WhatsApp con los clientes de Saba.
           </p>
         </header>
-        <ListaConversaciones
-          seleccionadaId={seleccionadaId}
-          onSeleccionar={setSeleccionadaId}
-        />
+        <ConversationList selectedId={selectedId} onSelect={setSelectedId} />
       </aside>
-      {seleccionada ? (
-        <HiloConversacion
-          key={seleccionada.id}
-          conversacion={seleccionada}
-          onVolver={() => setSeleccionadaId(null)}
+      {selected ? (
+        <ConversationThread
+          key={selected.id}
+          conversation={selected}
+          onBack={() => setSelectedId(null)}
         />
       ) : (
         <div className="hidden flex-col items-center justify-center text-center text-muted-foreground md:flex">

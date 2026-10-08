@@ -1,7 +1,7 @@
 import { HttpResponse, http } from 'msw';
 import React from 'react';
 import { BACKEND_URL } from '@/__tests__/mocks/backendUrl';
-import { clienteSabaFixture } from '@/__tests__/mocks/handlers/chats.mock';
+import { sabaCustomerFixture } from '@/__tests__/mocks/handlers/chats.mock';
 import { ChatsPage } from '@/features/chats/ui/pages/ChatsPage';
 import { server } from '../mocks/server';
 import {
@@ -13,29 +13,29 @@ import {
   within,
 } from '../test-utils/test-utils';
 
-const base = `${BACKEND_URL}/v1/whatsapp/conversaciones`;
+const base = `${BACKEND_URL}/v1/whatsapp/conversations`;
 
 describe('ChatsPage', () => {
-  it('lista las conversaciones con su vista previa y los no leídos', async () => {
+  it('lists the conversations with their preview and unread count', async () => {
     render(<ChatsPage />);
 
-    const lista = await screen.findByRole('navigation', {
+    const list = await screen.findByRole('navigation', {
       name: 'Conversaciones',
     });
-    expect(within(lista).getByText('Ana Pérez')).toBeInTheDocument();
+    expect(within(list).getByText('Ana Pérez')).toBeInTheDocument();
     expect(
-      within(lista).getByText('¿Tienen la moto en rojo?')
+      within(list).getByText('¿Tienen la moto en rojo?')
     ).toBeInTheDocument();
-    expect(within(lista).getByLabelText('2 sin leer')).toBeInTheDocument();
-    // Sin nombre de WhatsApp se muestra el teléfono.
-    expect(within(lista).getByText('+58 424 999 9999')).toBeInTheDocument();
+    expect(within(list).getByLabelText('2 sin leer')).toBeInTheDocument();
+    // Without a WhatsApp name the phone is shown.
+    expect(within(list).getByText('+58 424 999 9999')).toBeInTheDocument();
   });
 
-  it('abre el hilo, muestra la imagen del cliente y lo marca leído', async () => {
-    let marcada: string | undefined;
+  it('opens the thread, shows the customer image and marks it as read', async () => {
+    let marked: string | undefined;
     server.use(
-      http.post(`${base}/:id/leida`, ({ params }) => {
-        marcada = String(params.id);
+      http.post(`${base}/:id/read`, ({ params }) => {
+        marked = String(params.id);
         return HttpResponse.json({ success: true, data: null });
       })
     );
@@ -44,35 +44,35 @@ describe('ChatsPage', () => {
 
     await user.click(await screen.findByRole('button', { name: /Ana Pérez/ }));
 
-    const hilo = await screen.findByRole('list', { name: 'Mensajes' });
+    const thread = await screen.findByRole('list', { name: 'Mensajes' });
     expect(
-      within(hilo).getByText('¿Tienen la moto en rojo?')
+      within(thread).getByText('¿Tienen la moto en rojo?')
     ).toBeInTheDocument();
     expect(
-      within(hilo).getByRole('img', { name: 'Imagen del cliente' })
-    ).toHaveAttribute('src', '/api/backend/v1/whatsapp/mensajes/m2/media');
+      within(thread).getByRole('img', { name: 'Imagen del cliente' })
+    ).toHaveAttribute('src', '/api/backend/v1/whatsapp/messages/m2/media');
     expect(
       screen.getByText(/Ventana de respuesta: quedan/)
     ).toBeInTheDocument();
-    await waitFor(() => expect(marcada).toBe('conv-abierta'));
+    await waitFor(() => expect(marked).toBe('conv-open'));
   });
 
-  it('muestra un loader mientras la imagen baja y lo quita al terminar', async () => {
+  it('shows a loader while the image downloads and removes it when done', async () => {
     const user = userEvent.setup();
     render(<ChatsPage />);
     await user.click(await screen.findByRole('button', { name: /Ana Pérez/ }));
 
-    const imagen = await screen.findByRole('img', {
+    const image = await screen.findByRole('img', {
       name: 'Imagen del cliente',
     });
     expect(screen.getByRole('status')).toHaveTextContent('Cargando imagen…');
 
-    fireEvent.load(imagen);
+    fireEvent.load(image);
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
-  it('vuelve al aviso si Meta ya no tiene la imagen', async () => {
+  it('falls back to the notice if Meta no longer has the image', async () => {
     const user = userEvent.setup();
     render(<ChatsPage />);
     await user.click(await screen.findByRole('button', { name: /Ana Pérez/ }));
@@ -88,23 +88,26 @@ describe('ChatsPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('abre las fotos en un visor de la misma página y las recorre con flechas', async () => {
-    const foto = (id: string, cuerpo: string | null) => ({
+  it('opens the photos in a viewer on the same page and browses them with arrows', async () => {
+    const photo = (id: string, body: string | null) => ({
       id,
-      direccion: 'entrante' as const,
-      origen: 'cliente' as const,
-      tipo: 'image',
-      cuerpo,
-      estado: null,
-      errorDetalle: null,
-      tieneMedia: true,
+      direction: 'inbound' as const,
+      source: 'customer' as const,
+      type: 'image',
+      body,
+      status: null,
+      errorDetail: null,
+      hasMedia: true,
       waTimestamp: '2026-10-07T15:00:00.000Z',
     });
     server.use(
-      http.get(`${base}/:id/mensajes`, () =>
+      http.get(`${base}/:id/messages`, () =>
         HttpResponse.json({
           success: true,
-          data: [foto('f1', 'la moto por delante'), foto('f2', 'y por detrás')],
+          data: [
+            photo('f1', 'la moto por delante'),
+            photo('f2', 'y por detrás'),
+          ],
         })
       )
     );
@@ -112,22 +115,22 @@ describe('ChatsPage', () => {
     render(<ChatsPage />);
     await user.click(await screen.findByRole('button', { name: /Ana Pérez/ }));
 
-    const [primera] = await screen.findAllByRole('button', {
+    const [first] = await screen.findAllByRole('button', {
       name: 'Ver imagen en grande',
     });
-    if (!primera) throw new Error('sin fotos');
-    await user.click(primera);
+    if (!first) throw new Error('sin fotos');
+    await user.click(first);
 
-    const visor = await screen.findByRole('dialog', { name: 'Imagen 1 de 2' });
+    const viewer = await screen.findByRole('dialog', { name: 'Imagen 1 de 2' });
     expect(
-      within(visor).getByRole('img', { name: 'la moto por delante' })
-    ).toHaveAttribute('src', '/api/backend/v1/whatsapp/mensajes/f1/media');
+      within(viewer).getByRole('img', { name: 'la moto por delante' })
+    ).toHaveAttribute('src', '/api/backend/v1/whatsapp/messages/f1/media');
     expect(
-      within(visor).queryByRole('button', { name: 'Imagen anterior' })
+      within(viewer).queryByRole('button', { name: 'Imagen anterior' })
     ).not.toBeInTheDocument();
 
     await user.click(
-      within(visor).getByRole('button', { name: 'Imagen siguiente' })
+      within(viewer).getByRole('button', { name: 'Imagen siguiente' })
     );
     expect(
       await screen.findByRole('dialog', { name: 'Imagen 2 de 2' })
@@ -147,23 +150,23 @@ describe('ChatsPage', () => {
     );
   });
 
-  it('envía la respuesta y limpia el compositor', async () => {
-    let enviado: unknown;
+  it('sends the reply and clears the composer', async () => {
+    let sent: unknown;
     server.use(
-      http.post(`${base}/:id/mensajes`, async ({ request }) => {
-        enviado = await request.json();
+      http.post(`${base}/:id/messages`, async ({ request }) => {
+        sent = await request.json();
         return HttpResponse.json(
           {
             success: true,
             data: {
               id: 'm3',
-              direccion: 'saliente',
-              origen: 'sistema',
-              tipo: 'text',
-              cuerpo: 'Sí, la tenemos',
-              estado: 'enviado',
-              errorDetalle: null,
-              tieneMedia: false,
+              direction: 'outbound',
+              source: 'system',
+              type: 'text',
+              body: 'Sí, la tenemos',
+              status: 'sent',
+              errorDetail: null,
+              hasMedia: false,
               waTimestamp: new Date().toISOString(),
             },
           },
@@ -175,19 +178,19 @@ describe('ChatsPage', () => {
     render(<ChatsPage />);
     await user.click(await screen.findByRole('button', { name: /Ana Pérez/ }));
 
-    const caja = await screen.findByLabelText('Mensaje');
-    await user.type(caja, 'Sí, la tenemos');
+    const box = await screen.findByLabelText('Mensaje');
+    await user.type(box, 'Sí, la tenemos');
     await user.click(screen.getByRole('button', { name: 'Enviar' }));
 
-    await waitFor(() => expect(enviado).toEqual({ cuerpo: 'Sí, la tenemos' }));
-    await waitFor(() => expect(caja).toHaveValue(''));
+    await waitFor(() => expect(sent).toEqual({ body: 'Sí, la tenemos' }));
+    await waitFor(() => expect(box).toHaveValue(''));
   });
 
-  it('le avisa a Meta que se está escribiendo, una sola vez por ráfaga de teclas', async () => {
-    const avisos: string[] = [];
+  it('tells Meta someone is typing, only once per burst of keystrokes', async () => {
+    const notices: string[] = [];
     server.use(
-      http.post(`${base}/:id/escribiendo`, ({ params }) => {
-        avisos.push(String(params.id));
+      http.post(`${base}/:id/typing`, ({ params }) => {
+        notices.push(String(params.id));
         return HttpResponse.json({ success: true, data: null });
       })
     );
@@ -200,18 +203,18 @@ describe('ChatsPage', () => {
       'Hola, ¿cómo estás?'
     );
 
-    await waitFor(() => expect(avisos).toEqual(['conv-abierta']));
+    await waitFor(() => expect(notices).toEqual(['conv-open']));
   });
 
-  it('muestra el error de la API si WhatsApp rechaza el envío', async () => {
+  it('shows the API error if WhatsApp rejects the send', async () => {
     server.use(
-      http.post(`${base}/:id/mensajes`, () =>
+      http.post(`${base}/:id/messages`, () =>
         HttpResponse.json(
           {
             success: false,
             error:
               'Este número no está en la lista de destinatarios permitidos del número de prueba.',
-            code: 'WHATSAPP_DESTINATARIO_NO_PERMITIDO',
+            code: 'WHATSAPP_RECIPIENT_NOT_ALLOWED',
           },
           { status: 422 }
         )
@@ -229,7 +232,7 @@ describe('ChatsPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('bloquea el compositor con la ventana de 24 h cerrada', async () => {
+  it('locks the composer with the 24 h window closed', async () => {
     const user = userEvent.setup();
     render(<ChatsPage />);
 
@@ -241,27 +244,27 @@ describe('ChatsPage', () => {
     expect(screen.queryByLabelText('Mensaje')).not.toBeInTheDocument();
   });
 
-  it('muestra la flecha para bajar solo si subiste a leer, y baja al tocarla', async () => {
+  it('shows the scroll-down arrow only if you scrolled up to read, and scrolls down when tapped', async () => {
     const user = userEvent.setup();
     render(<ChatsPage />);
     await user.click(await screen.findByRole('button', { name: /Ana Pérez/ }));
-    const lista = await screen.findByRole('list', { name: 'Mensajes' });
-    const contenedor = lista.parentElement as HTMLElement;
+    const list = await screen.findByRole('list', { name: 'Mensajes' });
+    const container = list.parentElement as HTMLElement;
     expect(
       screen.queryByRole('button', { name: /Ir a los mensajes más nuevos/ })
     ).not.toBeInTheDocument();
 
-    // jsdom no hace layout: se simula haber subido 600 px en un hilo de 1000.
-    Object.defineProperty(contenedor, 'scrollHeight', {
+    // jsdom does no layout: we simulate having scrolled up 600 px in a 1000 px thread.
+    Object.defineProperty(container, 'scrollHeight', {
       configurable: true,
       value: 1000,
     });
-    Object.defineProperty(contenedor, 'clientHeight', {
+    Object.defineProperty(container, 'clientHeight', {
       configurable: true,
       value: 300,
     });
-    contenedor.scrollTop = 100;
-    fireEvent.scroll(contenedor);
+    container.scrollTop = 100;
+    fireEvent.scroll(container);
 
     await user.click(
       await screen.findByRole('button', {
@@ -274,7 +277,7 @@ describe('ChatsPage', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('vuelve a la lista desde el hilo (pantallas angostas)', async () => {
+  it('goes back to the list from the thread (narrow screens)', async () => {
     const user = userEvent.setup();
     render(<ChatsPage />);
     await user.click(await screen.findByRole('button', { name: /Ana Pérez/ }));
@@ -294,9 +297,9 @@ describe('ChatsPage', () => {
     ).toBeInTheDocument();
   });
 
-  describe('detalle del contacto', () => {
-    /** Abre el chat de Ana y su detalle desde el encabezado (sin matchMedia en jsdom: panel deslizable). */
-    async function abrirDetalleDeAna(): Promise<HTMLElement> {
+  describe('contact detail', () => {
+    /** Opens Ana's chat and her detail from the header (no matchMedia in jsdom: sliding panel). */
+    async function openAnaDetail(): Promise<HTMLElement> {
       const user = userEvent.setup();
       render(<ChatsPage />);
       await user.click(
@@ -308,7 +311,7 @@ describe('ChatsPage', () => {
       return screen.findByRole('dialog', { name: 'Info. del contacto' });
     }
 
-    it('no se muestra hasta tocar el encabezado del chat', async () => {
+    it('is not shown until the chat header is tapped', async () => {
       const user = userEvent.setup();
       render(<ChatsPage />);
       await user.click(
@@ -321,8 +324,8 @@ describe('ChatsPage', () => {
       ).not.toBeInTheDocument();
     });
 
-    it('muestra quién es en Saba, organizado por secciones', async () => {
-      const panel = await abrirDetalleDeAna();
+    it('shows who they are in Saba, organized by sections', async () => {
+      const panel = await openAnaDetail();
 
       expect(
         await within(panel).findByText('Ana María González')
@@ -333,28 +336,28 @@ describe('ChatsPage', () => {
       expect(
         within(panel).getByText(/Cliente de Saba desde/)
       ).toBeInTheDocument();
-      const identificacion = within(panel).getByRole('region', {
+      const identification = within(panel).getByRole('region', {
         name: 'Identificación',
       });
-      expect(within(identificacion).getByText('V12345678')).toBeInTheDocument();
+      expect(within(identification).getByText('V12345678')).toBeInTheDocument();
       expect(within(panel).getByRole('note')).toHaveTextContent(
         /solo por teléfono.*cédula.*correo/
       );
-      const solicitudes = within(panel).getByRole('region', {
+      const applications = within(panel).getByRole('region', {
         name: 'Solicitudes (1)',
       });
-      expect(within(solicitudes).getByText('CF 450MT')).toBeInTheDocument();
+      expect(within(applications).getByText('CF 450MT')).toBeInTheDocument();
       expect(
-        within(solicitudes).getByText('Cita agendada')
+        within(applications).getByText('Cita agendada')
       ).toBeInTheDocument();
       expect(
-        within(solicitudes).getByText('$40,00 semanal')
+        within(applications).getByText('$40,00 semanal')
       ).toBeInTheDocument();
     });
 
-    it('copia la cédula al portapapeles', async () => {
+    it('copies the ID number to the clipboard', async () => {
       const user = userEvent.setup();
-      // Después de setup(): user-event reemplaza navigator.clipboard por el suyo.
+      // After setup(): user-event replaces navigator.clipboard with its own.
       const writeText = jest.spyOn(navigator.clipboard, 'writeText');
       render(<ChatsPage />);
       await user.click(
@@ -377,27 +380,27 @@ describe('ChatsPage', () => {
       ).toBeInTheDocument();
     });
 
-    it('deja elegir cuando varios perfiles tienen el mismo número', async () => {
+    it('lets you choose when several profiles share the same number', async () => {
       server.use(
-        http.get(`${base}/:id/cliente-saba`, () =>
+        http.get(`${base}/:id/saba-customer`, () =>
           HttpResponse.json({
             success: true,
             data: {
-              sinTelefono: false,
-              clientes: [
-                clienteSabaFixture,
+              noPhone: false,
+              customers: [
+                sabaCustomerFixture,
                 {
-                  ...clienteSabaFixture,
+                  ...sabaCustomerFixture,
                   id: 'p2',
-                  nombre: 'José González',
-                  cedula: 'V87654321',
+                  name: 'José González',
+                  idNumber: 'V87654321',
                 },
               ],
             },
           })
         )
       );
-      const panel = await abrirDetalleDeAna();
+      const panel = await openAnaDetail();
 
       expect(
         await within(panel).findByText('Hay 2 perfiles con este número:')
@@ -409,44 +412,44 @@ describe('ChatsPage', () => {
       expect(within(panel).getByText('V87654321')).toBeInTheDocument();
     });
 
-    it('avisa cuando el número no está en Saba', async () => {
+    it('warns when the number is not in Saba', async () => {
       server.use(
-        http.get(`${base}/:id/cliente-saba`, () =>
+        http.get(`${base}/:id/saba-customer`, () =>
           HttpResponse.json({
             success: true,
-            data: { sinTelefono: false, clientes: [] },
+            data: { noPhone: false, customers: [] },
           })
         )
       );
-      const panel = await abrirDetalleDeAna();
+      const panel = await openAnaDetail();
 
       expect(
         await within(panel).findByText('No está registrado en Saba')
       ).toBeInTheDocument();
-      // Solo el mensaje: sin la cabecera del contacto, y con la sugerencia de validar.
+      // Only the message: without the contact header, and with the hint to validate.
       expect(within(panel).queryByText('Ana Pérez')).not.toBeInTheDocument();
       expect(
         within(panel).getByText(/puede estar escribiendo desde otro teléfono/)
       ).toBeInTheDocument();
     });
 
-    it('muestra el error de Saba y deja reintentar sin afectar el chat', async () => {
-      let intentos = 0;
+    it('shows the Saba error and allows retrying without affecting the chat', async () => {
+      let attempts = 0;
       server.use(
-        http.get(`${base}/:id/cliente-saba`, () => {
-          intentos++;
+        http.get(`${base}/:id/saba-customer`, () => {
+          attempts++;
           return HttpResponse.json(
             {
               success: false,
               error:
                 'No se pudo consultar Saba en este momento. Intenta de nuevo en unos segundos.',
-              code: 'SABA_CLIENTES_NO_DISPONIBLE',
+              code: 'SABA_CUSTOMERS_UNAVAILABLE',
             },
             { status: 424 }
           );
         })
       );
-      const panel = await abrirDetalleDeAna();
+      const panel = await openAnaDetail();
 
       expect(
         await within(panel).findByText(
@@ -455,23 +458,23 @@ describe('ChatsPage', () => {
           { timeout: 3000 }
         )
       ).toBeInTheDocument();
-      // El panel deslizable es modal: deja el hilo oculto para lectores, pero sigue ahí.
+      // The sliding panel is modal: it hides the thread from screen readers, but it is still there.
       expect(
         screen.getByRole('list', { name: 'Mensajes', hidden: true })
       ).toBeInTheDocument();
-      const antes = intentos;
+      const before = attempts;
       await userEvent
         .setup()
         .click(within(panel).getByRole('button', { name: 'Reintentar' }));
-      await waitFor(() => expect(intentos).toBeGreaterThan(antes));
+      await waitFor(() => expect(attempts).toBeGreaterThan(before));
     });
   });
 
-  it('no envía un mensaje vacío', async () => {
-    let llamadas = 0;
+  it('does not send an empty message', async () => {
+    let calls = 0;
     server.use(
-      http.post(`${base}/:id/mensajes`, () => {
-        llamadas++;
+      http.post(`${base}/:id/messages`, () => {
+        calls++;
         return HttpResponse.json(
           { success: false, error: 'x' },
           { status: 400 }
@@ -485,6 +488,6 @@ describe('ChatsPage', () => {
     await user.click(await screen.findByRole('button', { name: 'Enviar' }));
 
     expect(await screen.findByText('Escribe un mensaje.')).toBeInTheDocument();
-    expect(llamadas).toBe(0);
+    expect(calls).toBe(0);
   });
 });

@@ -1,35 +1,35 @@
 import React from 'react';
 
-export type PillTono = 'interno' | 'externo' | 'activo' | 'inactivo';
+export type PillTone = 'internal' | 'external' | 'active' | 'inactive';
 
-/** Tonos del prototipo, resueltos con los tokens del sistema de diseño. */
-const TONOS: Record<PillTono, { contenedor: string; punto: string }> = {
-  interno: { contenedor: 'bg-brand-50 text-brand-700', punto: 'bg-brand-600' },
-  externo: {
-    contenedor: 'bg-secondary-100 text-secondary-700',
-    punto: 'bg-secondary-700',
+/** The prototype's tones, resolved with the design system tokens. */
+const TONES: Record<PillTone, { container: string; dot: string }> = {
+  internal: { container: 'bg-brand-50 text-brand-700', dot: 'bg-brand-600' },
+  external: {
+    container: 'bg-secondary-100 text-secondary-700',
+    dot: 'bg-secondary-700',
   },
-  activo: {
-    contenedor: 'bg-success-50 text-success-700',
-    punto: 'bg-success-600',
+  active: {
+    container: 'bg-success-50 text-success-700',
+    dot: 'bg-success-600',
   },
-  inactivo: { contenedor: 'bg-gray-200 text-gray-600', punto: 'bg-gray-500' },
+  inactive: { container: 'bg-gray-200 text-gray-600', dot: 'bg-gray-500' },
 };
 
-/** Etiqueta de estado del prototipo (`.pill` + `.pill-dot`). */
+/** The prototype's status label (`.pill` + `.pill-dot`). */
 export function Pill({
-  tono,
+  tone,
   children,
 }: {
-  tono: PillTono;
+  tone: PillTone;
   children: React.ReactNode;
 }): React.JSX.Element {
-  const { contenedor, punto } = TONOS[tono];
+  const { container, dot } = TONES[tone];
   return (
     <span
-      className={`inline-flex items-center gap-[5px] rounded-full px-[9px] py-[3px] font-bold text-[11.5px] ${contenedor}`}
+      className={`inline-flex items-center gap-[5px] rounded-full px-[9px] py-[3px] font-bold text-[11.5px] ${container}`}
     >
-      <span className={`size-1.5 rounded-full ${punto}`} />
+      <span className={`size-1.5 rounded-full ${dot}`} />
       {children}
     </span>
   );

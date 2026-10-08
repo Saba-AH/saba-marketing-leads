@@ -1,10 +1,9 @@
 /**
- * El cliente ve "escribiendo…" mientras un agente le responde desde el panel.
- * Meta lo ata a marcar como leído su último mensaje (checks azules): con
- * `false` el panel no le avisa nada a Meta y el cliente no ve ninguna de las dos
- * cosas hasta que llegue la respuesta.
+ * The customer sees "typing…" while an agent replies from the panel. Meta ties
+ * it to marking their last message as read (blue ticks): with `false` the panel
+ * tells Meta nothing and the customer sees neither until the reply arrives.
  */
-export const MOSTRAR_ESCRIBIENDO_AL_CLIENTE = true;
+export const SHOW_TYPING_TO_CUSTOMER = true;
 
-/** Meta lo muestra hasta 25 s: avisar más seguido es gastar llamadas. */
-export const INTERVALO_AVISO_ESCRIBIENDO_MS = 20_000;
+/** Meta shows it for up to 25 s: notifying more often wastes calls. */
+export const TYPING_NOTICE_INTERVAL_MS = 20_000;

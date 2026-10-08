@@ -1,6 +1,6 @@
 import React from 'react';
 
-/** Contenedor de una pantalla (`.view` del prototipo: padding 28px 32px). */
+/** Container for a screen (the prototype's `.view`: padding 28px 32px). */
 export function PageShell({
   children,
 }: {

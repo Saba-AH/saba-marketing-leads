@@ -1,20 +1,20 @@
 import type {
-  TClienteSabaChat,
-  TConversacionResumen,
-  TEnviarMensaje,
-  TMensajeChat,
+  TChatMessage,
+  TChatSabaCustomers,
+  TConversationSummary,
+  TSendMessage,
 } from '@repo/schemas';
 import type { Safe } from '@repo/utils';
 
-/** Puerto: lo único que esta feature necesita de la API. */
+/** Port: the only thing this feature needs from the API. */
 export interface ChatsApi {
-  listarConversaciones(): Promise<Safe<TConversacionResumen[]>>;
-  listarMensajes(conversationId: string): Promise<Safe<TMensajeChat[]>>;
-  enviarMensaje(
+  listConversations(): Promise<Safe<TConversationSummary[]>>;
+  listMessages(conversationId: string): Promise<Safe<TChatMessage[]>>;
+  sendMessage(
     conversationId: string,
-    datos: TEnviarMensaje
-  ): Promise<Safe<TMensajeChat>>;
-  marcarLeida(conversationId: string): Promise<Safe<null>>;
-  indicarEscribiendo(conversationId: string): Promise<Safe<null>>;
-  obtenerClienteSaba(conversationId: string): Promise<Safe<TClienteSabaChat>>;
+    data: TSendMessage
+  ): Promise<Safe<TChatMessage>>;
+  markAsRead(conversationId: string): Promise<Safe<null>>;
+  sendTypingIndicator(conversationId: string): Promise<Safe<null>>;
+  getSabaCustomer(conversationId: string): Promise<Safe<TChatSabaCustomers>>;
 }

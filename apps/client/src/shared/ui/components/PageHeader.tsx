@@ -1,27 +1,27 @@
 import React from 'react';
 
 interface PageHeaderProps {
-  titulo: string;
-  subtitulo: string;
-  /** Botonera de la derecha. */
-  acciones?: React.ReactNode;
+  title: string;
+  subtitle: string;
+  /** Button bar on the right. */
+  actions?: React.ReactNode;
 }
 
-/** Encabezado de pantalla del prototipo (`.page-header`). */
+/** The prototype's screen header (`.page-header`). */
 export function PageHeader({
-  titulo,
-  subtitulo,
-  acciones,
+  title,
+  subtitle,
+  actions,
 }: PageHeaderProps): React.JSX.Element {
   return (
     <div className="mb-[22px] flex items-start justify-between gap-4">
       <div>
         <h1 className="font-extrabold text-2xl text-gray-950 tracking-[-0.01em]">
-          {titulo}
+          {title}
         </h1>
-        <p className="mt-1 text-[13.5px] text-gray-500">{subtitulo}</p>
+        <p className="mt-1 text-[13.5px] text-gray-500">{subtitle}</p>
       </div>
-      {acciones && <div className="flex shrink-0 gap-2.5">{acciones}</div>}
+      {actions && <div className="flex shrink-0 gap-2.5">{actions}</div>}
     </div>
   );
 }

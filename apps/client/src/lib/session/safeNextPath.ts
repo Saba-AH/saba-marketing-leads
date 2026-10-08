@@ -1,9 +1,9 @@
 const LOGIN_PATH = '/login';
 
 /**
- * A dónde volver después del login. Solo rutas internas: un `?next=` con otro
- * origen (`//evil.com`, `/\evil.com`, `https://…`) convertiría al login en un
- * redirector abierto.
+ * Where to go back to after login. Internal routes only: a `?next=` with
+ * another origin (`//evil.com`, `/\evil.com`, `https://…`) would turn the login
+ * into an open redirector.
  */
 export function safeNextPath(value: string | null | undefined): string {
   if (!value || !value.startsWith('/')) return '/';

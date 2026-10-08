@@ -1,9 +1,12 @@
-import { refreshSesionResponseSchema, type TSesionTokens } from '@repo/schemas';
+import {
+  refreshSessionResponseSchema,
+  type TSessionTokens,
+} from '@repo/schemas';
 import type { NextRequest } from 'next/server';
 
 /**
- * La API de NestJS vista desde el servidor de Next. Variable de runtime (no
- * `NEXT_PUBLIC_*`): el navegador ya no habla con la API, solo con este BFF.
+ * The NestJS API as seen from the Next server. Runtime variable (not
+ * `NEXT_PUBLIC_*`): the browser no longer talks to the API, only to this BFF.
  */
 function apiBaseUrl(): string {
   return `${(process.env.API_URL ?? 'http://localhost:8080').replace(/\/+$/, '')}/api`;
@@ -14,10 +17,10 @@ export function upstreamUrl(pathAndQuery: string): string {
 }
 
 /**
- * Cabeceras que la API necesita del navegador original. `x-forwarded-for` la
- * completa Next con la IP del socket si no venía; detrás del balanceador de
- * Cloud Run la entrada de más a la derecha es la IP real, que es la que toma
- * la API (`TRUST_PROXY_HOPS`) para el rate limit del login.
+ * Headers the API needs from the original browser. Next fills in
+ * `x-forwarded-for` with the socket IP if it was missing; behind Cloud Run's
+ * load balancer the rightmost entry is the real IP, which is the one the API
+ * takes (`TRUST_PROXY_HOPS`) for the login rate limit.
  */
 export function forwardedHeaders(
   request: NextRequest,
@@ -35,11 +38,11 @@ export function forwardedHeaders(
   return headers;
 }
 
-/** `null` si el refresh token ya no sirve; la sesión hay que darla por cerrada. */
+/** `null` if the refresh token is no longer valid; the session must be treated as closed. */
 export async function refreshSession(
   request: NextRequest,
   refreshToken: string
-): Promise<TSesionTokens | null> {
+): Promise<TSessionTokens | null> {
   const headers = forwardedHeaders(request);
   headers.set('content-type', 'application/json');
   const response = await fetch(upstreamUrl('/v1/auth/refresh'), {
@@ -48,15 +51,15 @@ export async function refreshSession(
     body: JSON.stringify({ refreshToken }),
     cache: 'no-store',
   });
-  const body = refreshSesionResponseSchema.safeParse(
+  const body = refreshSessionResponseSchema.safeParse(
     await response.json().catch(() => null)
   );
   return body.success && body.data.success ? body.data.data : null;
 }
 
 /**
- * Defensa extra contra CSRF en los POST del BFF (además de `SameSite=Strict`):
- * un navegador siempre manda `Origin` en un POST, y tiene que ser este sitio.
+ * Extra CSRF defense on the BFF's POSTs (on top of `SameSite=Strict`): a
+ * browser always sends `Origin` on a POST, and it has to be this site.
  */
 export function isSameOrigin(request: NextRequest): boolean {
   const origin = request.headers.get('origin');

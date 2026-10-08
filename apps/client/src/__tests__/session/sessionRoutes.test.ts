@@ -8,16 +8,16 @@ import { POST as logout } from '@/app/api/session/logout/route';
 import { server } from '../mocks/server';
 import {
   API,
-  PANEL,
+  PANEL_URL,
   panelRequest,
   setCookies,
   tokens,
-  usuario,
+  user,
 } from './bffFixtures';
 
-const credenciales = {
-  correo: 'angel.hernandez@sabatransporte.com',
-  contrasena: '12345678',
+const credentials = {
+  email: 'angel.hernandez@sabatransporte.com',
+  password: '12345678',
   captchaToken: 'captcha',
 };
 
@@ -26,12 +26,12 @@ function params(path: string[]) {
 }
 
 describe('POST /api/session/login', () => {
-  it('guarda los tokens en cookies httpOnly y solo devuelve el usuario', async () => {
+  it('stores the tokens in httpOnly cookies and only returns the user', async () => {
     server.use(
       http.post(`${API}/v1/auth/login`, () =>
         HttpResponse.json({
           success: true,
-          data: { sesion: tokens(), usuario },
+          data: { session: tokens(), user },
         })
       )
     );
@@ -39,46 +39,46 @@ describe('POST /api/session/login', () => {
     const response = await login(
       panelRequest('/api/session/login', {
         method: 'POST',
-        body: credenciales,
-        origin: PANEL,
+        body: credentials,
+        origin: PANEL_URL,
       })
     );
 
     expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body).toEqual({ success: true, data: { usuario } });
+    expect(body).toEqual({ success: true, data: { user } });
     expect(JSON.stringify(body)).not.toContain('access-1');
     const cookies = setCookies(response);
     expect(cookies.get('saba_session')).toMatch(/access-1.*HttpOnly/i);
     expect(cookies.get('saba_refresh')).toMatch(/refresh-1.*HttpOnly/i);
   });
 
-  it('pasa el código de la API (p. ej. cuenta bloqueada) sin crear sesión', async () => {
+  it('passes the API code through (e.g. account locked) without creating a session', async () => {
     server.use(
       http.post(`${API}/v1/auth/login`, () =>
         HttpResponse.json(
-          { success: false, error: 'Bloqueada', code: 'AUTH_CUENTA_BLOQUEADA' },
+          { success: false, error: 'Bloqueada', code: 'AUTH_ACCOUNT_LOCKED' },
           { status: 423 }
         )
       )
     );
 
     const response = await login(
-      panelRequest('/api/session/login', { method: 'POST', body: credenciales })
+      panelRequest('/api/session/login', { method: 'POST', body: credentials })
     );
 
     expect(response.status).toBe(423);
     expect(await response.json()).toMatchObject({
-      code: 'AUTH_CUENTA_BLOQUEADA',
+      code: 'AUTH_ACCOUNT_LOCKED',
     });
     expect(response.headers.getSetCookie()).toEqual([]);
   });
 
-  it('rechaza un POST de otro origen', async () => {
+  it('rejects a POST from another origin', async () => {
     const response = await login(
       panelRequest('/api/session/login', {
         method: 'POST',
-        body: credenciales,
+        body: credentials,
         origin: 'https://evil.com',
       })
     );
@@ -88,11 +88,11 @@ describe('POST /api/session/login', () => {
 });
 
 describe('POST /api/session/logout', () => {
-  it('revoca en la API y borra las cookies', async () => {
-    let autorizacion: string | null = null;
+  it('revokes in the API and deletes the cookies', async () => {
+    let authorization: string | null = null;
     server.use(
       http.post(`${API}/v1/auth/logout`, ({ request }) => {
-        autorizacion = request.headers.get('authorization');
+        authorization = request.headers.get('authorization');
         return new HttpResponse(null, { status: 204 });
       })
     );
@@ -105,7 +105,7 @@ describe('POST /api/session/logout', () => {
     );
 
     expect(response.status).toBe(204);
-    expect(autorizacion).toBe('Bearer access-1');
+    expect(authorization).toBe('Bearer access-1');
     expect(setCookies(response).get('saba_session')).toMatch(
       /Expires=Thu, 01 Jan 1970/
     );
@@ -113,12 +113,12 @@ describe('POST /api/session/logout', () => {
 });
 
 describe('/api/backend/*', () => {
-  it('agrega el token de la cookie y devuelve la respuesta de la API', async () => {
-    let autorizacion: string | null = null;
+  it('adds the token from the cookie and returns the API response', async () => {
+    let authorization: string | null = null;
     server.use(
       http.get(`${API}/v1/me`, ({ request }) => {
-        autorizacion = request.headers.get('authorization');
-        return HttpResponse.json({ success: true, data: usuario });
+        authorization = request.headers.get('authorization');
+        return HttpResponse.json({ success: true, data: user });
       })
     );
 
@@ -130,11 +130,11 @@ describe('/api/backend/*', () => {
     );
 
     expect(response.status).toBe(200);
-    expect(autorizacion).toBe('Bearer access-1');
-    expect(await response.json()).toEqual({ success: true, data: usuario });
+    expect(authorization).toBe('Bearer access-1');
+    expect(await response.json()).toEqual({ success: true, data: user });
   });
 
-  it('no deja llegar a los endpoints que devuelven tokens', async () => {
+  it('does not let requests reach the endpoints that return tokens', async () => {
     const response = await proxyPost(
       panelRequest('/api/backend/v1/auth/refresh', {
         method: 'POST',
@@ -146,11 +146,11 @@ describe('/api/backend/*', () => {
     expect(response.status).toBe(404);
   });
 
-  it('borra las cookies si la API dice que la sesión ya no vale', async () => {
+  it('deletes the cookies if the API says the session is no longer valid', async () => {
     server.use(
       http.get(`${API}/v1/me`, () =>
         HttpResponse.json(
-          { success: false, error: 'x', code: 'AUTH_SESION_INVALIDA' },
+          { success: false, error: 'x', code: 'AUTH_INVALID_SESSION' },
           { status: 401 }
         )
       )

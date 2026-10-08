@@ -17,41 +17,41 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import type { z } from 'zod';
 import { AlertBanner } from '@/shared/ui/components/form/AlertBanner';
-import { useIniciarSesion } from '../../application/mutations/useIniciarSesion.mutation';
+import { useLogin } from '../../application/mutations/useLogin.mutation';
 import { LoginError } from '../../domain/loginError';
 import { useTurnstile } from '../hooks/useTurnstile';
-import { CampoContrasena } from './CampoContrasena';
+import { PasswordField } from './PasswordField';
 
-/** El CAPTCHA no es un campo del formulario: lo entrega el widget. */
-const credencialesSchema = loginSchema.omit({ captchaToken: true });
-type CredencialesInput = z.input<typeof credencialesSchema>;
-type CredencialesOutput = z.output<typeof credencialesSchema>;
+/** The CAPTCHA is not a form field: the widget provides it. */
+const credentialsSchema = loginSchema.omit({ captchaToken: true });
+type CredentialsInput = z.input<typeof credentialsSchema>;
+type CredentialsOutput = z.output<typeof credentialsSchema>;
 
 export function LoginForm({ next }: { next: string }): React.JSX.Element {
   const router = useRouter();
-  const iniciarSesion = useIniciarSesion();
+  const login = useLogin();
   const captcha = useTurnstile();
-  const form = useForm<CredencialesInput, unknown, CredencialesOutput>({
-    resolver: zodResolver(credencialesSchema),
-    defaultValues: { correo: '', contrasena: '' },
+  const form = useForm<CredentialsInput, unknown, CredentialsOutput>({
+    resolver: zodResolver(credentialsSchema),
+    defaultValues: { email: '', password: '' },
   });
 
-  async function onSubmit(datos: CredencialesOutput): Promise<void> {
+  async function onSubmit(data: CredentialsOutput): Promise<void> {
     if (!captcha.token) return;
     try {
-      await iniciarSesion.mutateAsync({
-        ...datos,
+      await login.mutateAsync({
+        ...data,
         captchaToken: captcha.token,
       });
       router.replace(next);
     } catch {
-      form.resetField('contrasena');
+      form.resetField('password');
       captcha.reset();
     }
   }
 
-  const enviando = iniciarSesion.isPending || iniciarSesion.isSuccess;
-  const error = iniciarSesion.error;
+  const sending = login.isPending || login.isSuccess;
+  const error = login.error;
 
   return (
     <Form {...form}>
@@ -62,14 +62,14 @@ export function LoginForm({ next }: { next: string }): React.JSX.Element {
       >
         {error && (
           <AlertBanner
-            mensaje={error.message}
-            variante={error instanceof LoginError ? error.tipo : 'error'}
+            message={error.message}
+            variant={error instanceof LoginError ? error.type : 'error'}
           />
         )}
 
         <FormField
           control={form.control}
-          name="correo"
+          name="email"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Correo electrónico</FormLabel>
@@ -78,7 +78,7 @@ export function LoginForm({ next }: { next: string }): React.JSX.Element {
                   autoComplete="email"
                   autoFocus
                   className="h-11"
-                  disabled={enviando}
+                  disabled={sending}
                   placeholder="tu@correo.com"
                   type="email"
                   {...field}
@@ -91,12 +91,12 @@ export function LoginForm({ next }: { next: string }): React.JSX.Element {
 
         <FormField
           control={form.control}
-          name="contrasena"
+          name="password"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Contraseña</FormLabel>
               <FormControl>
-                <CampoContrasena disabled={enviando} {...field} />
+                <PasswordField disabled={sending} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -110,10 +110,10 @@ export function LoginForm({ next }: { next: string }): React.JSX.Element {
 
         <Button
           className="h-11 w-full"
-          disabled={enviando || !captcha.token}
+          disabled={sending || !captcha.token}
           type="submit"
         >
-          {enviando ? (
+          {sending ? (
             <>
               <Loader2 className="animate-spin" />
               Iniciando sesión…

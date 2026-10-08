@@ -1,6 +1,6 @@
-import type { TUsuarioSesion } from '@repo/schemas';
-import type { UsuarioSesion } from '../domain/usuarioSesion.model';
+import type { TSessionUser } from '@repo/schemas';
+import type { SessionUser } from '../domain/sessionUser.model';
 
-export function toUsuarioSesion(dto: TUsuarioSesion): UsuarioSesion {
-  return { id: dto.id, correo: dto.correo, nombre: dto.nombre, rol: dto.rol };
+export function toSessionUser(dto: TSessionUser): SessionUser {
+  return { id: dto.id, email: dto.email, name: dto.name, role: dto.role };
 }

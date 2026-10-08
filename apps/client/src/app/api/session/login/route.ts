@@ -9,8 +9,8 @@ import {
 } from '@/lib/session/upstream';
 
 /**
- * Login del panel: reenvía a la API y guarda los tokens en cookies
- * `httpOnly`. Al navegador solo vuelve el usuario, nunca los tokens.
+ * Panel login: forwards to the API and stores the tokens in `httpOnly`
+ * cookies. Only the user goes back to the browser, never the tokens.
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   if (!isSameOrigin(request)) return forbiddenOriginResponse();
@@ -47,8 +47,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const response = NextResponse.json({
     success: true,
-    data: { usuario: result.data.data.usuario },
+    data: { user: result.data.data.user },
   });
-  writeSessionCookies(response.cookies, result.data.data.sesion);
+  writeSessionCookies(response.cookies, result.data.data.session);
   return response;
 }

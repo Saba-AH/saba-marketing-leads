@@ -1,4 +1,4 @@
-import type { TCrearLead } from '@repo/schemas';
+import type { TCreateLead } from '@repo/schemas';
 import type { Lead } from '../domain/lead.model';
 import type { LeadsApi } from './leads.interfaces';
 import { toLeadDomain } from './leads.transform';
@@ -6,16 +6,16 @@ import { toLeadDomain } from './leads.transform';
 export class LeadsServiceClass {
   constructor(private leadsApi: LeadsApi) {}
 
-  async listar(): Promise<Lead[]> {
-    const result = await this.leadsApi.listar();
+  async list(): Promise<Lead[]> {
+    const result = await this.leadsApi.list();
     if (!result.success) {
       throw new Error(result.error);
     }
     return result.data.map(toLeadDomain);
   }
 
-  async crear(datos: TCrearLead): Promise<Lead> {
-    const result = await this.leadsApi.crear(datos);
+  async create(data: TCreateLead): Promise<Lead> {
+    const result = await this.leadsApi.create(data);
     if (!result.success) {
       throw new Error(result.error);
     }

@@ -7,12 +7,12 @@ interface SearchBoxProps {
   label: string;
   placeholder: string;
   value: string;
-  onChange: (valor: string) => void;
+  onChange: (value: string) => void;
 }
 
 /**
- * Buscador del prototipo (`.search-box`): 220px, empujado al extremo derecho
- * de su fila con `ml-auto` y con la lupa dentro del campo.
+ * The prototype's search box (`.search-box`): 220px, pushed to the far right of
+ * its row with `ml-auto` and with the magnifier inside the field.
  */
 export function SearchBox({
   label,

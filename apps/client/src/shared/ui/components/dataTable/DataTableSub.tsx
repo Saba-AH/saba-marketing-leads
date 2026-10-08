@@ -1,7 +1,7 @@
 import { cn } from '@repo/ui/lib/utils';
 import React from 'react';
 
-/** Línea secundaria bajo el nombre (`.dt-sub`). */
+/** Secondary line below the name (`.dt-sub`). */
 export function DataTableSub({
   children,
   className,

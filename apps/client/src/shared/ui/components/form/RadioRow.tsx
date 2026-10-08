@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-/** Fila de opciones excluyentes (`.radio-row` del prototipo). */
+/** Row of mutually exclusive options (the prototype's `.radio-row`). */
 export function RadioRow({
   label,
   children,

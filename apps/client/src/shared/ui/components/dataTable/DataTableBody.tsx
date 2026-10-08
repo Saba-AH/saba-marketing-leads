@@ -1,7 +1,7 @@
 import { TableBody } from '@repo/ui/components/table';
 import React from 'react';
 
-/** Cuerpo de la tabla (`<tbody>`). Agrupa las filas y los avisos. */
+/** Table body (`<tbody>`). Groups the rows and the notices. */
 export function DataTableBody({
   children,
 }: {

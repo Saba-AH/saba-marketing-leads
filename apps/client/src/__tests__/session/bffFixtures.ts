@@ -1,20 +1,20 @@
-import type { TSesionTokens, TUsuarioSesion } from '@repo/schemas';
+import type { TSessionTokens, TSessionUser } from '@repo/schemas';
 import { NextRequest } from 'next/server';
 
 export const API = 'http://localhost:8080/api';
-export const PANEL = 'http://localhost:3002';
+export const PANEL_URL = 'http://localhost:3002';
 
-export const usuario: TUsuarioSesion = {
+export const user: TSessionUser = {
   id: 'u-1',
-  correo: 'angel.hernandez@sabatransporte.com',
-  nombre: 'Angel Hernández',
-  rol: 'admin',
+  email: 'angel.hernandez@sabatransporte.com',
+  name: 'Angel Hernández',
+  role: 'admin',
 };
 
-export function tokens(sufijo = '1'): TSesionTokens {
+export function tokens(suffix = '1'): TSessionTokens {
   return {
-    accessToken: `access-${sufijo}`,
-    refreshToken: `refresh-${sufijo}`,
+    accessToken: `access-${suffix}`,
+    refreshToken: `refresh-${suffix}`,
     expiresAt: Math.floor(Date.now() / 1000) + 3600,
   };
 }
@@ -39,14 +39,14 @@ export function panelRequest(
   }
   if (init.origin) headers.set('origin', init.origin);
   if (init.body !== undefined) headers.set('content-type', 'application/json');
-  return new NextRequest(`${PANEL}${path}`, {
+  return new NextRequest(`${PANEL_URL}${path}`, {
     method: init.method ?? 'GET',
     headers,
     body: init.body === undefined ? undefined : JSON.stringify(init.body),
   });
 }
 
-/** `Set-Cookie` de la respuesta, por nombre. */
+/** The response's `Set-Cookie`, by name. */
 export function setCookies(response: Response): Map<string, string> {
   const map = new Map<string, string>();
   for (const header of response.headers.getSetCookie()) {

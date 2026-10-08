@@ -1,11 +1,11 @@
-import type { TSesionTokens } from '@repo/schemas';
+import type { TSessionTokens } from '@repo/schemas';
 import type { NextResponse } from 'next/server';
 
 type ResponseCookies = NextResponse['cookies'];
 
 /**
- * Los tokens de Supabase Auth viven solo en estas cookies `httpOnly`: el JS
- * del navegador nunca los ve, así que un XSS no puede llevárselos.
+ * Supabase Auth tokens live only in these `httpOnly` cookies: the browser's JS
+ * never sees them, so an XSS cannot steal them.
  */
 export const SESSION_COOKIES = {
   access: 'saba_session',
@@ -13,9 +13,9 @@ export const SESSION_COOKIES = {
 } as const;
 
 /**
- * La cookie del access token vence este margen antes que el token: cuando
- * falta, el middleware ya sabe que hay que renovar y no manda a la API un
- * token a punto de expirar.
+ * The access token cookie expires this margin before the token: when it is
+ * missing, the middleware already knows it has to renew and does not send the
+ * API a token about to expire.
  */
 const REFRESH_MARGIN_S = 60;
 const REFRESH_MAX_AGE_S = 30 * 24 * 60 * 60;
@@ -32,7 +32,7 @@ function cookieOptions(maxAge: number) {
 
 export function writeSessionCookies(
   cookies: ResponseCookies,
-  tokens: TSesionTokens,
+  tokens: TSessionTokens,
   nowS: number = Date.now() / 1000
 ): void {
   const accessMaxAge = Math.max(

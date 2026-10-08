@@ -4,58 +4,58 @@ import { Button } from '@repo/ui/components/button';
 import { DialogFooter } from '@repo/ui/components/dialog';
 import React from 'react';
 
-interface AccionEliminar {
-  /** Texto del botón, p. ej. "Eliminar unidad". */
+interface DeleteAction {
+  /** Button text, e.g. "Eliminar unidad". */
   label: string;
-  /** Lo que se pregunta antes de ejecutar. */
-  confirmacion: string;
-  onEliminar: () => void;
-  eliminando?: boolean;
+  /** What is asked before running it. */
+  confirmation: string;
+  onRemove: () => void;
+  deleting?: boolean;
 }
 
 interface ModalFooterProps {
-  guardarLabel: string;
-  guardando?: boolean;
-  onCancelar: () => void;
-  /** Se omite al crear: solo se elimina lo que ya existe. */
-  eliminar?: AccionEliminar;
+  saveLabel: string;
+  saving?: boolean;
+  onCancel: () => void;
+  /** Omitted when creating: only what already exists can be deleted. */
+  remove?: DeleteAction;
 }
 
 /**
- * Pie de modal del prototipo (`.modal-foot`): la acción destructiva a la
- * izquierda con `margin-right:auto`, y Cancelar + Guardar a la derecha.
+ * The prototype's modal footer (`.modal-foot`): the destructive action on the
+ * left with `margin-right:auto`, and Cancel + Save on the right.
  *
- * La confirmación es un segundo estado del propio pie y no un `confirm()`
- * nativo como en el prototipo: el repo no admite diálogos del navegador
- * (criterio de #28).
+ * Confirmation is a second state of the footer itself and not a native
+ * `confirm()` as in the prototype: the repo does not allow browser dialogs
+ * (criterion from #28).
  */
 export function ModalFooter({
-  guardarLabel,
-  guardando,
-  onCancelar,
-  eliminar,
+  saveLabel,
+  saving,
+  onCancel,
+  remove,
 }: ModalFooterProps): React.JSX.Element {
-  const [confirmando, setConfirmando] = React.useState(false);
+  const [confirming, setConfirming] = React.useState(false);
 
-  if (eliminar && confirmando) {
+  if (remove && confirming) {
     return (
       <DialogFooter className="-mx-6 -mb-5 mt-2 border-gray-200 border-t px-6 py-4 sm:justify-between">
-        <p className="text-[12.5px] text-gray-600">{eliminar.confirmacion}</p>
+        <p className="text-[12.5px] text-gray-600">{remove.confirmation}</p>
         <div className="flex gap-2">
           <Button
-            onClick={() => setConfirmando(false)}
+            onClick={() => setConfirming(false)}
             type="button"
             variant="ghost"
           >
             Conservar
           </Button>
           <Button
-            disabled={eliminar.eliminando}
-            onClick={eliminar.onEliminar}
+            disabled={remove.deleting}
+            onClick={remove.onRemove}
             type="button"
             variant="destructive"
           >
-            {eliminar.eliminando ? 'Eliminando…' : 'Sí, eliminar'}
+            {remove.deleting ? 'Eliminando…' : 'Sí, eliminar'}
           </Button>
         </div>
       </DialogFooter>
@@ -64,23 +64,23 @@ export function ModalFooter({
 
   return (
     <DialogFooter className="-mx-6 -mb-5 mt-2 border-gray-200 border-t px-6 py-4 sm:justify-between">
-      {eliminar ? (
+      {remove ? (
         <Button
-          onClick={() => setConfirmando(true)}
+          onClick={() => setConfirming(true)}
           type="button"
           variant="destructive"
         >
-          {eliminar.label}
+          {remove.label}
         </Button>
       ) : (
         <span />
       )}
       <div className="flex gap-2">
-        <Button onClick={onCancelar} type="button" variant="ghost">
+        <Button onClick={onCancel} type="button" variant="ghost">
           Cancelar
         </Button>
-        <Button disabled={guardando} type="submit">
-          {guardando ? 'Guardando…' : guardarLabel}
+        <Button disabled={saving} type="submit">
+          {saving ? 'Guardando…' : saveLabel}
         </Button>
       </div>
     </DialogFooter>

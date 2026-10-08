@@ -8,51 +8,50 @@ import { DataTableMessage } from './DataTableMessage';
 import { DataTableContext } from './dataTableContext';
 
 interface DataTableProps {
-  /** Opcional: mientras carga, la tabla es solo el contenedor con su aviso. */
+  /** Optional: while loading, the table is just the container with its notice. */
   children?: React.ReactNode;
   /**
-   * Reparto de columnas en unidades `fr`, como en el prototipo
-   * (`'1.8fr 1.1fr 1fr'`). Se omite cuando la tabla es una ficha de una sola
-   * columna (Estructura).
+   * Column split in `fr` units, as in the prototype (`'1.8fr 1.1fr 1fr'`).
+   * Omitted when the table is a single-column card (Structure).
    */
-  columnas?: string;
-  cargando?: boolean;
+  columns?: string;
+  loading?: boolean;
   className?: string;
 }
 
 /**
- * Una tabla no entiende `fr`, así que los pesos del prototipo se traducen a
- * porcentajes sobre un `<colgroup>`. Mantener la misma prop evita reescribir
- * el reparto de cada pantalla, y con `table-fixed` el ancho lo manda el
- * colgroup y no el contenido de las celdas.
+ * A table does not understand `fr`, so the prototype's weights are translated
+ * into percentages on a `<colgroup>`. Keeping the same prop avoids rewriting
+ * every screen's split, and with `table-fixed` the width is driven by the
+ * colgroup and not by the cells' content.
  */
-function anchosDesdeColumnas(columnas: string): string[] {
-  const pesos = columnas
+function widthsFromColumns(columns: string): string[] {
+  const weights = columns
     .trim()
     .split(/\s+/)
-    .map((peso) => Number.parseFloat(peso))
-    .filter((peso) => !Number.isNaN(peso));
+    .map((weight) => Number.parseFloat(weight))
+    .filter((weight) => !Number.isNaN(weight));
 
-  const total = pesos.reduce((suma, peso) => suma + peso, 0);
+  const total = weights.reduce((sum, weight) => sum + weight, 0);
   if (total === 0) {
     return [];
   }
 
-  return pesos.map((peso) => `${((peso / total) * 100).toFixed(4)}%`);
+  return weights.map((weight) => `${((weight / total) * 100).toFixed(4)}%`);
 }
 
-/** Tarjeta contenedora de un listado (`.data-table` del prototipo). */
+/** Container card for a list (the prototype's `.data-table`). */
 export function DataTable({
   children,
-  columnas,
-  cargando,
+  columns,
+  loading,
   className,
 }: DataTableProps): React.JSX.Element {
-  const anchos = columnas ? anchosDesdeColumnas(columnas) : [];
-  const cantidadColumnas = anchos.length || 1;
+  const widths = columns ? widthsFromColumns(columns) : [];
+  const columnCount = widths.length || 1;
 
   return (
-    <DataTableContext.Provider value={cantidadColumnas}>
+    <DataTableContext.Provider value={columnCount}>
       <div
         className={cn(
           'overflow-hidden rounded-[10px] border border-border bg-card',
@@ -60,19 +59,19 @@ export function DataTable({
         )}
       >
         <Table className="table-fixed">
-          {anchos.length > 0 && (
+          {widths.length > 0 && (
             <colgroup>
-              {/* Una columna se identifica por su posición: dos pueden
-                  compartir ancho, y el orden nunca cambia en vida de la tabla. */}
-              {anchos.map((ancho, indice) => (
-                <col key={indice} style={{ width: ancho }} />
+              {/* A column is identified by its position: two can share a width,
+                  and the order never changes during the table's life. */}
+              {widths.map((width, index) => (
+                <col key={index} style={{ width: width }} />
               ))}
             </colgroup>
           )}
 
           {children}
 
-          {cargando && (
+          {loading && (
             <DataTableBody>
               <DataTableMessage className="px-[18px] py-4 text-muted-foreground text-sm">
                 Cargando…

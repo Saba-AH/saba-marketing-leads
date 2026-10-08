@@ -7,7 +7,7 @@ import {
 } from '@repo/ui/components/card';
 import { LoginForm } from '../components/LoginForm';
 
-/** Mismo diseño que el ingreso de staff de Saba (`/saba-panel/ingreso`). */
+/** Same design as Saba's staff sign-in (`/saba-panel/ingreso`). */
 export function LoginPage({ next }: { next: string }): React.JSX.Element {
   return (
     <main className="flex min-h-svh items-center justify-center bg-muted px-4 py-12">

@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 import { UserMenu } from '@/features/auth/ui/widgets/UserMenu';
 import { AppShell } from '@/shared/ui/layouts/AppShell';
 
-/** Cookie que escribe el sidebar de shadcn al abrirlo o colapsarlo. */
+/** Cookie the shadcn sidebar writes when opened or collapsed. */
 const SIDEBAR_COOKIE = 'sidebar_state';
 
 export default async function AppLayout({
@@ -12,7 +12,10 @@ export default async function AppLayout({
 }>) {
   const sidebarState = (await cookies()).get(SIDEBAR_COOKIE)?.value;
   return (
-    <AppShell defaultOpen={sidebarState !== 'false'} pieSidebar={<UserMenu />}>
+    <AppShell
+      defaultOpen={sidebarState !== 'false'}
+      sidebarFooter={<UserMenu />}
+    >
       {children}
     </AppShell>
   );

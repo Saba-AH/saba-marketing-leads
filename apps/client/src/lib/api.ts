@@ -1,18 +1,19 @@
 import { API } from '@repo/services';
-import { recargarEn } from '@/lib/session/recargarEn';
+import { reloadIn } from '@/lib/session/reloadIn';
 import { loginPathFor } from '@/lib/session/safeNextPath';
 
 let api: API | null = null;
 
 function goToLogin(): void {
   const { pathname, search } = window.location;
-  recargarEn(loginPathFor(`${pathname}${search}`));
+  reloadIn(loginPathFor(`${pathname}${search}`));
 }
 
 /**
- * Cliente de la API para el navegador. No habla con NestJS directo: va al BFF
- * (`/api/backend/*`), que agrega el token desde la cookie `httpOnly`. Ante un
- * 401 la sesión ya no sirve (el BFF borró las cookies): de vuelta al login.
+ * API client for the browser. It does not talk to NestJS directly: it goes to
+ * the BFF (`/api/backend/*`), which adds the token from the `httpOnly` cookie.
+ * On a 401 the session is no longer valid (the BFF deleted the cookies): back
+ * to the login.
  */
 export function getAPIClient(): API {
   if (!api) {

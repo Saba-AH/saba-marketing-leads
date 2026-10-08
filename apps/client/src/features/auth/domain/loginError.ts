@@ -1,23 +1,22 @@
 import { AUTH_ERROR_CODES } from '@repo/schemas';
 
 /**
- * Bloqueo y rate limit no son un error de quien escribe: se muestran como
- * advertencia (amarillo), igual que en el login de Saba.
+ * Lockout and rate limit are not the user's typing mistake: they are shown as
+ * a warning (yellow), just like in Saba's login.
  */
-const CODIGOS_ADVERTENCIA: ReadonlySet<string> = new Set([
-  AUTH_ERROR_CODES.cuentaBloqueada,
-  AUTH_ERROR_CODES.demasiadosIntentos,
+const WARNING_CODES: ReadonlySet<string> = new Set([
+  AUTH_ERROR_CODES.accountLocked,
+  AUTH_ERROR_CODES.tooManyAttempts,
 ]);
 
-export type TipoAvisoLogin = 'error' | 'advertencia';
+export type LoginNoticeKind = 'error' | 'warning';
 
 export class LoginError extends Error {
-  readonly tipo: TipoAvisoLogin;
+  readonly type: LoginNoticeKind;
 
-  constructor(mensaje: string, codigo?: string) {
-    super(mensaje);
+  constructor(message: string, code?: string) {
+    super(message);
     this.name = 'LoginError';
-    this.tipo =
-      codigo && CODIGOS_ADVERTENCIA.has(codigo) ? 'advertencia' : 'error';
+    this.type = code && WARNING_CODES.has(code) ? 'warning' : 'error';
   }
 }

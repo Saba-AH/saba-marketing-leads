@@ -4,8 +4,8 @@ import { ClientProviders } from '@/context/client-providers';
 import './globals.css';
 
 /**
- * La de Saba web, con sus mismos archivos: el Light hace de peso normal, como
- * allá (`saba/src/index.css`).
+ * The one Saba web uses, with the same files: Light acts as the normal weight,
+ * as it does there (`saba/src/index.css`).
  */
 const antiqueOlive = localFont({
   src: [
@@ -23,7 +23,7 @@ const antiqueOlive = localFont({
   variable: '--font-antique-olive',
 });
 
-/** Se mantiene solo para bloques monoespaciados. */
+/** Kept only for monospaced blocks. */
 const geistMono = localFont({
   src: './fonts/GeistMonoVF.woff',
   variable: '--font-geist-mono',
@@ -32,7 +32,7 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: 'Saba Marketing Leads',
   description: 'Panel de leads de marketing',
-  // Panel interno: nada de esto tiene que aparecer en un buscador.
+  // Internal panel: none of this should show up in a search engine.
   robots: { index: false, follow: false },
 };
 

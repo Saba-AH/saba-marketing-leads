@@ -1,8 +1,8 @@
-import type { TCrearLead, TLead } from '@repo/schemas';
+import type { TCreateLead, TLead } from '@repo/schemas';
 import type { Safe } from '@repo/utils';
 
-/** Puerto: lo único que esta feature necesita de la API. */
+/** Port: the only thing this feature needs from the API. */
 export interface LeadsApi {
-  listar(): Promise<Safe<TLead[]>>;
-  crear(datos: TCrearLead): Promise<Safe<TLead>>;
+  list(): Promise<Safe<TLead[]>>;
+  create(data: TCreateLead): Promise<Safe<TLead>>;
 }

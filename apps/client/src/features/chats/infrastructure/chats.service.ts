@@ -1,15 +1,15 @@
-import type { TEnviarMensaje } from '@repo/schemas';
+import type { TSendMessage } from '@repo/schemas';
 import type { Safe } from '@repo/utils';
-import type { Conversacion, Mensaje } from '../domain/chat.model';
-import type { ClienteSabaDelChat } from '../domain/clienteSaba.model';
+import type { Conversation, Message } from '../domain/chat.model';
+import type { ChatSabaCustomers } from '../domain/sabaCustomer.model';
 import type { ChatsApi } from './chats.interfaces';
 import {
-  toClienteSabaDomain,
-  toConversacionDomain,
-  toMensajeDomain,
+  toConversationDomain,
+  toMessageDomain,
+  toSabaCustomerDomain,
 } from './chats.transform';
 
-function datos<T>(result: Safe<T>): T {
+function data<T>(result: Safe<T>): T {
   if (!result.success) throw new Error(result.error);
   return result.data;
 }
@@ -17,40 +17,38 @@ function datos<T>(result: Safe<T>): T {
 export class ChatsServiceClass {
   constructor(private chatsApi: ChatsApi) {}
 
-  async listarConversaciones(): Promise<Conversacion[]> {
-    return datos(await this.chatsApi.listarConversaciones()).map(
-      toConversacionDomain
+  async listConversations(): Promise<Conversation[]> {
+    return data(await this.chatsApi.listConversations()).map(
+      toConversationDomain
     );
   }
 
-  async listarMensajes(conversationId: string): Promise<Mensaje[]> {
-    return datos(await this.chatsApi.listarMensajes(conversationId)).map(
-      toMensajeDomain
+  async listMessages(conversationId: string): Promise<Message[]> {
+    return data(await this.chatsApi.listMessages(conversationId)).map(
+      toMessageDomain
     );
   }
 
-  async enviarMensaje(
+  async sendMessage(
     conversationId: string,
-    mensaje: TEnviarMensaje
-  ): Promise<Mensaje> {
-    return toMensajeDomain(
-      datos(await this.chatsApi.enviarMensaje(conversationId, mensaje))
+    message: TSendMessage
+  ): Promise<Message> {
+    return toMessageDomain(
+      data(await this.chatsApi.sendMessage(conversationId, message))
     );
   }
 
-  async marcarLeida(conversationId: string): Promise<void> {
-    datos(await this.chatsApi.marcarLeida(conversationId));
+  async markAsRead(conversationId: string): Promise<void> {
+    data(await this.chatsApi.markAsRead(conversationId));
   }
 
-  async indicarEscribiendo(conversationId: string): Promise<void> {
-    datos(await this.chatsApi.indicarEscribiendo(conversationId));
+  async sendTypingIndicator(conversationId: string): Promise<void> {
+    data(await this.chatsApi.sendTypingIndicator(conversationId));
   }
 
-  async obtenerClienteSaba(
-    conversationId: string
-  ): Promise<ClienteSabaDelChat> {
-    return toClienteSabaDomain(
-      datos(await this.chatsApi.obtenerClienteSaba(conversationId))
+  async getSabaCustomer(conversationId: string): Promise<ChatSabaCustomers> {
+    return toSabaCustomerDomain(
+      data(await this.chatsApi.getSabaCustomer(conversationId))
     );
   }
 }

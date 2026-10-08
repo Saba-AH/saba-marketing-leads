@@ -17,17 +17,17 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import React from 'react';
-import { estaActivo, NAVEGACION } from './navegacion';
+import { isNavItemActive, NAVIGATION } from './navigation';
 
 /**
- * Sidebar del panel: logo, navegación y, abajo, lo que reciba en `pie` (el
- * menú de usuario, que vive en la feature de auth: `shared` no importa
- * features).
+ * The panel's sidebar: logo, navigation and, at the bottom, whatever it gets in
+ * `sidebarFooter` (the user menu, which lives in the auth feature: `shared`
+ * does not import features).
  */
 export function AppSidebar({
-  pie,
+  footer,
 }: {
-  pie?: React.ReactNode;
+  footer?: React.ReactNode;
 }): React.JSX.Element {
   const pathname = usePathname();
   const { isMobile, setOpenMobile } = useSidebar();
@@ -58,24 +58,24 @@ export function AppSidebar({
       </SidebarHeader>
 
       <SidebarContent>
-        {NAVEGACION.map((grupo) => (
-          <SidebarGroup key={grupo.etiqueta}>
-            <SidebarGroupLabel>{grupo.etiqueta}</SidebarGroupLabel>
+        {NAVIGATION.map((group) => (
+          <SidebarGroup key={group.label}>
+            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {grupo.items.map((item) => (
+                {group.items.map((item) => (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                       asChild
-                      isActive={estaActivo(item.href, pathname)}
-                      tooltip={item.etiqueta}
+                      isActive={isNavItemActive(item.href, pathname)}
+                      tooltip={item.label}
                     >
                       <Link
                         href={item.href}
                         onClick={() => isMobile && setOpenMobile(false)}
                       >
-                        <item.icono />
-                        <span>{item.etiqueta}</span>
+                        <item.icon />
+                        <span>{item.label}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -86,7 +86,7 @@ export function AppSidebar({
         ))}
       </SidebarContent>
 
-      {pie && <SidebarFooter>{pie}</SidebarFooter>}
+      {footer && <SidebarFooter>{footer}</SidebarFooter>}
       <SidebarRail />
     </Sidebar>
   );
