@@ -1,5 +1,10 @@
-import type { TConversacionResumen, TMensajeChat } from '@repo/schemas';
+import type {
+  TClienteSabaChat,
+  TConversacionResumen,
+  TMensajeChat,
+} from '@repo/schemas';
 import type { Conversacion, Mensaje } from '../domain/chat.model';
+import type { ClienteSabaDelChat } from '../domain/clienteSaba.model';
 
 /** El navegador lo pide al BFF, que agrega la sesión; nunca a Meta directo. */
 function urlMedia(mensajeId: string): string {
@@ -33,5 +38,19 @@ export function toMensajeDomain(dto: TMensajeChat): Mensaje {
     errorDetalle: dto.errorDetalle,
     mediaUrl: dto.tieneMedia ? urlMedia(dto.id) : null,
     waTimestamp: new Date(dto.waTimestamp),
+  };
+}
+
+export function toClienteSabaDomain(dto: TClienteSabaChat): ClienteSabaDelChat {
+  return {
+    sinTelefono: dto.sinTelefono,
+    clientes: dto.clientes.map((c) => ({
+      ...c,
+      clienteDesde: fecha(c.clienteDesde),
+      solicitudes: c.solicitudes.map((s) => ({
+        ...s,
+        creadaAt: new Date(s.creadaAt),
+      })),
+    })),
   };
 }

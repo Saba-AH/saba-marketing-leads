@@ -1,8 +1,15 @@
 'use client';
 
 import { Button } from '@repo/ui/components/button';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@repo/ui/components/sheet';
 import { Skeleton } from '@repo/ui/components/skeleton';
-import { ArrowLeft, Clock, Lock } from 'lucide-react';
+import { ArrowLeft, Clock, Lock, UserRound } from 'lucide-react';
 import React from 'react';
 import { ErrorState } from '@/shared/ui/components/ErrorState';
 import { useAvisoEscribiendo } from '../../application/mutations/useAvisoEscribiendo.mutation';
@@ -19,6 +26,7 @@ import { BotonIrAlFinal } from '../components/BotonIrAlFinal';
 import { BurbujaMensaje } from '../components/BurbujaMensaje';
 import { ComposerMensaje } from '../components/ComposerMensaje';
 import { useScrollAlFinal } from '../hooks/useScrollAlFinal';
+import { PanelClienteSaba } from './PanelClienteSaba';
 
 export function HiloConversacion({
   conversacion,
@@ -44,96 +52,124 @@ export function HiloConversacion({
   const scroll = useScrollAlFinal(mensajes?.length ?? 0);
 
   return (
-    <section
-      aria-label={`Chat con ${nombreVisible(conversacion)}`}
-      className="flex min-h-0 flex-1 flex-col"
-    >
-      <header className="flex items-center gap-2 border-b px-3 py-3 md:px-5">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="shrink-0 md:hidden"
-          aria-label="Volver a los chats"
-          onClick={onVolver}
-        >
-          <ArrowLeft aria-hidden="true" />
-        </Button>
-        <div className="min-w-0">
-          <h2 className="truncate font-semibold">
-            {nombreVisible(conversacion)}
-          </h2>
-          <p className="truncate text-muted-foreground text-xs">
-            {telefono ? formatearTelefono(telefono) : 'Sin teléfono'}
-            {conversacion.contacto.vinculadoASaba
-              ? ' · Vinculado a Saba'
-              : ' · Sin vincular a Saba'}
-          </p>
-        </div>
-      </header>
-
-      <div className="relative flex min-h-0 flex-1 flex-col">
-        <div
-          ref={scroll.contenedorRef}
-          onScroll={scroll.onScroll}
-          className="min-h-0 flex-1 overflow-y-auto px-3 py-4 md:px-5"
-        >
-          {isPending && (
-            <div className="flex flex-col gap-3">
-              <Skeleton className="h-10 w-1/2" />
-              <Skeleton className="ml-auto h-10 w-1/2" />
-            </div>
-          )}
-          {error && <ErrorState error={error} />}
-          {mensajes && (
-            <ol aria-label="Mensajes" className="flex flex-col gap-2">
-              {mensajes.map((mensaje) => (
-                <BurbujaMensaje key={mensaje.id} mensaje={mensaje} />
-              ))}
-            </ol>
-          )}
-        </div>
-        {!scroll.alFinal && (
-          <BotonIrAlFinal
-            nuevos={scroll.nuevos}
-            onClick={() => scroll.irAlFinal()}
-          />
-        )}
-      </div>
-
-      <footer className="border-t px-3 py-3 md:px-5">
-        {ventana.abierta && telefono ? (
-          <div className="flex flex-col gap-2">
-            <p className="flex items-center gap-1 text-muted-foreground text-xs">
-              <Clock aria-hidden="true" className="size-3.5" />
-              Ventana de respuesta: quedan {ventana.restante}
+    <div className="flex min-h-0 flex-1">
+      <section
+        aria-label={`Chat con ${nombreVisible(conversacion)}`}
+        className="flex min-h-0 min-w-0 flex-1 flex-col"
+      >
+        <header className="flex items-center gap-2 border-b px-3 py-3 md:px-5">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="shrink-0 md:hidden"
+            aria-label="Volver a los chats"
+            onClick={onVolver}
+          >
+            <ArrowLeft aria-hidden="true" />
+          </Button>
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate font-semibold">
+              {nombreVisible(conversacion)}
+            </h2>
+            <p className="truncate text-muted-foreground text-xs">
+              {telefono ? formatearTelefono(telefono) : 'Sin teléfono'}
             </p>
-            <ComposerMensaje
-              onEscribiendo={avisarEscribiendo}
-              onEnviar={async (datos) => {
-                try {
-                  await enviar.mutateAsync(datos);
-                  return true;
-                } catch {
-                  // El mensaje del error se muestra abajo (`enviar.error`).
-                  return false;
-                }
-              }}
-            />
-            {enviar.isError && (
-              <p role="alert" className="text-destructive text-sm">
-                {enviar.error.message}
-              </p>
+          </div>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0 xl:hidden"
+              >
+                <UserRound aria-hidden="true" />
+                Ver cliente
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="overflow-y-auto">
+              <SheetHeader>
+                <SheetTitle>Cliente en Saba</SheetTitle>
+              </SheetHeader>
+              <div className="px-4 pb-4">
+                <PanelClienteSaba conversationId={conversacion.id} />
+              </div>
+            </SheetContent>
+          </Sheet>
+        </header>
+
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          <div
+            ref={scroll.contenedorRef}
+            onScroll={scroll.onScroll}
+            className="min-h-0 flex-1 overflow-y-auto px-3 py-4 md:px-5"
+          >
+            {isPending && (
+              <div className="flex flex-col gap-3">
+                <Skeleton className="h-10 w-1/2" />
+                <Skeleton className="ml-auto h-10 w-1/2" />
+              </div>
+            )}
+            {error && <ErrorState error={error} />}
+            {mensajes && (
+              <ol aria-label="Mensajes" className="flex flex-col gap-2">
+                {mensajes.map((mensaje) => (
+                  <BurbujaMensaje key={mensaje.id} mensaje={mensaje} />
+                ))}
+              </ol>
             )}
           </div>
-        ) : (
-          <p className="flex items-start gap-2 rounded-md bg-muted px-3 py-2 text-muted-foreground text-sm">
-            <Lock aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-            {telefono
-              ? 'Pasaron más de 24 h desde el último mensaje del cliente. Solo se le puede escribir con una plantilla (próximamente).'
-              : 'Este contacto solo comparte su nombre de usuario de WhatsApp: todavía no se le puede responder desde el panel.'}
-          </p>
-        )}
-      </footer>
-    </section>
+          {!scroll.alFinal && (
+            <BotonIrAlFinal
+              nuevos={scroll.nuevos}
+              onClick={() => scroll.irAlFinal()}
+            />
+          )}
+        </div>
+
+        <footer className="border-t px-3 py-3 md:px-5">
+          {ventana.abierta && telefono ? (
+            <div className="flex flex-col gap-2">
+              <p className="flex items-center gap-1 text-muted-foreground text-xs">
+                <Clock aria-hidden="true" className="size-3.5" />
+                Ventana de respuesta: quedan {ventana.restante}
+              </p>
+              <ComposerMensaje
+                onEscribiendo={avisarEscribiendo}
+                onEnviar={async (datos) => {
+                  try {
+                    await enviar.mutateAsync(datos);
+                    return true;
+                  } catch {
+                    // El mensaje del error se muestra abajo (`enviar.error`).
+                    return false;
+                  }
+                }}
+              />
+              {enviar.isError && (
+                <p role="alert" className="text-destructive text-sm">
+                  {enviar.error.message}
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="flex items-start gap-2 rounded-md bg-muted px-3 py-2 text-muted-foreground text-sm">
+              <Lock aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+              {telefono
+                ? 'Pasaron más de 24 h desde el último mensaje del cliente. Solo se le puede escribir con una plantilla (próximamente).'
+                : 'Este contacto solo comparte su nombre de usuario de WhatsApp: todavía no se le puede responder desde el panel.'}
+            </p>
+          )}
+        </footer>
+      </section>
+      <aside
+        aria-label="Cliente en Saba"
+        className="hidden w-80 shrink-0 flex-col gap-3 overflow-y-auto border-l p-4 xl:flex"
+      >
+        <h2 className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">
+          Cliente en Saba
+        </h2>
+        <PanelClienteSaba conversationId={conversacion.id} />
+      </aside>
+    </div>
   );
 }

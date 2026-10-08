@@ -1,4 +1,8 @@
-import type { TConversacionResumen, TMensajeChat } from '@repo/schemas';
+import type {
+  TClienteSaba,
+  TConversacionResumen,
+  TMensajeChat,
+} from '@repo/schemas';
 import { HttpResponse, http } from 'msw';
 import { BACKEND_URL } from '@/__tests__/mocks/backendUrl';
 
@@ -65,7 +69,37 @@ export const mensajesFixture: TMensajeChat[] = [
   },
 ];
 
+export const clienteSabaFixture: TClienteSaba = {
+  id: 'p1',
+  nombre: 'Ana María González',
+  cedula: 'V12345678',
+  correo: 'ana@correo.com',
+  telefono: '+58 414 1234567',
+  ciudad: 'Caracas',
+  origen: 'web',
+  clienteDesde: '2026-01-15T12:00:00.000Z',
+  solicitudes: [
+    {
+      id: 'a1',
+      estado: 'date_scheduled',
+      estadoEtiqueta: 'Cita agendada',
+      activa: true,
+      creadaAt: '2026-09-01T12:00:00.000Z',
+      producto: 'CF 450MT',
+      montoFinanciado: 1500,
+      cuota: 40,
+      frecuencia: 'weekly',
+    },
+  ],
+};
+
 export const chatsHandlers = [
+  http.get(`${base}/:id/cliente-saba`, () =>
+    HttpResponse.json({
+      success: true,
+      data: { sinTelefono: false, clientes: [clienteSabaFixture] },
+    })
+  ),
   http.get(base, () =>
     HttpResponse.json({ success: true, data: conversacionesFixture() })
   ),

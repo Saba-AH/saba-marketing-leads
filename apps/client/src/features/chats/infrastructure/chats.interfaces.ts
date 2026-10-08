@@ -1,4 +1,5 @@
 import type {
+  TClienteSabaChat,
   TConversacionResumen,
   TEnviarMensaje,
   TMensajeChat,
@@ -15,4 +16,5 @@ export interface ChatsApi {
   ): Promise<Safe<TMensajeChat>>;
   marcarLeida(conversationId: string): Promise<Safe<null>>;
   indicarEscribiendo(conversationId: string): Promise<Safe<null>>;
+  obtenerClienteSaba(conversationId: string): Promise<Safe<TClienteSabaChat>>;
 }

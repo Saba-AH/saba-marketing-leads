@@ -1,8 +1,13 @@
 import type { TEnviarMensaje } from '@repo/schemas';
 import type { Safe } from '@repo/utils';
 import type { Conversacion, Mensaje } from '../domain/chat.model';
+import type { ClienteSabaDelChat } from '../domain/clienteSaba.model';
 import type { ChatsApi } from './chats.interfaces';
-import { toConversacionDomain, toMensajeDomain } from './chats.transform';
+import {
+  toClienteSabaDomain,
+  toConversacionDomain,
+  toMensajeDomain,
+} from './chats.transform';
 
 function datos<T>(result: Safe<T>): T {
   if (!result.success) throw new Error(result.error);
@@ -39,5 +44,13 @@ export class ChatsServiceClass {
 
   async indicarEscribiendo(conversationId: string): Promise<void> {
     datos(await this.chatsApi.indicarEscribiendo(conversationId));
+  }
+
+  async obtenerClienteSaba(
+    conversationId: string
+  ): Promise<ClienteSabaDelChat> {
+    return toClienteSabaDomain(
+      datos(await this.chatsApi.obtenerClienteSaba(conversationId))
+    );
   }
 }

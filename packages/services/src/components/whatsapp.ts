@@ -1,8 +1,10 @@
 import {
+  clienteSabaChatResponseSchema,
   conversacionesResponseSchema,
   mensajeResponseSchema,
   mensajesResponseSchema,
   sinDatosResponseSchema,
+  type TClienteSabaChat,
   type TConversacionResumen,
   type TEnviarMensaje,
   type TMensajeChat,
@@ -76,6 +78,18 @@ export class WhatsAppService {
       undefined,
       options,
       sinDatosResponseSchema
+    );
+  }
+
+  async obtenerClienteSaba(
+    conversationId: string,
+    options?: HttpRequestOptions
+  ): Promise<Safe<TClienteSabaChat>> {
+    return await this.httpClient.get(
+      `${this.basePath}/${encodeURIComponent(conversationId)}/cliente-saba`,
+      undefined,
+      options,
+      clienteSabaChatResponseSchema
     );
   }
 }

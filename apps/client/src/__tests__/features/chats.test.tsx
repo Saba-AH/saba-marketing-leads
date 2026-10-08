@@ -1,6 +1,7 @@
 import { HttpResponse, http } from 'msw';
 import React from 'react';
 import { BACKEND_URL } from '@/__tests__/mocks/backendUrl';
+import { clienteSabaFixture } from '@/__tests__/mocks/handlers/chats.mock';
 import { ChatsPage } from '@/features/chats/ui/pages/ChatsPage';
 import { server } from '../mocks/server';
 import {
@@ -232,6 +233,150 @@ describe('ChatsPage', () => {
     expect(
       screen.getByText('Elige una conversación para ver los mensajes.')
     ).toBeInTheDocument();
+  });
+
+  describe('cliente en Saba', () => {
+    async function abrirChatDeAna(): Promise<HTMLElement> {
+      const user = userEvent.setup();
+      render(<ChatsPage />);
+      await user.click(
+        await screen.findByRole('button', { name: /Ana Pérez/ })
+      );
+      return screen.getByRole('complementary', { name: 'Cliente en Saba' });
+    }
+
+    it('muestra quién es en Saba y sus solicitudes al abrir el chat', async () => {
+      const panel = await abrirChatDeAna();
+
+      expect(
+        await within(panel).findByText('Ana María González')
+      ).toBeInTheDocument();
+      expect(within(panel).getByText('Cédula V12345678')).toBeInTheDocument();
+      expect(within(panel).getByText('CF 450MT')).toBeInTheDocument();
+      expect(within(panel).getByText('Cita agendada')).toBeInTheDocument();
+      expect(
+        within(panel).getByText(/Cuota \$40,00 semanal/)
+      ).toBeInTheDocument();
+    });
+
+    it('copia la cédula al portapapeles', async () => {
+      const user = userEvent.setup();
+      // Después de setup(): user-event reemplaza navigator.clipboard por el suyo.
+      const writeText = jest.spyOn(navigator.clipboard, 'writeText');
+      render(<ChatsPage />);
+      await user.click(
+        await screen.findByRole('button', { name: /Ana Pérez/ })
+      );
+      const panel = screen.getByRole('complementary', {
+        name: 'Cliente en Saba',
+      });
+
+      await user.click(
+        await within(panel).findByRole('button', { name: 'Copiar cédula' })
+      );
+
+      expect(writeText).toHaveBeenCalledWith('V12345678');
+      expect(
+        await within(panel).findByRole('button', { name: 'Copiado' })
+      ).toBeInTheDocument();
+    });
+
+    it('deja elegir cuando varios perfiles tienen el mismo número', async () => {
+      server.use(
+        http.get(`${base}/:id/cliente-saba`, () =>
+          HttpResponse.json({
+            success: true,
+            data: {
+              sinTelefono: false,
+              clientes: [
+                clienteSabaFixture,
+                {
+                  ...clienteSabaFixture,
+                  id: 'p2',
+                  nombre: 'José González',
+                  cedula: 'V87654321',
+                },
+              ],
+            },
+          })
+        )
+      );
+      const user = userEvent.setup();
+      render(<ChatsPage />);
+      await user.click(
+        await screen.findByRole('button', { name: /Ana Pérez/ })
+      );
+      const panel = screen.getByRole('complementary', {
+        name: 'Cliente en Saba',
+      });
+
+      expect(
+        await within(panel).findByText('Hay 2 perfiles con este número:')
+      ).toBeInTheDocument();
+      await user.click(
+        within(panel).getByRole('button', { name: 'José González' })
+      );
+
+      expect(within(panel).getByText('Cédula V87654321')).toBeInTheDocument();
+    });
+
+    it('avisa cuando el número no está en Saba', async () => {
+      server.use(
+        http.get(`${base}/:id/cliente-saba`, () =>
+          HttpResponse.json({
+            success: true,
+            data: { sinTelefono: false, clientes: [] },
+          })
+        )
+      );
+      const panel = await abrirChatDeAna();
+
+      expect(
+        await within(panel).findByText('No está registrado en Saba')
+      ).toBeInTheDocument();
+    });
+
+    it('muestra el error de Saba y deja reintentar sin afectar el chat', async () => {
+      let intentos = 0;
+      server.use(
+        http.get(`${base}/:id/cliente-saba`, () => {
+          intentos++;
+          return HttpResponse.json(
+            {
+              success: false,
+              error:
+                'No se pudo consultar Saba en este momento. Intenta de nuevo en unos segundos.',
+              code: 'SABA_CLIENTES_NO_DISPONIBLE',
+            },
+            { status: 424 }
+          );
+        })
+      );
+      const user = userEvent.setup();
+      render(<ChatsPage />);
+      await user.click(
+        await screen.findByRole('button', { name: /Ana Pérez/ })
+      );
+      const panel = screen.getByRole('complementary', {
+        name: 'Cliente en Saba',
+      });
+
+      expect(
+        await within(panel).findByText(
+          /No se pudo consultar Saba/,
+          {},
+          { timeout: 3000 }
+        )
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('list', { name: 'Mensajes' })
+      ).toBeInTheDocument();
+      const antes = intentos;
+      await user.click(
+        within(panel).getByRole('button', { name: 'Reintentar' })
+      );
+      await waitFor(() => expect(intentos).toBeGreaterThan(antes));
+    });
   });
 
   it('no envía un mensaje vacío', async () => {
