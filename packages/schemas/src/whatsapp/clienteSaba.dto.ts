@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { buildSafeResponseSchema } from '../utils';
 
-/** Solicitud de un cliente, como la resume el servidor de Saba (`/admin/marketing/clientes`). */
+/** Solicitud de un cliente, como la resume el servidor de Saba (`/admin/marketing/customers`). */
 export const solicitudSabaSchema = z.object({
   id: z.string(),
   estado: z.string(),

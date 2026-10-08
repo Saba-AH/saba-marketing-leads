@@ -31,6 +31,6 @@ Todo módulo nuevo se registra acá antes o en el mismo PR que su implementació
 
 ## `sabaClientes`
 
-- Cliente HTTP del servidor Node de Saba (`SABA_API_URL`): `GET /api/admin/marketing/clientes/por-telefono?telefono=` devuelve hasta 5 perfiles con identidad y últimas solicitudes, el más probable primero. La normalización de teléfonos y qué es "información importante" viven en Saba (`services/marketing/clientesSaba.js`), no acá.
-- Se reenvía el token de sesión del agente: Saba lo valida (`getAuthUserFromRequest`) y exige el permiso `/admin/marketing/clientes` de su `routePermissions.ts`. 401/403 de Saba → `SABA_CLIENTES_SIN_PERMISO` (403); caída, timeout o respuesta inesperada → `SABA_CLIENTES_NO_DISPONIBLE` (424).
+- Cliente HTTP del servidor Node de Saba (`SABA_API_URL`): `GET /api/admin/marketing/customers/by-phone?phone=` devuelve hasta 5 perfiles con identidad y últimas solicitudes, el más probable primero. La normalización de teléfonos y qué es "información importante" viven en Saba (`services/marketing/customerLookup.js`), no acá.
+- Se reenvía el token de sesión del agente: Saba lo valida (`getAuthUserFromRequest`) y exige el permiso `/admin/marketing/customers` de su `routePermissions.ts`. 401/403 de Saba → `SABA_CLIENTES_SIN_PERMISO` (403); caída, timeout o respuesta inesperada → `SABA_CLIENTES_NO_DISPONIBLE` (424).
 - Lo usa `whatsapp` al **abrir un chat** (`GET /whatsapp/conversaciones/:id/cliente-saba`). Ya no hay vínculo automático al recibir mensajes; `whatsapp_contacts.saba_profile_id` queda para un vínculo manual futuro.

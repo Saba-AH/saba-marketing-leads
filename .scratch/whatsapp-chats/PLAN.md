@@ -198,7 +198,7 @@ Agregar al glosario de `CONTEXT.md`: Contacto, Conversación, Ventana de atenci�
 
 ## Fase 5 — Módulo `sabaClientes` (solo lectura)
 
-**Reemplazada (2026-10-08):** este repo ya no lee `profiles`/`applications`. El servidor de Saba expone `GET /api/admin/marketing/clientes/por-telefono` (rama `feat/marketing-clientes-telefono` del repo `saba`, permiso `/admin/marketing/clientes` en su `routePermissions.ts`) con identidad + últimas 5 solicitudes, hasta 5 perfiles. `sabaClientes` es ahora un cliente HTTP que reenvía la sesión del agente (`SABA_API_URL`). Se consulta **al abrir el chat** (`GET /whatsapp/conversaciones/:id/cliente-saba`) y se muestra en un panel lateral (o "Ver cliente" en pantallas chicas) con botón para copiar la cédula. Se quitó el vínculo automático del webhook. Nivel 3 (pagos) fuera por ser dato de cobranza.
+**Reemplazada (2026-10-08):** este repo ya no lee `profiles`/`applications`. El servidor de Saba expone `GET /api/admin/marketing/customers/by-phone` (rama `feat/marketing-customers-by-phone` del repo `saba`, permiso `/admin/marketing/customers` en su `routePermissions.ts`) con identidad + últimas 5 solicitudes, hasta 5 perfiles. `sabaClientes` es ahora un cliente HTTP que reenvía la sesión del agente (`SABA_API_URL`). Se consulta **al abrir el chat** (`GET /whatsapp/conversaciones/:id/cliente-saba`) y se muestra en un panel lateral (o "Ver cliente" en pantallas chicas) con botón para copiar la cédula. Se quitó el vínculo automático del webhook. Nivel 3 (pagos) fuera por ser dato de cobranza.
 
 
 **Hecha (2026-10-07), con estos ajustes:**

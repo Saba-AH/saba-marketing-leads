@@ -142,7 +142,7 @@ export class ChatsController {
     summary:
       'Clientes de Saba con el teléfono del chat (identidad y solicitudes)',
     description:
-      'Se consulta al servidor de Saba con la sesión del agente; Saba valida el permiso `/admin/marketing/clientes`.',
+      'Se consulta al servidor de Saba con la sesión del agente; Saba valida el permiso `/admin/marketing/customers`.',
   })
   @ZodApiResponse(HttpStatus.OK, clienteSabaChatResponseSchema)
   async clienteSaba(
