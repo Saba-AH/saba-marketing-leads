@@ -2,27 +2,27 @@ import { sql } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 
 /**
- * Admin de desarrollo para poder iniciar sesión contra el stack local de
- * Supabase. Contraseña trivial a propósito: solo existe en local, y
- * `assertLocalDatabase` (en `scripts/seed.ts`) impide sembrarlo en otra base.
+ * Development admin to be able to log in against the local Supabase stack.
+ * Trivial password on purpose: it only exists locally, and
+ * `assertLocalDatabase` (in `scripts/seed.ts`) prevents seeding it elsewhere.
  */
 export const DEV_ADMIN = {
   id: 'de000000-0000-0000-0000-000000000001',
   email: 'angel.hernandez@sabatransporte.com',
   password: '12345678',
-  nombre: 'Angel',
-  apellido: 'Hernández',
+  name: 'Angel',
+  lastName: 'Hernández',
 } as const;
 
 /**
- * Idempotente: correrlo de nuevo no duplica nada ni cambia la contraseña.
- * Si el correo ya es de otro usuario (el de prod, traído por
- * `npm run db:sync:saba`), no hace nada: ese manda.
+ * Idempotent: running it again duplicates nothing and does not change the
+ * password. If the email already belongs to another user (the prod one, brought
+ * by `npm run db:sync:saba`), it does nothing: that one wins.
  *
- * @returns si sembró (o ya estaba) el admin de desarrollo.
+ * @returns whether it seeded (or already had) the development admin.
  *
- * SQL cruda: `auth.*` es de GoTrue y `profiles` de Saba; ninguna tiene
- * `*.schema.ts` en este repo, así que el builder no las conoce.
+ * Raw SQL: `auth.*` belongs to GoTrue and `profiles` to Saba; neither has a
+ * `*.schema.ts` in this repo, so the builder does not know them.
  */
 export async function seedDevAdmin(
   db: NodePgDatabase<Record<string, unknown>>
@@ -33,7 +33,7 @@ export async function seedDevAdmin(
   if (rows.some((row) => row.id !== DEV_ADMIN.id)) return false;
 
   await db.transaction(async (tx) => {
-    // GoTrue escanea las columnas de tokens como string: NULL rompe el login.
+    // GoTrue scans the token columns as strings: NULL breaks the login.
     await tx.execute(sql`
       INSERT INTO auth.users (
         instance_id, id, aud, role, email,
@@ -55,7 +55,7 @@ export async function seedDevAdmin(
       ON CONFLICT (id) DO NOTHING
     `);
 
-    // GoTrue v2 busca la identidad de email por `provider_id = email`.
+    // GoTrue v2 looks up the email identity by `provider_id = email`.
     await tx.execute(sql`
       INSERT INTO auth.identities (
         id, user_id, provider_id, identity_data, provider,
@@ -72,7 +72,7 @@ export async function seedDevAdmin(
     await tx.execute(sql`
       INSERT INTO public.profiles (id, nombre, apellido, email, role)
       VALUES (
-        ${DEV_ADMIN.id}, ${DEV_ADMIN.nombre}, ${DEV_ADMIN.apellido},
+        ${DEV_ADMIN.id}, ${DEV_ADMIN.name}, ${DEV_ADMIN.lastName},
         ${DEV_ADMIN.email}, 'admin'
       )
       ON CONFLICT (id) DO UPDATE SET role = 'admin'

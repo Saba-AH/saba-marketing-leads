@@ -1,10 +1,10 @@
 import type { DependencyCheck } from '../../../domain/HealthReport';
 
 /**
- * Puerto de salida: una dependencia que sabe reportar si está viva.
+ * Outbound port: a dependency that can report whether it is alive.
  *
- * Cada integración (Postgres, Cloud Storage, Vertex AI, ...) implementa este
- * puerto en su adaptador; el caso de uso solo conoce la interfaz.
+ * Each integration (Postgres, Cloud Storage, Vertex AI, ...) implements this
+ * port in its adapter; the use case only knows the interface.
  */
 export interface DependencyProbe {
   readonly name: string;

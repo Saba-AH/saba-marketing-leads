@@ -1,54 +1,54 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { WebhookEventPublisherPort } from '../../modules/whatsapp/application/ports/out/WebhookEventPublisherPort';
 import type { WebhookEventRepositoryPort } from '../../modules/whatsapp/application/ports/out/WebhookEventRepositoryPort';
-import { RecibirWebhookUseCase } from '../../modules/whatsapp/application/use-cases/RecibirWebhookUseCase';
-import { VerificarSuscripcionWebhookUseCase } from '../../modules/whatsapp/application/use-cases/VerificarSuscripcionWebhookUseCase';
-import { FirmaWebhookInvalidaException } from '../../modules/whatsapp/domain/exceptions/FirmaWebhookInvalidaException';
-import { SuscripcionWebhookRechazadaException } from '../../modules/whatsapp/domain/exceptions/SuscripcionWebhookRechazadaException';
-import { extraerCambios } from '../../modules/whatsapp/domain/WebhookCambio';
+import { ReceiveWebhookUseCase } from '../../modules/whatsapp/application/use-cases/ReceiveWebhookUseCase';
+import { VerifyWebhookSubscriptionUseCase } from '../../modules/whatsapp/application/use-cases/VerifyWebhookSubscriptionUseCase';
+import { InvalidWebhookSignatureException } from '../../modules/whatsapp/domain/exceptions/InvalidWebhookSignatureException';
+import { WebhookSubscriptionRejectedException } from '../../modules/whatsapp/domain/exceptions/WebhookSubscriptionRejectedException';
+import { extractChanges } from '../../modules/whatsapp/domain/WebhookChange';
 
-describe('VerificarSuscripcionWebhookUseCase', () => {
-  const useCase = new VerificarSuscripcionWebhookUseCase({
-    verifyToken: 'secreto',
+describe('VerifyWebhookSubscriptionUseCase', () => {
+  const useCase = new VerifyWebhookSubscriptionUseCase({
+    verifyToken: 'secret',
   });
 
-  it('devuelve el challenge cuando el token coincide', () => {
+  it('returns the challenge when the token matches', () => {
     expect(
       useCase.execute({
         mode: 'subscribe',
-        verifyToken: 'secreto',
+        verifyToken: 'secret',
         challenge: '1158201444',
       })
     ).toBe('1158201444');
   });
 
   it.each([
-    { mode: 'subscribe', verifyToken: 'otro', challenge: 'c' },
-    { mode: 'unsubscribe', verifyToken: 'secreto', challenge: 'c' },
-    { mode: 'subscribe', verifyToken: 'secreto', challenge: undefined },
+    { mode: 'subscribe', verifyToken: 'other', challenge: 'c' },
+    { mode: 'unsubscribe', verifyToken: 'secret', challenge: 'c' },
+    { mode: 'subscribe', verifyToken: 'secret', challenge: undefined },
     { mode: undefined, verifyToken: undefined, challenge: undefined },
-  ])('rechaza %o', (solicitud) => {
-    expect(() => useCase.execute(solicitud)).toThrow(
-      SuscripcionWebhookRechazadaException
+  ])('rejects %o', (application) => {
+    expect(() => useCase.execute(application)).toThrow(
+      WebhookSubscriptionRejectedException
     );
   });
 
-  it('rechaza todo si no hay verify token configurado', () => {
-    const sinConfigurar = new VerificarSuscripcionWebhookUseCase({
+  it('rejects everything if no verify token is configured', () => {
+    const unconfigured = new VerifyWebhookSubscriptionUseCase({
       verifyToken: null,
     });
     expect(() =>
-      sinConfigurar.execute({
+      unconfigured.execute({
         mode: 'subscribe',
         verifyToken: '',
         challenge: 'c',
       })
-    ).toThrow(SuscripcionWebhookRechazadaException);
+    ).toThrow(WebhookSubscriptionRejectedException);
   });
 });
 
-describe('RecibirWebhookUseCase', () => {
-  const cuerpo = {
+describe('ReceiveWebhookUseCase', () => {
+  const body = {
     object: 'whatsapp_business_account',
     entry: [
       {
@@ -62,73 +62,73 @@ describe('RecibirWebhookUseCase', () => {
     ],
   };
 
-  function armar(firmaValida: boolean) {
-    const eventos: WebhookEventRepositoryPort = {
-      guardar: vi.fn(async (cambios) => cambios.map((_, i) => `id-${i}`)),
-      registrarFallo: vi.fn(),
-      pendientes: vi.fn(),
+  function build(validSignature: boolean) {
+    const events: WebhookEventRepositoryPort = {
+      save: vi.fn(async (changes) => changes.map((_, i) => `id-${i}`)),
+      registerFailure: vi.fn(),
+      pending: vi.fn(),
     };
-    const publicador: WebhookEventPublisherPort = {
-      publicarRecibidos: vi.fn(),
+    const publisher: WebhookEventPublisherPort = {
+      publishReceived: vi.fn(),
     };
-    const useCase = new RecibirWebhookUseCase(
-      { esValida: () => firmaValida },
-      eventos,
-      publicador
+    const useCase = new ReceiveWebhookUseCase(
+      { isValid: () => validSignature },
+      events,
+      publisher
     );
-    return { useCase, eventos, publicador };
+    return { useCase, events, publisher };
   }
 
-  it('guarda un evento por cada cambio de cada entry y los publica', async () => {
-    const { useCase, eventos, publicador } = armar(true);
+  it('saves one event per change of each entry and publishes them', async () => {
+    const { useCase, events, publisher } = build(true);
 
-    const guardados = await useCase.execute({
+    const saved = await useCase.execute({
       rawBody: Buffer.from('x'),
-      firma: 'sha256=x',
-      cuerpo,
+      signature: 'sha256=x',
+      body,
     });
 
-    expect(guardados).toBe(3);
-    expect(eventos.guardar).toHaveBeenCalledWith([
-      { campo: 'messages', payload: { messages: [{ id: 'wamid.1' }] } },
-      { campo: 'message_template_status_update', payload: { event: 'X' } },
-      { campo: 'messages', payload: { statuses: [] } },
+    expect(saved).toBe(3);
+    expect(events.save).toHaveBeenCalledWith([
+      { field: 'messages', payload: { messages: [{ id: 'wamid.1' }] } },
+      { field: 'message_template_status_update', payload: { event: 'X' } },
+      { field: 'messages', payload: { statuses: [] } },
     ]);
-    expect(publicador.publicarRecibidos).toHaveBeenCalledWith([
+    expect(publisher.publishReceived).toHaveBeenCalledWith([
       'id-0',
       'id-1',
       'id-2',
     ]);
   });
 
-  it('rechaza una firma inválida sin guardar nada', async () => {
-    const { useCase, eventos } = armar(false);
+  it('rejects an invalid signature without saving anything', async () => {
+    const { useCase, events } = build(false);
 
     await expect(
-      useCase.execute({ rawBody: Buffer.from('x'), firma: undefined, cuerpo })
-    ).rejects.toBeInstanceOf(FirmaWebhookInvalidaException);
-    expect(eventos.guardar).not.toHaveBeenCalled();
+      useCase.execute({ rawBody: Buffer.from('x'), signature: undefined, body })
+    ).rejects.toBeInstanceOf(InvalidWebhookSignatureException);
+    expect(events.save).not.toHaveBeenCalled();
   });
 
-  it('acepta sin guardar un cuerpo firmado que no es un webhook de WhatsApp', async () => {
-    const { useCase, eventos, publicador } = armar(true);
+  it('accepts without saving a signed body that is not a WhatsApp webhook', async () => {
+    const { useCase, events, publisher } = build(true);
 
-    const guardados = await useCase.execute({
+    const saved = await useCase.execute({
       rawBody: Buffer.from('x'),
-      firma: 'sha256=x',
-      cuerpo: { hola: 'mundo' },
+      signature: 'sha256=x',
+      body: { hello: 'mundo' },
     });
 
-    expect(guardados).toBe(0);
-    expect(eventos.guardar).not.toHaveBeenCalled();
-    expect(publicador.publicarRecibidos).not.toHaveBeenCalled();
+    expect(saved).toBe(0);
+    expect(events.save).not.toHaveBeenCalled();
+    expect(publisher.publishReceived).not.toHaveBeenCalled();
   });
 });
 
-describe('extraerCambios', () => {
-  it('guarda null cuando el cambio no trae value', () => {
+describe('extractChanges', () => {
+  it('saves null when the change carries no value', () => {
     expect(
-      extraerCambios({ entry: [{ changes: [{ field: 'messages' }] }] })
-    ).toEqual([{ campo: 'messages', payload: null }]);
+      extractChanges({ entry: [{ changes: [{ field: 'messages' }] }] })
+    ).toEqual([{ field: 'messages', payload: null }]);
   });
 });

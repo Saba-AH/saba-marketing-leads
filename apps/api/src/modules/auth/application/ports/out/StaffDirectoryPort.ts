@@ -1,7 +1,7 @@
 import type { StaffProfile } from '../../../domain/StaffProfile';
 
-/** Perfiles de Saba (`profiles`), solo lectura. */
+/** Saba profiles (`profiles`), read only. */
 export interface StaffDirectoryPort {
-  findByEmail(correo: string): Promise<StaffProfile | null>;
+  findByEmail(email: string): Promise<StaffProfile | null>;
   findById(id: string): Promise<StaffProfile | null>;
 }

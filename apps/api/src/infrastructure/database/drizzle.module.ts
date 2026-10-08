@@ -7,8 +7,8 @@ import * as schema from './db-schema';
 export const DRIZZLE_CLIENT = Symbol('DRIZZLE_CLIENT');
 
 /**
- * El cliente de Drizzle con el esquema cargado. Inyectar con este tipo, no con
- * `NodePgDatabase` pelado: es lo que da `db.query.<tabla>` y los `with`.
+ * The Drizzle client with the schema loaded. Inject with this type, not with
+ * a bare `NodePgDatabase`: it is what provides `db.query.<table>` and `with`.
  */
 export type ApiDb = NodePgDatabase<typeof schema>;
 
@@ -18,8 +18,8 @@ export type ApiDb = NodePgDatabase<typeof schema>;
     {
       provide: DRIZZLE_CLIENT,
       useFactory: async (): Promise<ApiDb> => {
-        // El pool se abre en frío: si Postgres no está arriba, la API igual
-        // levanta y el health check reporta la dependencia caída.
+        // The pool opens cold: if Postgres is not up, the API still starts and the
+        // health check reports the dependency as down.
         const pool = new Pool({
           connectionString: resolveDatabaseUrl(),
         });

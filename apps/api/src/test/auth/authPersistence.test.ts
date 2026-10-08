@@ -5,8 +5,8 @@ import { DrizzleStaffDirectory } from '../../modules/auth/infrastructure/persist
 import { closeTestDb, getTestDb, resetDatabase } from '../support/testDatabase';
 
 const USER = '11111111-1111-1111-1111-111111111111';
-const AHORA = new Date('2026-10-06T12:00:00.000Z');
-const HACE_UNA_HORA = new Date('2026-10-06T11:00:00.000Z');
+const NOW = new Date('2026-10-06T12:00:00.000Z');
+const ONE_HOUR_AGO = new Date('2026-10-06T11:00:00.000Z');
 
 afterAll(async () => {
   await closeTestDb();
@@ -19,12 +19,12 @@ describe('DrizzleLoginAttempts (contra Postgres)', () => {
     await resetDatabase();
   });
 
-  async function fallo(
+  async function failure(
     reason: 'bad_credentials' | 'rate_limited',
     ip = '10.0.0.1'
   ): Promise<void> {
     await attempts.record({
-      correo: 'x@y.com',
+      email: 'x@y.com',
       userId: null,
       ip,
       userAgent: null,
@@ -33,32 +33,32 @@ describe('DrizzleLoginAttempts (contra Postgres)', () => {
     });
   }
 
-  it('cuenta los fallos recientes de la IP sin contar los del propio límite', async () => {
-    await fallo('bad_credentials');
-    await fallo('bad_credentials');
-    await fallo('rate_limited');
-    await fallo('bad_credentials', '10.0.0.2');
+  it('counts the IP recent failures without counting the limit own ones', async () => {
+    await failure('bad_credentials');
+    await failure('bad_credentials');
+    await failure('rate_limited');
+    await failure('bad_credentials', '10.0.0.2');
     await getTestDb().execute(
-      sql`UPDATE login_attempts SET created_at = ${HACE_UNA_HORA.toISOString()} WHERE ip = '10.0.0.2'`
+      sql`UPDATE login_attempts SET created_at = ${ONE_HOUR_AGO.toISOString()} WHERE ip = '10.0.0.2'`
     );
 
-    const desde = new Date(Date.now() - 15 * 60 * 1000);
-    expect(await attempts.countRecentIpFailures('10.0.0.1', desde)).toBe(2);
-    expect(await attempts.countRecentIpFailures('10.0.0.2', desde)).toBe(0);
+    const from = new Date(Date.now() - 15 * 60 * 1000);
+    expect(await attempts.countRecentIpFailures('10.0.0.1', from)).toBe(2);
+    expect(await attempts.countRecentIpFailures('10.0.0.2', from)).toBe(0);
   });
 
-  it('guarda, actualiza y reinicia el contador de bloqueo', async () => {
+  it('saves, updates and resets the lockout counter', async () => {
     expect(await attempts.findLockout(USER)).toBeNull();
 
     await attempts.saveLockout(
       { userId: USER, failedCount: 1, lockedAt: null },
       'staff@saba.com',
-      AHORA
+      NOW
     );
     await attempts.saveLockout(
       { userId: USER, failedCount: 2, lockedAt: null },
       'staff@saba.com',
-      AHORA
+      NOW
     );
     expect(await attempts.findLockout(USER)).toEqual({
       userId: USER,
@@ -66,23 +66,23 @@ describe('DrizzleLoginAttempts (contra Postgres)', () => {
       lockedAt: null,
     });
 
-    await attempts.resetFailures(USER, AHORA);
+    await attempts.resetFailures(USER, NOW);
     expect((await attempts.findLockout(USER))?.failedCount).toBe(0);
   });
 
-  it('no reinicia una cuenta bloqueada: eso se hace desde Saba', async () => {
+  it('does not reset a locked account: that is done from Saba', async () => {
     await attempts.saveLockout(
-      { userId: USER, failedCount: 5, lockedAt: AHORA },
+      { userId: USER, failedCount: 5, lockedAt: NOW },
       'staff@saba.com',
-      AHORA
+      NOW
     );
 
-    await attempts.resetFailures(USER, AHORA);
+    await attempts.resetFailures(USER, NOW);
 
     expect(await attempts.findLockout(USER)).toEqual({
       userId: USER,
       failedCount: 5,
-      lockedAt: AHORA,
+      lockedAt: NOW,
     });
   });
 });
@@ -98,17 +98,17 @@ describe('DrizzleStaffDirectory (contra Postgres)', () => {
     `);
   });
 
-  it('encuentra el perfil aunque el correo de Saba no esté normalizado', async () => {
+  it('finds the profile even if the Saba email is not normalized', async () => {
     expect(await directory.findByEmail('ana.perez@saba.com')).toEqual({
       id: USER,
-      correo: 'ana.perez@saba.com',
-      nombre: 'Ana',
-      apellido: 'Pérez',
-      rol: 'cajero',
+      email: 'ana.perez@saba.com',
+      name: 'Ana',
+      lastName: 'Pérez',
+      role: 'cajero',
     });
   });
 
-  it('devuelve null si no existe', async () => {
+  it('returns null if it does not exist', async () => {
     expect(await directory.findByEmail('otro@saba.com')).toBeNull();
     expect(
       await directory.findById('22222222-2222-2222-2222-222222222222')

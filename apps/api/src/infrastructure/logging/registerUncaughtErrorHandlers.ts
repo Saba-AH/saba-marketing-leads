@@ -1,11 +1,11 @@
 import type { StructuredLogger } from './StructuredLogger';
 
 /**
- * `uncaughtException`/`unhandledRejection` no deberían pasar en código
- * correcto, pero si pasan el proceso queda en estado indefinido: los logueamos
- * con traza completa (severidad ERROR → Cloud Error Reporting los detecta
- * solo) antes de salir, para que Cloud Run reinicie la instancia sobre un
- * estado limpio en vez de seguir sirviendo tráfico corrupto.
+ * `uncaughtException`/`unhandledRejection` should not happen in correct code,
+ * but if they do the process is left in an undefined state: we log them with
+ * the full trace (ERROR severity → Cloud Error Reporting picks them up on its
+ * own) before exiting, so Cloud Run restarts the instance on a clean state
+ * instead of keeping on serving corrupt traffic.
  */
 export function registerUncaughtErrorHandlers(logger: StructuredLogger): void {
   process.on('uncaughtException', (error: Error) => {

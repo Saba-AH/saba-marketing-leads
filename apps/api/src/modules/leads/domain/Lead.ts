@@ -1,15 +1,15 @@
-/** Lead tal como vive en el dominio. Ver `@repo/schemas` para el contrato. */
+/** Lead as it lives in the domain. See `@repo/schemas` for the contract. */
 export interface Lead {
   id: string;
-  nombre: string;
-  correo: string;
-  origen: string | null;
+  name: string;
+  email: string;
+  source: string | null;
   createdAt: Date;
 }
 
-/** Insumo de `crear`: valores planos, ya validados en el borde. */
-export interface DatosLead {
-  nombre: string;
-  correo: string;
-  origen?: string;
+/** Input of `create`: plain values, already validated at the edge. */
+export interface LeadData {
+  name: string;
+  email: string;
+  source?: string;
 }

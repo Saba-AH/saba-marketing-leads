@@ -6,7 +6,7 @@ import {
 
 const LOCAL_DB = 'postgresql://postgres:postgres@127.0.0.1:54332/postgres';
 const REMOTE_DB =
-  'postgresql://postgres.ref:secreto@aws-0-us-east-2.pooler.supabase.com:5432/postgres';
+  'postgresql://postgres.ref:s3cret-value@aws-0-us-east-2.pooler.supabase.com:5432/postgres';
 
 const BASE = {
   port: 8080,
@@ -18,7 +18,7 @@ const BASE = {
 };
 
 describe('startupBanner', () => {
-  it('en local dice LOCAL y lista lo que se puede abrir, Studio incluido', () => {
+  it('locally says LOCAL and lists what can be opened, Studio included', () => {
     const banner = startupBanner({ ...BASE, databaseUrl: LOCAL_DB });
 
     expect(banner).toContain('● LOCAL');
@@ -30,7 +30,7 @@ describe('startupBanner', () => {
     expect(banner).not.toContain('postgres:postgres');
   });
 
-  it('contra Supabase avisa que son datos reales y no muestra el Studio local', () => {
+  it('against Supabase warns it is real data and does not show the local Studio', () => {
     const banner = startupBanner({
       ...BASE,
       dbTarget: 'supabase',
@@ -40,20 +40,20 @@ describe('startupBanner', () => {
     expect(banner).toContain('▲ SUPABASE REMOTO');
     expect(banner).toContain('datos reales');
     expect(banner).not.toContain('Studio');
-    expect(banner).not.toContain('secreto');
+    expect(banner).not.toContain('s3cret-value');
   });
 
-  it('dibuja un recuadro parejo', () => {
-    const lineas = startupBanner({ ...BASE, databaseUrl: LOCAL_DB })
+  it('draws an even box', () => {
+    const lines = startupBanner({ ...BASE, databaseUrl: LOCAL_DB })
       .split('\n')
-      .filter((linea) => linea.trim());
+      .filter((line) => line.trim());
 
-    expect(lineas[0]?.trim()).toMatch(/^╭─ .*╮$/);
-    expect(lineas.at(-1)?.trim()).toMatch(/^╰─+╯$/);
-    expect(new Set(lineas.map((linea) => linea.length)).size).toBe(1);
+    expect(lines[0]?.trim()).toMatch(/^╭─ .*╮$/);
+    expect(lines.at(-1)?.trim()).toMatch(/^╰─+╯$/);
+    expect(new Set(lines.map((line) => line.length)).size).toBe(1);
   });
 
-  it('muestra los avisos y sigue informando aunque la base no se pueda resolver', () => {
+  it('shows the warnings and keeps reporting even if the database cannot be resolved', () => {
     const banner = startupBanner({
       ...BASE,
       dbTarget: 'supabase',
@@ -65,13 +65,13 @@ describe('startupBanner', () => {
     expect(banner).toContain('⚠ DATABASE_SUPABASE está vacía');
   });
 
-  it('colorea verde en local y rojo contra Supabase', () => {
+  it('colors green locally and red against Supabase', () => {
     const local = startupBanner({
       ...BASE,
       databaseUrl: LOCAL_DB,
       color: true,
     });
-    const remoto = startupBanner({
+    const remote = startupBanner({
       ...BASE,
       dbTarget: 'supabase',
       databaseUrl: REMOTE_DB,
@@ -79,18 +79,18 @@ describe('startupBanner', () => {
     });
 
     expect(local).toContain('\u001b[32m');
-    expect(remoto).toContain('\u001b[31m');
+    expect(remote).toContain('\u001b[31m');
   });
 
-  it('muestra contra qué Auth valida y, solo en local, el usuario de prueba', () => {
-    const devLogin = { correo: 'admin@saba.com', contrasena: '12345678' };
+  it('shows which Auth it validates against and, only locally, the test user', () => {
+    const devLogin = { email: 'admin@saba.com', password: '12345678' };
     const local = startupBanner({
       ...BASE,
       databaseUrl: LOCAL_DB,
       authUrl: 'http://127.0.0.1:54331',
       devLogin,
     });
-    const remoto = startupBanner({
+    const remote = startupBanner({
       ...BASE,
       dbTarget: 'supabase',
       databaseUrl: REMOTE_DB,
@@ -100,11 +100,11 @@ describe('startupBanner', () => {
 
     expect(local).toMatch(/│ Auth\s+http:\/\/127\.0\.0\.1:54331/);
     expect(local).toMatch(/│ Login\s+admin@saba\.com \/ 12345678 \(o la real/);
-    expect(remoto).toMatch(/│ Auth\s+https:\/\/ref\.supabase\.co/);
-    expect(remoto).not.toContain('12345678');
+    expect(remote).toMatch(/│ Auth\s+https:\/\/ref\.supabase\.co/);
+    expect(remote).not.toContain('12345678');
   });
 
-  it('nombra el origen de la base cuando es una DATABASE explícita', () => {
+  it('names the database source when it is an explicit DATABASE', () => {
     const banner = startupBanner({
       ...BASE,
       explicitDatabase: true,
@@ -116,7 +116,7 @@ describe('startupBanner', () => {
 });
 
 describe('shouldColor', () => {
-  it('no colorea en producción ni con NO_COLOR', () => {
+  it('does not color in production nor with NO_COLOR', () => {
     expect(shouldColor({ NODE_ENV: 'development' })).toBe(true);
     expect(shouldColor({ NODE_ENV: 'production' })).toBe(false);
     expect(shouldColor({ NO_COLOR: '1' })).toBe(false);

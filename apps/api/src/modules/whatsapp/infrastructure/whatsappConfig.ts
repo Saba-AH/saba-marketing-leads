@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-/** `VAR=` en el `.env` cuenta como no definida: el `.env` trae en blanco lo que no se usa. */
+/** `VAR=` in `.env` counts as undefined: `.env` ships blank whatever is unused. */
 function optional<T extends z.ZodType>(schema: T) {
   return z.preprocess(
     (value) => (value === '' ? undefined : value),
@@ -25,8 +25,9 @@ export interface WhatsAppConfig {
 }
 
 /**
- * A diferencia de auth, no falla al arrancar: la API sirve el resto del panel
- * aunque WhatsApp no esté configurado, y el webhook rechaza todo hasta que lo esté.
+ * Unlike auth, it does not fail at startup: the API serves the rest of the
+ * panel even if WhatsApp is not configured, and the webhook rejects everything
+ * until it is.
  */
 export function loadWhatsAppConfig(
   env: NodeJS.ProcessEnv = process.env

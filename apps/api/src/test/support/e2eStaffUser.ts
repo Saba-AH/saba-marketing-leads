@@ -1,25 +1,25 @@
 import type { Pool } from 'pg';
 
 /**
- * Usuario propio del e2e de auth, en la base del stack local. No depende del
- * admin del seed: ese puede haber sido reemplazado por el de prod
- * (`npm run db:sync:saba`), con otra contraseña.
+ * The auth e2e's own user, in the local stack's database. It does not depend
+ * on the seed admin: that one may have been replaced by the prod one
+ * (`npm run db:sync:saba`), with another password.
  */
 export const E2E_STAFF = {
   id: 'e2e00000-0000-0000-0000-000000000001',
   email: 'e2e-auth@saba-marketing-leads.test',
-  password: 'e2e-contrasena-larga',
-  nombre: 'E2E',
-  apellido: 'Auth',
+  password: 'e2e-long-password',
+  name: 'E2E',
+  lastName: 'Auth',
 } as const;
 
-/** Correos con los que el e2e escribe en `login_attempts`. */
+/** Emails the e2e writes to `login_attempts` with. */
 export const E2E_LOGIN_EMAILS = [E2E_STAFF.email, 'nadie@ejemplo.com'];
 
 export async function createE2EStaff(pool: Pool): Promise<void> {
   await removeE2EStaff(pool);
-  const { id, email, password, nombre, apellido } = E2E_STAFF;
-  // Las columnas de tokens en '' y no NULL: GoTrue las escanea como string.
+  const { id, email, password, name, lastName } = E2E_STAFF;
+  // Token columns as '' and not NULL: GoTrue scans them as strings.
   await pool.query(
     `INSERT INTO auth.users (
        instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -43,7 +43,7 @@ export async function createE2EStaff(pool: Pool): Promise<void> {
   await pool.query(
     `INSERT INTO public.profiles (id, nombre, apellido, email, role)
      VALUES ($1, $2, $3, $4, 'admin')`,
-    [id, nombre, apellido, email]
+    [id, name, lastName, email]
   );
 }
 
@@ -60,7 +60,7 @@ export async function removeE2EStaff(pool: Pool): Promise<void> {
   await pool.query('DELETE FROM public.profiles WHERE id = $1', [id]);
   await pool.query('DELETE FROM auth.identities WHERE user_id = $1', [id]);
   await pool.query('DELETE FROM auth.users WHERE id = $1', [id]);
-  // Sin esto, cada corrida suma fallos por IP hasta tocar el rate limit.
+  // Without this, every run adds per-IP failures until it hits the rate limit.
   await pool.query('DELETE FROM public.login_attempts WHERE email = ANY($1)', [
     E2E_LOGIN_EMAILS,
   ]);

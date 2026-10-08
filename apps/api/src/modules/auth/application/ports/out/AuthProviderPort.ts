@@ -1,11 +1,11 @@
 import type { AuthSession } from '../../../domain/AuthSession';
 
-/** Supabase Auth: dueño de las contraseñas y de las sesiones. */
+/** Supabase Auth: owner of passwords and sessions. */
 export interface AuthProviderPort {
-  /** `null` si las credenciales no son válidas. */
-  signIn(correo: string, contrasena: string): Promise<AuthSession | null>;
-  /** `null` si el refresh token ya no sirve (usado, revocado o vencido). */
+  /** `null` if the credentials are not valid. */
+  signIn(email: string, password: string): Promise<AuthSession | null>;
+  /** `null` if the refresh token is no longer usable (used, revoked or expired). */
   refresh(refreshToken: string): Promise<AuthSession | null>;
-  /** Cierra la sesión del token. Idempotente: un token ya inválido no falla. */
+  /** Ends the token's session. Idempotent: an already invalid token does not fail. */
   revoke(accessToken: string): Promise<void>;
 }

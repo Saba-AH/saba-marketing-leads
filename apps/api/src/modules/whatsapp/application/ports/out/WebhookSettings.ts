@@ -1,4 +1,4 @@
 export interface WebhookSettings {
-  /** `null` si `WHATSAPP_VERIFY_TOKEN` no está definido: se rechaza toda suscripción. */
+  /** `null` if `WHATSAPP_VERIFY_TOKEN` is not defined: every subscription is rejected. */
   verifyToken: string | null;
 }

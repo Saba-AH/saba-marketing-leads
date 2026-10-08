@@ -6,208 +6,208 @@ import {
 } from '../../../../infrastructure/database/drizzle.module';
 import type {
   ChatsRepositoryPort,
-  NuevoMensajeSaliente,
+  NewOutboundMessage,
 } from '../../application/ports/out/ChatsRepositoryPort';
-import type { ConversacionResumen, MensajeChat } from '../../domain/Chats';
+import type { ChatMessage, ConversationSummary } from '../../domain/Chats';
 import {
   whatsappContacts,
   whatsappConversations,
   whatsappMessages,
 } from './whatsapp.schema';
 
-const LARGO_PREVIEW = 120;
+const PREVIEW_LENGTH = 120;
 
-const columnasConversacion = {
+const conversationColumns = {
   id: whatsappConversations.id,
-  estado: whatsappConversations.estado,
-  noLeidos: whatsappConversations.noLeidos,
-  ultimoMensajeAt: whatsappConversations.ultimoMensajeAt,
-  ultimoMensajePreview: whatsappConversations.ultimoMensajePreview,
-  ultimoEntranteAt: whatsappConversations.ultimoEntranteAt,
-  contactoId: whatsappContacts.id,
+  status: whatsappConversations.status,
+  unreadCount: whatsappConversations.unreadCount,
+  lastMessageAt: whatsappConversations.lastMessageAt,
+  lastMessagePreview: whatsappConversations.lastMessagePreview,
+  lastInboundAt: whatsappConversations.lastInboundAt,
+  contactId: whatsappContacts.id,
   waId: whatsappContacts.waId,
   profileName: whatsappContacts.profileName,
   sabaProfileId: whatsappContacts.sabaProfileId,
 };
 
-const columnasMensaje = {
+const messageColumns = {
   id: whatsappMessages.id,
-  direccion: whatsappMessages.direccion,
-  origen: whatsappMessages.origen,
-  tipo: whatsappMessages.tipo,
-  cuerpo: whatsappMessages.cuerpo,
-  estado: whatsappMessages.estado,
-  errorDetalle: whatsappMessages.errorDetalle,
-  tieneMedia: sql<boolean>`${whatsappMessages.mediaId} is not null`,
+  direction: whatsappMessages.direction,
+  source: whatsappMessages.source,
+  type: whatsappMessages.type,
+  body: whatsappMessages.body,
+  status: whatsappMessages.status,
+  errorDetail: whatsappMessages.errorDetail,
+  hasMedia: sql<boolean>`${whatsappMessages.mediaId} is not null`,
   waTimestamp: whatsappMessages.waTimestamp,
 };
 
-function aConversacion(fila: {
+function toConversation(row: {
   id: string;
-  estado: 'abierta' | 'resuelta';
-  noLeidos: number;
-  ultimoMensajeAt: Date | null;
-  ultimoMensajePreview: string | null;
-  ultimoEntranteAt: Date | null;
-  contactoId: string;
+  status: 'open' | 'resolved';
+  unreadCount: number;
+  lastMessageAt: Date | null;
+  lastMessagePreview: string | null;
+  lastInboundAt: Date | null;
+  contactId: string;
   waId: string | null;
   profileName: string | null;
   sabaProfileId: string | null;
-}): ConversacionResumen {
+}): ConversationSummary {
   return {
-    id: fila.id,
-    contacto: {
-      id: fila.contactoId,
-      waId: fila.waId,
-      profileName: fila.profileName,
-      sabaProfileId: fila.sabaProfileId,
+    id: row.id,
+    contact: {
+      id: row.contactId,
+      waId: row.waId,
+      profileName: row.profileName,
+      sabaProfileId: row.sabaProfileId,
     },
-    estado: fila.estado,
-    noLeidos: fila.noLeidos,
-    ultimoMensajeAt: fila.ultimoMensajeAt,
-    ultimoMensajePreview: fila.ultimoMensajePreview,
-    ultimoEntranteAt: fila.ultimoEntranteAt,
+    status: row.status,
+    unreadCount: row.unreadCount,
+    lastMessageAt: row.lastMessageAt,
+    lastMessagePreview: row.lastMessagePreview,
+    lastInboundAt: row.lastInboundAt,
   };
 }
 
-function previewDe(cuerpo: string): string {
-  const texto = cuerpo.trim();
-  return texto.length > LARGO_PREVIEW
-    ? `${texto.slice(0, LARGO_PREVIEW - 1)}…`
-    : texto;
+function previewOf(body: string): string {
+  const text = body.trim();
+  return text.length > PREVIEW_LENGTH
+    ? `${text.slice(0, PREVIEW_LENGTH - 1)}…`
+    : text;
 }
 
 @Injectable()
 export class DrizzleChatsRepository implements ChatsRepositoryPort {
   constructor(@Inject(DRIZZLE_CLIENT) private readonly db: ApiDb) {}
 
-  async listarConversaciones(limite: number): Promise<ConversacionResumen[]> {
-    const filas = await this.db
-      .select(columnasConversacion)
+  async listConversations(limit: number): Promise<ConversationSummary[]> {
+    const rows = await this.db
+      .select(conversationColumns)
       .from(whatsappConversations)
       .innerJoin(
         whatsappContacts,
         eq(whatsappContacts.id, whatsappConversations.contactId)
       )
-      .orderBy(sql`${whatsappConversations.ultimoMensajeAt} desc nulls last`)
-      .limit(limite);
-    return filas.map(aConversacion);
+      .orderBy(sql`${whatsappConversations.lastMessageAt} desc nulls last`)
+      .limit(limit);
+    return rows.map(toConversation);
   }
 
-  async obtenerConversacion(id: string): Promise<ConversacionResumen | null> {
-    const [fila] = await this.db
-      .select(columnasConversacion)
+  async getConversation(id: string): Promise<ConversationSummary | null> {
+    const [row] = await this.db
+      .select(conversationColumns)
       .from(whatsappConversations)
       .innerJoin(
         whatsappContacts,
         eq(whatsappContacts.id, whatsappConversations.contactId)
       )
       .where(eq(whatsappConversations.id, id));
-    return fila ? aConversacion(fila) : null;
+    return row ? toConversation(row) : null;
   }
 
-  async listarMensajes(
+  async listMessages(
     conversationId: string,
-    limite: number
-  ): Promise<MensajeChat[]> {
-    const filas = await this.db
-      .select(columnasMensaje)
+    limit: number
+  ): Promise<ChatMessage[]> {
+    const rows = await this.db
+      .select(messageColumns)
       .from(whatsappMessages)
       .where(eq(whatsappMessages.conversationId, conversationId))
       .orderBy(
         desc(whatsappMessages.waTimestamp),
         desc(whatsappMessages.createdAt)
       )
-      .limit(limite);
-    return filas.reverse();
+      .limit(limit);
+    return rows.reverse();
   }
 
-  /** Mensaje y conversación son el mismo agregado: van en una transacción. */
-  async registrarSaliente(mensaje: NuevoMensajeSaliente): Promise<MensajeChat> {
+  /** Message and conversation are the same aggregate: they go in one transaction. */
+  async registerOutbound(message: NewOutboundMessage): Promise<ChatMessage> {
     return this.db.transaction(async (tx) => {
-      const [creado] = await tx
+      const [created] = await tx
         .insert(whatsappMessages)
         .values({
-          conversationId: mensaje.conversationId,
-          direccion: 'saliente',
-          origen: 'sistema',
-          tipo: 'text',
-          cuerpo: mensaje.cuerpo,
-          enviadoPor: mensaje.enviadoPor,
-          estado: 'pendiente',
-          waTimestamp: mensaje.waTimestamp,
+          conversationId: message.conversationId,
+          direction: 'outbound',
+          source: 'system',
+          type: 'text',
+          body: message.body,
+          sentBy: message.sentBy,
+          status: 'pending',
+          waTimestamp: message.waTimestamp,
         })
-        .returning(columnasMensaje);
-      if (!creado) throw new Error('no se guardó el mensaje');
+        .returning(messageColumns);
+      if (!created) throw new Error('no se guardó el mensaje');
       await tx
         .update(whatsappConversations)
         .set({
-          ultimoMensajeAt: mensaje.waTimestamp,
-          ultimoMensajePreview: previewDe(mensaje.cuerpo),
+          lastMessageAt: message.waTimestamp,
+          lastMessagePreview: previewOf(message.body),
           updatedAt: new Date(),
         })
-        .where(eq(whatsappConversations.id, mensaje.conversationId));
-      return creado;
+        .where(eq(whatsappConversations.id, message.conversationId));
+      return created;
     });
   }
 
-  async confirmarEnvio(mensajeId: string, wamid: string): Promise<MensajeChat> {
-    // Si un status de Meta llegó antes que esta respuesta, se ignoró por wamid
-    // desconocido: `enviado` es lo mínimo que sabemos con certeza.
-    const [mensaje] = await this.db
+  async confirmSend(messageId: string, wamid: string): Promise<ChatMessage> {
+    // If a Meta status arrived before this response, it was ignored as an unknown
+    // wamid: `sent` is the least we know for sure.
+    const [message] = await this.db
       .update(whatsappMessages)
-      .set({ wamid, estado: 'enviado' })
-      .where(eq(whatsappMessages.id, mensajeId))
-      .returning(columnasMensaje);
-    if (!mensaje) throw new Error('el mensaje enviado desapareció');
-    return mensaje;
+      .set({ wamid, status: 'sent' })
+      .where(eq(whatsappMessages.id, messageId))
+      .returning(messageColumns);
+    if (!message) throw new Error('el mensaje enviado desapareció');
+    return message;
   }
 
-  async registrarFalloEnvio(
-    mensajeId: string,
-    codigo: string | null,
-    detalle: string
+  async registerSendFailure(
+    messageId: string,
+    code: string | null,
+    detail: string
   ): Promise<void> {
     await this.db
       .update(whatsappMessages)
       .set({
-        estado: 'fallido',
-        errorCodigo: codigo,
-        errorDetalle: detalle.slice(0, 2000),
+        status: 'failed',
+        errorCode: code,
+        errorDetail: detail.slice(0, 2000),
       })
-      .where(eq(whatsappMessages.id, mensajeId));
+      .where(eq(whatsappMessages.id, messageId));
   }
 
-  async mediaIdDe(mensajeId: string): Promise<string | null | undefined> {
-    const [fila] = await this.db
+  async mediaIdOf(messageId: string): Promise<string | null | undefined> {
+    const [row] = await this.db
       .select({ mediaId: whatsappMessages.mediaId })
       .from(whatsappMessages)
-      .where(eq(whatsappMessages.id, mensajeId));
-    return fila ? fila.mediaId : undefined;
+      .where(eq(whatsappMessages.id, messageId));
+    return row ? row.mediaId : undefined;
   }
 
-  async ultimoWamidEntrante(conversationId: string): Promise<string | null> {
-    const [fila] = await this.db
+  async lastInboundWamid(conversationId: string): Promise<string | null> {
+    const [row] = await this.db
       .select({ wamid: whatsappMessages.wamid })
       .from(whatsappMessages)
       .where(
         and(
           eq(whatsappMessages.conversationId, conversationId),
-          eq(whatsappMessages.direccion, 'entrante'),
+          eq(whatsappMessages.direction, 'inbound'),
           isNotNull(whatsappMessages.wamid)
         )
       )
       .orderBy(desc(whatsappMessages.waTimestamp))
       .limit(1);
-    return fila?.wamid ?? null;
+    return row?.wamid ?? null;
   }
 
-  async marcarLeida(conversationId: string): Promise<boolean> {
-    const actualizadas = await this.db
+  async markAsRead(conversationId: string): Promise<boolean> {
+    const updated = await this.db
       .update(whatsappConversations)
-      .set({ noLeidos: 0 })
+      .set({ unreadCount: 0 })
       .where(eq(whatsappConversations.id, conversationId))
       .returning({ id: whatsappConversations.id });
-    return actualizadas.length > 0;
+    return updated.length > 0;
   }
 }

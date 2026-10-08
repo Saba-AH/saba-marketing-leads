@@ -5,8 +5,8 @@ import { resolveDatabaseUrl } from './src/infrastructure/database/databaseUrl';
 
 loadEnv({ path: resolve(__dirname, '.env') });
 
-// Misma resolución que la API (`DATABASE` / `DB_TARGET`): `db:generate` y
-// compañía apuntan a la misma base que la app.
+// Same resolution as the API (`DATABASE` / `DB_TARGET`): `db:generate` and
+// friends point at the same database as the app.
 export default defineConfig({
   dialect: 'postgresql',
   schema: './src/modules/**/infrastructure/persistence/*.schema.ts',

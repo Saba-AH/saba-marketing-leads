@@ -1,17 +1,18 @@
-import type { ArchivoMedia } from '../../../domain/Chats';
+import type { MediaFile } from '../../../domain/Chats';
 
 export interface WhatsAppCloudPort {
   /**
-   * Devuelve el `wamid` con que Meta aceptó el mensaje. Lanza `ErrorEnvioMeta`
-   * si Meta lo rechaza y `WhatsAppNoConfiguradoException` si faltan credenciales.
+   * Returns the `wamid` Meta accepted the message with. Throws `MetaSendError`
+   * if Meta rejects it and `WhatsAppNotConfiguredException` if credentials are
+   * missing.
    */
-  enviarTexto(to: string, cuerpo: string): Promise<string>;
-  /** Lanza `ErrorEnvioMeta` si Meta ya no lo tiene (lo guarda ~30 días). */
-  descargarMedia(mediaId: string): Promise<ArchivoMedia>;
+  sendText(to: string, body: string): Promise<string>;
+  /** Throws `MetaSendError` if Meta no longer has it (it keeps it ~30 days). */
+  downloadMedia(mediaId: string): Promise<MediaFile>;
   /**
-   * Muestra "escribiendo…" al cliente (hasta 25 s o hasta que llegue la
-   * respuesta). Meta lo ata a marcar como leído ese mensaje: el cliente ve los
-   * checks azules.
+   * Shows "typing…" to the customer (up to 25 s or until the reply arrives).
+   * Meta ties it to marking that message as read: the customer sees the blue
+   * ticks.
    */
-  indicarEscribiendo(wamidEntrante: string): Promise<void>;
+  sendTypingIndicator(inboundWamid: string): Promise<void>;
 }

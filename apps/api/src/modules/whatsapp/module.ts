@@ -1,20 +1,20 @@
 import { Module } from '@nestjs/common';
-import { SabaClientesModule } from '../sabaClientes/module';
-import { SABA_CLIENTES_TOKENS } from '../sabaClientes/tokens';
-import { IndicarEscribiendoUseCase } from './application/use-cases/IndicarEscribiendoUseCase';
-import { ListarConversacionesUseCase } from './application/use-cases/ListarConversacionesUseCase';
-import { ListarMensajesUseCase } from './application/use-cases/ListarMensajesUseCase';
-import { MarcarLeidaUseCase } from './application/use-cases/MarcarLeidaUseCase';
-import { ObtenerClienteSabaUseCase } from './application/use-cases/ObtenerClienteSabaUseCase';
-import { ObtenerMediaUseCase } from './application/use-cases/ObtenerMediaUseCase';
-import { ProcesarWebhookEventoUseCase } from './application/use-cases/ProcesarWebhookEventoUseCase';
-import { RecibirWebhookUseCase } from './application/use-cases/RecibirWebhookUseCase';
-import { ReprocesarPendientesUseCase } from './application/use-cases/ReprocesarPendientesUseCase';
-import { ResponderConversacionUseCase } from './application/use-cases/ResponderConversacionUseCase';
-import { VerificarSuscripcionWebhookUseCase } from './application/use-cases/VerificarSuscripcionWebhookUseCase';
+import { SabaCustomersModule } from '../sabaCustomers/module';
+import { SABA_CUSTOMERS_TOKENS } from '../sabaCustomers/tokens';
+import { GetMediaUseCase } from './application/use-cases/GetMediaUseCase';
+import { GetSabaCustomerUseCase } from './application/use-cases/GetSabaCustomerUseCase';
+import { ListConversationsUseCase } from './application/use-cases/ListConversationsUseCase';
+import { ListMessagesUseCase } from './application/use-cases/ListMessagesUseCase';
+import { MarkAsReadUseCase } from './application/use-cases/MarkAsReadUseCase';
+import { ProcessWebhookEventUseCase } from './application/use-cases/ProcessWebhookEventUseCase';
+import { ReceiveWebhookUseCase } from './application/use-cases/ReceiveWebhookUseCase';
+import { ReplyToConversationUseCase } from './application/use-cases/ReplyToConversationUseCase';
+import { ReprocessPendingUseCase } from './application/use-cases/ReprocessPendingUseCase';
+import { SendTypingIndicatorUseCase } from './application/use-cases/SendTypingIndicatorUseCase';
+import { VerifyWebhookSubscriptionUseCase } from './application/use-cases/VerifyWebhookSubscriptionUseCase';
 import { CqrsWebhookEventPublisher } from './infrastructure/bus/CqrsWebhookEventPublisher';
-import { ProcesarWebhookEventoHandler } from './infrastructure/bus/ProcesarWebhookEventoHandler';
-import { ReprocesadorWebhookService } from './infrastructure/bus/ReprocesadorWebhookService';
+import { ProcessWebhookEventHandler } from './infrastructure/bus/ProcessWebhookEventHandler';
+import { WebhookReprocessorService } from './infrastructure/bus/WebhookReprocessorService';
 import { GraphWhatsAppCloudAdapter } from './infrastructure/external/GraphWhatsAppCloudAdapter';
 import { HmacWebhookSignatureVerifier } from './infrastructure/external/HmacWebhookSignatureVerifier';
 import { SystemClock } from './infrastructure/external/SystemClock';
@@ -28,7 +28,7 @@ import { loadWhatsAppConfig } from './infrastructure/whatsappConfig';
 import { WHATSAPP_TOKENS } from './tokens';
 
 @Module({
-  imports: [SabaClientesModule],
+  imports: [SabaCustomersModule],
   controllers: [WhatsAppWebhookController, ChatsController, MediaController],
   providers: [
     { provide: WHATSAPP_TOKENS.Config, useFactory: () => loadWhatsAppConfig() },
@@ -48,40 +48,40 @@ import { WHATSAPP_TOKENS } from './tokens';
       provide: WHATSAPP_TOKENS.WebhookEventPublisher,
       useClass: CqrsWebhookEventPublisher,
     },
-    VerificarSuscripcionWebhookUseCase,
+    VerifyWebhookSubscriptionUseCase,
     {
-      provide: WHATSAPP_TOKENS.VerificarSuscripcionWebhook,
-      useExisting: VerificarSuscripcionWebhookUseCase,
+      provide: WHATSAPP_TOKENS.VerifyWebhookSubscription,
+      useExisting: VerifyWebhookSubscriptionUseCase,
     },
-    RecibirWebhookUseCase,
+    ReceiveWebhookUseCase,
     {
-      provide: WHATSAPP_TOKENS.RecibirWebhook,
-      useExisting: RecibirWebhookUseCase,
+      provide: WHATSAPP_TOKENS.ReceiveWebhook,
+      useExisting: ReceiveWebhookUseCase,
     },
     {
       provide: WHATSAPP_TOKENS.InboxUnitOfWork,
       useClass: DrizzleInboxUnitOfWork,
     },
     {
-      provide: WHATSAPP_TOKENS.ClientesSaba,
-      useExisting: SABA_CLIENTES_TOKENS.Reader,
+      provide: WHATSAPP_TOKENS.SabaCustomers,
+      useExisting: SABA_CUSTOMERS_TOKENS.Reader,
     },
-    ObtenerClienteSabaUseCase,
+    GetSabaCustomerUseCase,
     {
-      provide: WHATSAPP_TOKENS.ObtenerClienteSaba,
-      useExisting: ObtenerClienteSabaUseCase,
+      provide: WHATSAPP_TOKENS.GetSabaCustomer,
+      useExisting: GetSabaCustomerUseCase,
     },
-    ProcesarWebhookEventoUseCase,
+    ProcessWebhookEventUseCase,
     {
-      provide: WHATSAPP_TOKENS.ProcesarWebhookEvento,
-      useExisting: ProcesarWebhookEventoUseCase,
+      provide: WHATSAPP_TOKENS.ProcessWebhookEvent,
+      useExisting: ProcessWebhookEventUseCase,
     },
-    ReprocesarPendientesUseCase,
+    ReprocessPendingUseCase,
     {
-      provide: WHATSAPP_TOKENS.ReprocesarPendientes,
-      useExisting: ReprocesarPendientesUseCase,
+      provide: WHATSAPP_TOKENS.ReprocessPending,
+      useExisting: ReprocessPendingUseCase,
     },
-    ProcesarWebhookEventoHandler,
+    ProcessWebhookEventHandler,
     {
       provide: WHATSAPP_TOKENS.ChatsRepository,
       useClass: DrizzleChatsRepository,
@@ -91,31 +91,31 @@ import { WHATSAPP_TOKENS } from './tokens';
       useClass: GraphWhatsAppCloudAdapter,
     },
     { provide: WHATSAPP_TOKENS.Clock, useClass: SystemClock },
-    ListarConversacionesUseCase,
+    ListConversationsUseCase,
     {
-      provide: WHATSAPP_TOKENS.ListarConversaciones,
-      useExisting: ListarConversacionesUseCase,
+      provide: WHATSAPP_TOKENS.ListConversations,
+      useExisting: ListConversationsUseCase,
     },
-    ListarMensajesUseCase,
+    ListMessagesUseCase,
     {
-      provide: WHATSAPP_TOKENS.ListarMensajes,
-      useExisting: ListarMensajesUseCase,
+      provide: WHATSAPP_TOKENS.ListMessages,
+      useExisting: ListMessagesUseCase,
     },
-    ResponderConversacionUseCase,
+    ReplyToConversationUseCase,
     {
-      provide: WHATSAPP_TOKENS.ResponderConversacion,
-      useExisting: ResponderConversacionUseCase,
+      provide: WHATSAPP_TOKENS.ReplyToConversation,
+      useExisting: ReplyToConversationUseCase,
     },
-    ObtenerMediaUseCase,
-    { provide: WHATSAPP_TOKENS.ObtenerMedia, useExisting: ObtenerMediaUseCase },
-    MarcarLeidaUseCase,
-    { provide: WHATSAPP_TOKENS.MarcarLeida, useExisting: MarcarLeidaUseCase },
-    IndicarEscribiendoUseCase,
+    GetMediaUseCase,
+    { provide: WHATSAPP_TOKENS.GetMedia, useExisting: GetMediaUseCase },
+    MarkAsReadUseCase,
+    { provide: WHATSAPP_TOKENS.MarkAsRead, useExisting: MarkAsReadUseCase },
+    SendTypingIndicatorUseCase,
     {
-      provide: WHATSAPP_TOKENS.IndicarEscribiendo,
-      useExisting: IndicarEscribiendoUseCase,
+      provide: WHATSAPP_TOKENS.SendTypingIndicator,
+      useExisting: SendTypingIndicatorUseCase,
     },
-    ReprocesadorWebhookService,
+    WebhookReprocessorService,
   ],
 })
 export class WhatsAppModule {}

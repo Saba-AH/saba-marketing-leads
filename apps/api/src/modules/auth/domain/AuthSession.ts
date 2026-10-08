@@ -1,18 +1,18 @@
 import type { TStaffRole } from '@repo/schemas';
 
-/** Tokens que emite Supabase Auth para una sesión. */
+/** Tokens Supabase Auth issues for a session. */
 export interface AuthSession {
   userId: string;
   accessToken: string;
   refreshToken: string;
-  /** Segundos desde epoch, como el `exp` del JWT. */
+  /** Seconds since epoch, like the JWT's `exp`. */
   expiresAt: number;
 }
 
-/** Lo que el guard deja en la petición una vez validada la sesión. */
+/** What the guard leaves on the request once the session is validated. */
 export interface AuthenticatedUser {
   id: string;
-  correo: string;
-  nombre: string;
-  rol: TStaffRole;
+  email: string;
+  name: string;
+  role: TStaffRole;
 }

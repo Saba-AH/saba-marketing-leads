@@ -1,5 +1,5 @@
 export const LEADS_TOKENS = {
-  ListarLeads: Symbol('ListarLeadsPort'),
-  CrearLead: Symbol('CrearLeadPort'),
+  ListLeads: Symbol('ListLeadsPort'),
+  CreateLead: Symbol('CreateLeadPort'),
   LeadRepository: Symbol('LeadRepositoryPort'),
 } as const;

@@ -36,7 +36,7 @@ async function token(options: TokenOptions = {}): Promise<string> {
 }
 
 describe('JoseAccessTokenVerifier', () => {
-  it('acepta un token de Supabase Auth bien firmado', async () => {
+  it('accepts a well-signed Supabase Auth token', async () => {
     expect(await verifier.verify(await token())).toEqual({
       userId: 'u-1',
       sessionId: 's-1',
@@ -45,26 +45,26 @@ describe('JoseAccessTokenVerifier', () => {
 
   it.each<[string, TokenOptions]>([
     [
-      'firmado con otro secreto',
-      { secret: 'otro-secreto-de-al-menos-32-caracteres!!' },
+      'signed with another secret',
+      { secret: 'another-secret-of-at-least-32-chars!!' },
     ],
-    ['de otro proyecto', { issuer: 'https://otro.supabase.co/auth/v1' }],
-    ['de un rol que no es usuario', { audience: 'anon' }],
+    ['from another project', { issuer: 'https://other.supabase.co/auth/v1' }],
+    ['from a role that is not a user', { audience: 'anon' }],
     ['vencido', { expiresIn: '-1m' }],
-    ['sin sesión', { sessionId: null }],
-  ])('rechaza un token %s', async (_caso, options) => {
+    ['without a session', { sessionId: null }],
+  ])('rejects a token %s', async (_case, options) => {
     expect(await verifier.verify(await token(options))).toBeNull();
   });
 
-  it('rechaza algo que ni siquiera es un JWT', async () => {
+  it('rejects something that is not even a JWT', async () => {
     expect(await verifier.verify('no-es-un-jwt')).toBeNull();
   });
 
-  it('rechaza HS256 si el proyecto no tiene secreto legado configurado', async () => {
-    const soloJwks = new JoseAccessTokenVerifier({
+  it('rejects HS256 if the project has no legacy secret configured', async () => {
+    const jwksOnly = new JoseAccessTokenVerifier({
       ...config,
       jwtSecret: null,
     });
-    expect(await soloJwks.verify(await token())).toBeNull();
+    expect(await jwksOnly.verify(await token())).toBeNull();
   });
 });

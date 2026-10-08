@@ -62,7 +62,7 @@ describe('GET /mobile-app-versions', () => {
       ]);
   });
 
-  it('lista todas, las más recientes primero', async () => {
+  it('lists all of them, most recent first', async () => {
     const response = await request(app.getHttpServer()).get(
       '/mobile-app-versions'
     );
@@ -78,7 +78,7 @@ describe('GET /mobile-app-versions', () => {
     });
   });
 
-  it('filtra por plataforma', async () => {
+  it('filters by platform', async () => {
     const response = await request(app.getHttpServer()).get(
       '/mobile-app-versions?platform=ios'
     );
@@ -88,7 +88,7 @@ describe('GET /mobile-app-versions', () => {
     expect(response.body.data[0].latestVersion).toBe('1.2.0');
   });
 
-  it('responde 400 con una plataforma inválida', async () => {
+  it('answers 400 with an invalid platform', async () => {
     const response = await request(app.getHttpServer()).get(
       '/mobile-app-versions?platform=windows'
     );
@@ -96,7 +96,7 @@ describe('GET /mobile-app-versions', () => {
     expect(response.status).toBe(400);
   });
 
-  it('la base rechaza una plataforma fuera del CHECK', async () => {
+  it('the database rejects a platform outside the CHECK', async () => {
     await expect(
       getTestDb().execute(
         "INSERT INTO mobile_app_versions (platform, latest_version, store_url) VALUES ('windows', '1', 'x')"

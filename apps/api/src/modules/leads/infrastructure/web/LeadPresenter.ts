@@ -4,9 +4,9 @@ import type { Lead } from '../../domain/Lead';
 function toLead(lead: Lead): TLead {
   return {
     id: lead.id,
-    nombre: lead.nombre,
-    correo: lead.correo,
-    origen: lead.origen,
+    name: lead.name,
+    email: lead.email,
+    source: lead.source,
     createdAt: lead.createdAt.toISOString(),
   };
 }

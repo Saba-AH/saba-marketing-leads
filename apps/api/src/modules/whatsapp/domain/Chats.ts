@@ -1,47 +1,46 @@
-import type { EstadoMensaje } from './Inbox';
+import type { MessageStatus } from './Inbox';
 
-const VENTANA_MS = 24 * 60 * 60 * 1000;
+const WINDOW_MS = 24 * 60 * 60 * 1000;
 
-export interface ConversacionResumen {
+export interface ConversationSummary {
   id: string;
-  contacto: {
+  contact: {
     id: string;
     waId: string | null;
     profileName: string | null;
     sabaProfileId: string | null;
   };
-  estado: 'abierta' | 'resuelta';
-  noLeidos: number;
-  ultimoMensajeAt: Date | null;
-  ultimoMensajePreview: string | null;
-  ultimoEntranteAt: Date | null;
+  status: 'open' | 'resolved';
+  unreadCount: number;
+  lastMessageAt: Date | null;
+  lastMessagePreview: string | null;
+  lastInboundAt: Date | null;
 }
 
-export interface MensajeChat {
+export interface ChatMessage {
   id: string;
-  direccion: 'entrante' | 'saliente';
-  origen: 'cliente' | 'sistema' | 'celular' | 'historial';
-  tipo: string;
-  cuerpo: string | null;
-  estado: EstadoMensaje | null;
-  errorDetalle: string | null;
-  tieneMedia: boolean;
+  direction: 'inbound' | 'outbound';
+  source: 'customer' | 'system' | 'phone' | 'history';
+  type: string;
+  body: string | null;
+  status: MessageStatus | null;
+  errorDetail: string | null;
+  hasMedia: boolean;
   waTimestamp: Date;
 }
 
-/** Un archivo que manda el cliente, tal como lo entrega Meta (en stream: un video pesa megas). */
-export interface ArchivoMedia {
+/** A file sent by the customer, as Meta delivers it (streamed: a video weighs megabytes). */
+export interface MediaFile {
   mimeType: string;
-  tamano: number | null;
-  contenido: ReadableStream<Uint8Array>;
+  size: number | null;
+  content: ReadableStream<Uint8Array>;
 }
 
 /**
- * Tipos que se pueden mostrar dentro del panel sin riesgo. Cualquier otro
- * (HTML, SVG…) se sirve como descarga: abierto en el mismo origen podría
- * ejecutar código.
+ * Types that can be shown inside the panel safely. Any other (HTML, SVG…) is
+ * served as a download: opened on the same origin it could run code.
  */
-const MIME_EN_LINEA = new Set([
+const INLINE_MIME_TYPES = new Set([
   'image/jpeg',
   'image/png',
   'image/webp',
@@ -56,31 +55,28 @@ const MIME_EN_LINEA = new Set([
   'application/pdf',
 ]);
 
-export function seMuestraEnLinea(mimeType: string): boolean {
-  return MIME_EN_LINEA.has(mimeType.split(';')[0]?.trim().toLowerCase() ?? '');
+export function isInlineDisplayable(mimeType: string): boolean {
+  return INLINE_MIME_TYPES.has(
+    mimeType.split(';')[0]?.trim().toLowerCase() ?? ''
+  );
 }
 
-/** La ventana de 24 h la abre el último mensaje del cliente, no el nuestro. */
-export function ventanaExpiraAt(ultimoEntranteAt: Date | null): Date | null {
-  return ultimoEntranteAt
-    ? new Date(ultimoEntranteAt.getTime() + VENTANA_MS)
-    : null;
+/** The 24 h window is opened by the customer's last message, not ours. */
+export function windowExpiresAt(lastInboundAt: Date | null): Date | null {
+  return lastInboundAt ? new Date(lastInboundAt.getTime() + WINDOW_MS) : null;
 }
 
-export function ventanaAbierta(
-  ultimoEntranteAt: Date | null,
-  ahora: Date
-): boolean {
-  const expira = ventanaExpiraAt(ultimoEntranteAt);
-  return expira !== null && expira.getTime() > ahora.getTime();
+export function isWindowOpen(lastInboundAt: Date | null, now: Date): boolean {
+  const expiresAt = windowExpiresAt(lastInboundAt);
+  return expiresAt !== null && expiresAt.getTime() > now.getTime();
 }
 
-/** Error que devolvió Meta al enviar; el caso de uso lo traduce. */
-export class ErrorEnvioMeta extends Error {
+/** Error Meta returned when sending; the use case translates it. */
+export class MetaSendError extends Error {
   constructor(
-    readonly codigo: number | null,
-    readonly detalle: string
+    readonly code: number | null,
+    readonly detail: string
   ) {
-    super(`Meta rechazó el envío (${codigo ?? 'sin código'}): ${detalle}`);
+    super(`Meta rechazó el envío (${code ?? 'sin código'}): ${detail}`);
   }
 }

@@ -1,8 +1,8 @@
 import type {
-  FiltroMobileAppVersions,
   MobileAppVersion,
+  MobileAppVersionsFilter,
 } from '../../../domain/MobileAppVersion';
 
 export interface MobileAppVersionRepositoryPort {
-  findAll(filtro: FiltroMobileAppVersions): Promise<MobileAppVersion[]>;
+  findAll(filter: MobileAppVersionsFilter): Promise<MobileAppVersion[]>;
 }

@@ -8,20 +8,20 @@ import type {
 } from '../../modules/auth/domain/loginPolicy';
 import type { StaffProfile } from '../../modules/auth/domain/StaffProfile';
 
-export const AHORA = new Date('2026-10-06T12:00:00.000Z');
+export const NOW = new Date('2026-10-06T12:00:00.000Z');
 
-export function perfil(overrides: Partial<StaffProfile> = {}): StaffProfile {
+export function profile(overrides: Partial<StaffProfile> = {}): StaffProfile {
   return {
     id: 'u-1',
-    correo: 'angel.hernandez@sabatransporte.com',
-    nombre: 'Angel',
-    apellido: 'Hernández',
-    rol: 'admin',
+    email: 'angel.hernandez@sabatransporte.com',
+    name: 'Angel',
+    lastName: 'Hernández',
+    role: 'admin',
     ...overrides,
   };
 }
 
-/** Supabase Auth en memoria: una contraseña por correo. */
+/** In-memory Supabase Auth: one password per email. */
 export class FakeAuthProvider implements AuthProviderPort {
   readonly revoked: string[] = [];
   private readonly passwords = new Map<
@@ -29,21 +29,18 @@ export class FakeAuthProvider implements AuthProviderPort {
     { userId: string; pwd: string }
   >();
 
-  register(correo: string, userId: string, pwd: string): void {
-    this.passwords.set(correo, { userId, pwd });
+  register(email: string, userId: string, pwd: string): void {
+    this.passwords.set(email, { userId, pwd });
   }
 
-  async signIn(
-    correo: string,
-    contrasena: string
-  ): Promise<AuthSession | null> {
-    const cuenta = this.passwords.get(correo);
-    if (!cuenta || cuenta.pwd !== contrasena) return null;
-    return sesion(cuenta.userId);
+  async signIn(email: string, password: string): Promise<AuthSession | null> {
+    const account = this.passwords.get(email);
+    if (!account || account.pwd !== password) return null;
+    return session(account.userId);
   }
 
   async refresh(refreshToken: string): Promise<AuthSession | null> {
-    return refreshToken === 'refresh-valido' ? sesion('u-1') : null;
+    return refreshToken === 'refresh-valido' ? session('u-1') : null;
   }
 
   async revoke(accessToken: string): Promise<void> {
@@ -51,7 +48,7 @@ export class FakeAuthProvider implements AuthProviderPort {
   }
 }
 
-export function sesion(userId: string): AuthSession {
+export function session(userId: string): AuthSession {
   return {
     userId,
     accessToken: `access-${userId}`,

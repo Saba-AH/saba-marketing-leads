@@ -16,7 +16,7 @@ import { HEALTH_TOKENS } from './tokens';
       useExisting: SystemClock,
     },
     {
-      // Cada integración nueva se suma aquí como una sonda más.
+      // Each new integration is added here as one more probe.
       provide: HEALTH_TOKENS.DependencyProbes,
       useFactory: (postgres: PostgresProbe): DependencyProbe[] => [postgres],
       inject: [PostgresProbe],

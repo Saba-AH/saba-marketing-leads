@@ -1,13 +1,13 @@
 import type { TAuthErrorCode } from '@repo/schemas';
 
 export const authMessages = {
-  AUTH_CREDENCIALES_INVALIDAS:
+  AUTH_INVALID_CREDENTIALS:
     'Credenciales inválidas. Verifica tu correo y contraseña.',
-  AUTH_CAPTCHA_INVALIDO: 'No pudimos validar el CAPTCHA. Intenta de nuevo.',
-  AUTH_DEMASIADOS_INTENTOS:
+  AUTH_INVALID_CAPTCHA: 'No pudimos validar el CAPTCHA. Intenta de nuevo.',
+  AUTH_TOO_MANY_ATTEMPTS:
     'Demasiados intentos. Espera unos minutos e intenta de nuevo.',
-  AUTH_CUENTA_BLOQUEADA:
+  AUTH_ACCOUNT_LOCKED:
     'Tu cuenta fue bloqueada por intentos fallidos. Contacta a un administrador para desbloquearla.',
-  AUTH_SIN_ACCESO: 'Tu cuenta no tiene acceso a este panel.',
-  AUTH_SESION_INVALIDA: 'Tu sesión expiró. Inicia sesión de nuevo.',
+  AUTH_NO_ACCESS: 'Tu cuenta no tiene acceso a este panel.',
+  AUTH_INVALID_SESSION: 'Tu sesión expiró. Inicia sesión de nuevo.',
 } as const satisfies Record<TAuthErrorCode, string>;

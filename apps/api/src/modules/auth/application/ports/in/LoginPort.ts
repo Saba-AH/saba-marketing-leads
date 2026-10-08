@@ -4,16 +4,16 @@ import type {
 } from '../../../domain/AuthSession';
 
 export interface LoginCommand {
-  correo: string;
-  contrasena: string;
+  email: string;
+  password: string;
   captchaToken: string;
   ip: string | null;
   userAgent: string | null;
 }
 
 export interface LoginResult {
-  sesion: AuthSession;
-  usuario: AuthenticatedUser;
+  session: AuthSession;
+  user: AuthenticatedUser;
 }
 
 export interface LoginPort {

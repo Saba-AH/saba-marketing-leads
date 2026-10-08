@@ -2,21 +2,21 @@ import { describe, expect, it } from 'vitest';
 import { redact } from '../../infrastructure/logging/logRedaction';
 
 describe('redact', () => {
-  it('tapa el valor de claves sensibles sin importar mayúsculas o anidamiento', () => {
+  it('masks the value of sensitive keys regardless of case or nesting', () => {
     const result = redact({
-      correo: 'a@example.com',
+      email: 'a@example.com',
       password: 'super-secreta',
       auth: { token: 'abc.def.ghi', Authorization: 'Bearer abc.def.ghi' },
     });
 
     expect(result).toEqual({
-      correo: 'a@example.com',
+      email: 'a@example.com',
       password: '[REDACTED]',
       auth: { token: '[REDACTED]', Authorization: '[REDACTED]' },
     });
   });
 
-  it('tapa un bearer token dentro de un string libre', () => {
+  it('masks a bearer token inside a free string', () => {
     const result = redact(
       'llamada rechazada, header: Bearer eyJhbGciOiJIUzI1NiJ9.payload.signature'
     );
@@ -24,25 +24,25 @@ describe('redact', () => {
     expect(result).toBe('llamada rechazada, header: Bearer [REDACTED]');
   });
 
-  it('tapa un bearer opaco (no JWT) dentro de un string libre', () => {
+  it('masks an opaque bearer (not a JWT) inside a free string', () => {
     const result = redact('llamada rechazada, header: Bearer tok_opaco_xyz123');
 
     expect(result).toBe('llamada rechazada, header: Bearer [REDACTED]');
   });
 
-  it('tapa credenciales Basic en la cabecera Authorization', () => {
+  it('masks Basic credentials in the Authorization header', () => {
     const result = redact('rechazado, Authorization: Basic dXNlcjpwYXNz');
 
     expect(result).toBe('rechazado, Authorization: [REDACTED]');
   });
 
-  it('tapa el valor de una cabecera X-API-Key en texto libre', () => {
+  it('masks the value of an X-API-Key header in free text', () => {
     const result = redact('llamada con X-API-Key: abc123def4567890');
 
     expect(result).toBe('llamada con X-API-Key: [REDACTED]');
   });
 
-  it('tapa la query de una URL firmada mas conserva origen y ruta', () => {
+  it('masks the query of a signed URL but keeps origin and path', () => {
     const result = redact(
       'subida a https://storage.googleapis.com/originals/foto.jpg?X-Goog-Signature=abc123&X-Goog-Expires=600'
     );
@@ -52,23 +52,23 @@ describe('redact', () => {
     );
   });
 
-  it('recorre arreglos preservando el resto de los valores', () => {
-    const result = redact([{ password: 'x' }, { correo: 'a@example.com' }]);
+  it('walks arrays keeping the rest of the values', () => {
+    const result = redact([{ password: 'x' }, { email: 'a@example.com' }]);
 
     expect(result).toEqual([
       { password: '[REDACTED]' },
-      { correo: 'a@example.com' },
+      { email: 'a@example.com' },
     ]);
   });
 
-  it('no revienta con referencias circulares', () => {
+  it('does not blow up with circular references', () => {
     const value: Record<string, unknown> = { name: 'ciclo' };
     value.self = value;
 
     expect(() => redact(value)).not.toThrow();
   });
 
-  it('tapa el valor completo de Authorization con esquemas que no son Bearer', () => {
+  it('masks the whole Authorization value with schemes that are not Bearer', () => {
     expect(redact('Authorization: Token secreto-123')).toBe(
       'Authorization: [REDACTED]'
     );

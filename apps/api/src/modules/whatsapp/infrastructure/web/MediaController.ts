@@ -10,16 +10,16 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
-import type { ObtenerMediaPort } from '../../application/ports/in/ObtenerMediaPort';
-import { seMuestraEnLinea } from '../../domain/Chats';
+import type { GetMediaPort } from '../../application/ports/in/GetMediaPort';
+import { isInlineDisplayable } from '../../domain/Chats';
 import { WHATSAPP_TOKENS } from '../../tokens';
 
 @ApiTags('whatsapp')
-@Controller('whatsapp/mensajes')
+@Controller('whatsapp/messages')
 export class MediaController {
   constructor(
-    @Inject(WHATSAPP_TOKENS.ObtenerMedia)
-    private readonly obtenerMedia: ObtenerMediaPort
+    @Inject(WHATSAPP_TOKENS.GetMedia)
+    private readonly getMedia: GetMediaPort
   ) {}
 
   @Get(':id/media')
@@ -32,22 +32,22 @@ export class MediaController {
     @Param('id', ParseUUIDPipe) id: string,
     @Res() res: Response
   ): Promise<void> {
-    const archivo = await this.obtenerMedia.execute(id);
+    const file = await this.getMedia.execute(id);
     res.status(200);
-    res.setHeader('Content-Type', archivo.mimeType);
-    if (archivo.tamano !== null) {
-      res.setHeader('Content-Length', String(archivo.tamano));
+    res.setHeader('Content-Type', file.mimeType);
+    if (file.size !== null) {
+      res.setHeader('Content-Length', String(file.size));
     }
-    // Un mensaje nunca cambia su archivo; `private` porque es de un cliente.
+    // A message never changes its file; `private` because it belongs to a customer.
     res.setHeader('Cache-Control', 'private, max-age=3600');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Content-Security-Policy', "sandbox; default-src 'none'");
     res.setHeader(
       'Content-Disposition',
-      seMuestraEnLinea(archivo.mimeType) ? 'inline' : 'attachment'
+      isInlineDisplayable(file.mimeType) ? 'inline' : 'attachment'
     );
-    Readable.fromWeb(
-      archivo.contenido as NodeWebReadableStream<Uint8Array>
-    ).pipe(res);
+    Readable.fromWeb(file.content as NodeWebReadableStream<Uint8Array>).pipe(
+      res
+    );
   }
 }

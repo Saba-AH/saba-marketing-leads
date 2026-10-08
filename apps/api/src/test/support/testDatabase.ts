@@ -6,25 +6,25 @@ import type { ApiDb } from '../../infrastructure/database/drizzle.module';
 import { testBaseDatabaseUrl } from '../../infrastructure/database/migrator';
 
 /**
- * Conexión a la base de tests.
+ * Connection to the test database.
  *
- * Los tickets de E01 piden pruebas de comportamiento **contra Postgres local**,
- * no contra un doble: buena parte de lo que hay que verificar —el NOT NULL de
- * `destino_uso`, el índice único que da idempotencia, la propagación por
- * referencia— solo existe en la base.
+ * The E01 tickets ask for behavior tests **against local Postgres**, not
+ * against a double: much of what needs verifying —the NOT NULL on
+ * `destino_uso`, the unique index that gives idempotency, propagation by
+ * reference— only exists in the database.
  *
- * Corre sobre una base aparte (`app_dev_test`) para que la suite pueda truncar
- * sin llevarse por delante los datos de desarrollo.
+ * It runs on a separate database (`app_dev_test`) so the suite can truncate
+ * without wiping the development data.
  */
 
 export const TEST_DATABASE_NAME = 'app_dev_test';
 
 export function testDatabaseUrl(): string {
-  // Se deriva de `testBaseDatabaseUrl()` —la misma fuente que usa el
-  // globalSetup—, que carga `apps/api/.env` antes de leer `process.env.DATABASE`. Si acá se leyera
-  // solo el env del shell, un `DATABASE` definido en `.env` haría que el setup
-  // migre en un server y los tests consulten otro: fallos por tablas ausentes
-  // sin causa visible.
+  // Derived from `testBaseDatabaseUrl()` —the same source the globalSetup
+  // uses—, which loads `apps/api/.env` before reading `process.env.DATABASE`. If
+  // only the shell env were read here, a `DATABASE` defined in `.env` would make
+  // the setup migrate one server and the tests query another: failures from
+  // missing tables with no visible cause.
   const url = new URL(testBaseDatabaseUrl());
   url.pathname = `/${TEST_DATABASE_NAME}`;
   return url.toString();
@@ -48,25 +48,25 @@ export async function closeTestDb(): Promise<void> {
 }
 
 /**
- * Vacía todas las tablas del esquema público de una sola vez.
+ * Empties every table of the public schema at once.
  *
- * La lista se descubre en la base y no se mantiene a mano: una tabla nueva que
- * no se truncara filtraría datos de un test al siguiente, y ese es el tipo de
- * fallo que aparece semanas después y en otro test.
+ * The list is discovered in the database and not kept by hand: a new table that
+ * was not truncated would leak data from one test to the next, and that is the
+ * kind of failure that shows up weeks later and in another test.
  */
 export async function resetDatabase(): Promise<void> {
   const database = getTestDb();
 
-  const { rows } = await database.execute<{ tablas: string | null }>(sql`
-    SELECT string_agg(format('%I.%I', schemaname, tablename), ', ') AS tablas
+  const { rows } = await database.execute<{ tables: string | null }>(sql`
+    SELECT string_agg(format('%I.%I', schemaname, tablename), ', ') AS tables
     FROM pg_tables
     WHERE schemaname = 'public'
   `);
 
-  const tablas = rows[0]?.tablas;
-  if (!tablas) return;
+  const tables = rows[0]?.tables;
+  if (!tables) return;
 
   await database.execute(
-    sql.raw(`TRUNCATE TABLE ${tablas} RESTART IDENTITY CASCADE`)
+    sql.raw(`TRUNCATE TABLE ${tables} RESTART IDENTITY CASCADE`)
   );
 }

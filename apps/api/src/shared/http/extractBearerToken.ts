@@ -2,7 +2,7 @@ import type { Request } from 'express';
 
 const BEARER_PREFIX = 'Bearer ';
 
-/** Usado por `AuthGuard` (Supabase Auth) y el logout. */
+/** Used by `AuthGuard` (Supabase Auth) and by logout. */
 export function extractBearerToken(request: Request): string | undefined {
   const header = request.headers.authorization;
   if (!header?.startsWith(BEARER_PREFIX)) {

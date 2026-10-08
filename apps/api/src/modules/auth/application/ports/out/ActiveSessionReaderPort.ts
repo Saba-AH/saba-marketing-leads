@@ -2,8 +2,9 @@ import type { StaffProfile } from '../../../domain/StaffProfile';
 
 export interface ActiveSessionReaderPort {
   /**
-   * El perfil dueño de la sesión, o `null` si la sesión ya no existe (logout,
-   * revocada) o venció. Una sola ida a la base por petición autenticada.
+   * The profile that owns the session, or `null` if the session no longer
+   * exists (logout, revoked) or expired. One database round trip per
+   * authenticated request.
    */
   findProfileBySession(
     userId: string,

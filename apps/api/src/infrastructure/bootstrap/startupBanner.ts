@@ -6,24 +6,24 @@ import {
 
 export interface StartupBannerInput {
   port: number;
-  /** `null` si no se pudo resolver (p. ej. DATABASE_SUPABASE vacía). */
+  /** `null` if it could not be resolved (e.g. empty DATABASE_SUPABASE). */
   databaseUrl: string | null;
   dbTarget: DbTarget;
   explicitDatabase: boolean;
-  /** Origen del panel (el primero de CORS_ALLOWED_ORIGINS). */
+  /** Panel origin (the first one in CORS_ALLOWED_ORIGINS). */
   panelUrl?: string;
-  /** Studio del stack local; lo exporta `scripts/localSupabase.mjs`. */
+  /** Local stack Studio; exported by `scripts/localSupabase.mjs`. */
   studioUrl?: string;
-  /** Supabase Auth contra el que se validan las sesiones (`SUPABASE_URL`). */
+  /** Supabase Auth that sessions are validated against (`SUPABASE_URL`). */
   authUrl?: string;
-  /** Credenciales del admin del seed: solo se muestran si la base es local. */
-  devLogin?: { correo: string; contrasena: string };
-  /** Lo que falta o está mal en la configuración. */
+  /** Seed admin credentials: only shown when the database is local. */
+  devLogin?: { email: string; password: string };
+  /** What is missing or wrong in the configuration. */
   warnings?: string[];
   color: boolean;
 }
 
-/** Códigos ANSI, para que el recuadro se distinga entre los logs JSON. */
+/** ANSI codes, so the box stands out among the JSON logs. */
 const ANSI = {
   reset: '\u001b[0m',
   bold: '\u001b[1m',
@@ -41,23 +41,23 @@ interface Row {
   warning?: boolean;
 }
 
-/** Colores solo en desarrollo: en Cloud Run ensuciarían los logs. */
+/** Colors only in development: on Cloud Run they would pollute the logs. */
 export function shouldColor(env: NodeJS.ProcessEnv = process.env): boolean {
   return !env.NO_COLOR && env.NODE_ENV !== 'production';
 }
 
 /**
- * Lo que se imprime al arrancar, para humanos: contra qué base corre y qué
- * se puede abrir. Confundir el stack local con Supabase es el error caro, así
- * que va en el título, en mayúsculas y en color (verde local, rojo remoto).
- * Lo usan la API al arrancar y la tarea `dev:info` del sidebar de turbo.
+ * What gets printed at startup, for humans: which database it runs against and
+ * what can be opened. Mixing up the local stack with Supabase is the expensive
+ * mistake, so it goes in the title, in uppercase and in color (green local,
+ * red remote). Used by the API at startup and by turbo's `dev:info` task.
  */
 export function startupBanner(input: StartupBannerInput): string {
   const local = input.databaseUrl
     ? isLocalDatabaseUrl(input.databaseUrl)
     : input.dbTarget === 'local';
   const api = `http://localhost:${input.port}`;
-  const origen = input.explicitDatabase
+  const source = input.explicitDatabase
     ? 'DATABASE explícita'
     : `destino ${input.dbTarget}`;
 
@@ -72,16 +72,16 @@ export function startupBanner(input: StartupBannerInput): string {
     {
       label: 'Base',
       value: input.databaseUrl
-        ? `${redactDatabaseUrl(input.databaseUrl)} (${origen})`
-        : `sin resolver (${origen})`,
+        ? `${redactDatabaseUrl(input.databaseUrl)} (${source})`
+        : `sin resolver (${source})`,
     },
     ...(input.authUrl ? [{ label: 'Auth', value: input.authUrl }] : []),
     ...(local && input.devLogin
       ? [
           {
             label: 'Login',
-            // Tras `db:sync:saba` el usuario es el de prod y la contraseña la real.
-            value: `${input.devLogin.correo} / ${input.devLogin.contrasena} (o la real si sincronizaste prod)`,
+            // After `db:sync:saba` the user is the prod one and the password is the real one.
+            value: `${input.devLogin.email} / ${input.devLogin.password} (o la real si sincronizaste prod)`,
           },
         ]
       : []),
@@ -112,7 +112,7 @@ function drawBox(
     row.warning
       ? `${row.label} ${row.value}`
       : `${row.label.padEnd(LABEL_WIDTH)}${row.value}`;
-  // Se mide el texto sin colores: los códigos ANSI no ocupan columnas.
+  // Text is measured without colors: ANSI codes take no columns.
   const width = Math.max(
     title.length + 1,
     ...rows.map((row) => text(row).length)

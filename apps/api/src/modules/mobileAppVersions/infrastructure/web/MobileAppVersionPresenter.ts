@@ -17,7 +17,7 @@ function toMobileAppVersion(version: MobileAppVersion): TMobileAppVersion {
 }
 
 export function toMobileAppVersionsResponse(
-  versiones: MobileAppVersion[]
+  versions: MobileAppVersion[]
 ): TMobileAppVersionsResponse {
-  return { success: true, data: versiones.map(toMobileAppVersion) };
+  return { success: true, data: versions.map(toMobileAppVersion) };
 }

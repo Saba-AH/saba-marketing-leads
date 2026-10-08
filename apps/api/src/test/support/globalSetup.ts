@@ -9,32 +9,31 @@ import {
 import { TEST_DATABASE_NAME, testDatabaseUrl } from './testDatabase';
 
 /**
- * Prepara la base de tests una sola vez por corrida: la crea si no existe,
- * habilita las extensiones y aplica las migraciones.
+ * Prepares the test database once per run: creates it if it does not exist,
+ * enables the extensions and applies the migrations.
  *
- * Se apoya en las migraciones reales y no en un `push` del esquema: si una
- * migración está mal escrita, la suite tiene que enterarse acá y no en el
- * despliegue.
+ * It relies on the real migrations and not on a schema `push`: if a migration
+ * is badly written, the suite has to find out here and not at deploy time.
  */
 export default async function setup(): Promise<void> {
-  // Cambiar solo la base de datos, preservando el query string (p. ej. sslmode).
-  const mantenimientoUrl = new URL(testBaseDatabaseUrl());
-  mantenimientoUrl.pathname = '/postgres';
-  const mantenimiento = new Pool({
-    connectionString: mantenimientoUrl.toString(),
+  // Change only the database, keeping the query string (e.g. sslmode).
+  const maintenanceUrl = new URL(testBaseDatabaseUrl());
+  maintenanceUrl.pathname = '/postgres';
+  const maintenance = new Pool({
+    connectionString: maintenanceUrl.toString(),
   });
 
   try {
-    const existe = await mantenimiento.query(
+    const exists = await maintenance.query(
       'SELECT 1 FROM pg_database WHERE datname = $1',
       [TEST_DATABASE_NAME]
     );
-    if (existe.rowCount === 0) {
-      // No admite parámetros: el nombre es una constante del repositorio.
-      await mantenimiento.query(`CREATE DATABASE "${TEST_DATABASE_NAME}"`);
+    if (exists.rowCount === 0) {
+      // Takes no parameters: the name is a repository constant.
+      await maintenance.query(`CREATE DATABASE "${TEST_DATABASE_NAME}"`);
     }
   } finally {
-    await mantenimiento.end();
+    await maintenance.end();
   }
 
   const pool = new Pool({ connectionString: testDatabaseUrl() });

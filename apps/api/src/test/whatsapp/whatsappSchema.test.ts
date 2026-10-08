@@ -16,7 +16,7 @@ async function pgErrorCode(
   try {
     await work;
   } catch (error: unknown) {
-    // Drizzle envuelve el error de `pg` en `cause` según la versión.
+    // Drizzle wraps the `pg` error in `cause` depending on the version.
     const candidates = [
       error,
       error instanceof Error ? error.cause : undefined,
@@ -36,7 +36,7 @@ async function pgErrorCode(
   return undefined;
 }
 
-async function crearConversacion(waId: string): Promise<string> {
+async function createConversation(waId: string): Promise<string> {
   const db = getTestDb();
   const [contact] = await db
     .insert(whatsappContacts)
@@ -51,7 +51,7 @@ async function crearConversacion(waId: string): Promise<string> {
   return conversation.id;
 }
 
-describe('esquema de WhatsApp', () => {
+describe('WhatsApp schema', () => {
   afterAll(async () => {
     await closeTestDb();
   });
@@ -60,34 +60,34 @@ describe('esquema de WhatsApp', () => {
     await resetDatabase();
   });
 
-  it('resuelve contacto → conversación → mensajes en una consulta relacional', async () => {
-    const conversationId = await crearConversacion('584141234567');
+  it('resolves contact → conversation → messages in one relational query', async () => {
+    const conversationId = await createConversation('584141234567');
     await getTestDb()
       .insert(whatsappMessages)
       .values({
         conversationId,
         wamid: 'wamid.A',
-        direccion: 'entrante',
-        origen: 'cliente',
-        tipo: 'text',
-        cuerpo: 'Hola',
+        direction: 'inbound',
+        source: 'customer',
+        type: 'text',
+        body: 'Hola',
         waTimestamp: new Date('2026-10-07T12:00:00Z'),
       });
 
-    const contacto = await getTestDb().query.whatsappContacts.findFirst({
+    const contact = await getTestDb().query.whatsappContacts.findFirst({
       where: eq(whatsappContacts.waId, '584141234567'),
       with: { conversation: { with: { messages: true } } },
     });
 
-    expect(contacto?.conversation?.estado).toBe('abierta');
-    expect(contacto?.conversation?.messages.map((m) => m.cuerpo)).toEqual([
+    expect(contact?.conversation?.status).toBe('open');
+    expect(contact?.conversation?.messages.map((m) => m.body)).toEqual([
       'Hola',
     ]);
   });
 
-  it('admite una sola conversación por contacto', async () => {
-    const conversationId = await crearConversacion('584141234567');
-    const conversacion =
+  it('allows a single conversation per contact', async () => {
+    const conversationId = await createConversation('584141234567');
+    const conversation =
       await getTestDb().query.whatsappConversations.findFirst({
         where: eq(whatsappConversations.id, conversationId),
       });
@@ -95,47 +95,47 @@ describe('esquema de WhatsApp', () => {
     const code = await pgErrorCode(
       getTestDb()
         .insert(whatsappConversations)
-        .values({ contactId: conversacion?.contactId ?? '' })
+        .values({ contactId: conversation?.contactId ?? '' })
     );
 
     expect(code).toBe(UNIQUE_VIOLATION);
   });
 
-  it('permite varios mensajes pendientes sin wamid, pero no dos con el mismo', async () => {
-    const conversationId = await crearConversacion('584141234567');
-    const pendiente = {
+  it('allows several pending messages without a wamid, but not two with the same one', async () => {
+    const conversationId = await createConversation('584141234567');
+    const pending = {
       conversationId,
-      direccion: 'saliente' as const,
-      origen: 'sistema' as const,
-      tipo: 'text',
-      cuerpo: 'Hola',
-      estado: 'pendiente' as const,
+      direction: 'outbound' as const,
+      source: 'system' as const,
+      type: 'text',
+      body: 'Hola',
+      status: 'pending' as const,
       waTimestamp: new Date(),
     };
-    await getTestDb().insert(whatsappMessages).values([pendiente, pendiente]);
+    await getTestDb().insert(whatsappMessages).values([pending, pending]);
 
     await getTestDb()
       .insert(whatsappMessages)
-      .values({ ...pendiente, wamid: 'wamid.X', estado: 'enviado' });
+      .values({ ...pending, wamid: 'wamid.X', status: 'sent' });
     const code = await pgErrorCode(
       getTestDb()
         .insert(whatsappMessages)
-        .values({ ...pendiente, wamid: 'wamid.X', estado: 'enviado' })
+        .values({ ...pending, wamid: 'wamid.X', status: 'sent' })
     );
 
     expect(code).toBe(UNIQUE_VIOLATION);
   });
 
-  it('rechaza un mensaje de plantilla sin nombre ni idioma de plantilla', async () => {
-    const conversationId = await crearConversacion('584141234567');
+  it('rejects a template message without a template name or language', async () => {
+    const conversationId = await createConversation('584141234567');
 
     const code = await pgErrorCode(
       getTestDb().insert(whatsappMessages).values({
         conversationId,
-        direccion: 'saliente',
-        origen: 'sistema',
-        tipo: 'template',
-        cuerpo: 'Hola Juan, te escribimos de Saba',
+        direction: 'outbound',
+        source: 'system',
+        type: 'template',
+        body: 'Hola Juan, te escribimos de Saba',
         waTimestamp: new Date(),
       })
     );
@@ -143,7 +143,7 @@ describe('esquema de WhatsApp', () => {
     expect(code).toBe(CHECK_VIOLATION);
   });
 
-  it('exige teléfono o user_id en cada contacto', async () => {
+  it('requires a phone or user_id on every contact', async () => {
     await getTestDb().insert(whatsappContacts).values({ userId: 'VE.1' });
 
     const code = await pgErrorCode(
@@ -155,13 +155,13 @@ describe('esquema de WhatsApp', () => {
     expect(code).toBe(CHECK_VIOLATION);
   });
 
-  it('borra conversación y mensajes al borrar el contacto', async () => {
-    const conversationId = await crearConversacion('584141234567');
+  it('deletes conversation and messages when the contact is deleted', async () => {
+    const conversationId = await createConversation('584141234567');
     await getTestDb().insert(whatsappMessages).values({
       conversationId,
-      direccion: 'entrante',
-      origen: 'cliente',
-      tipo: 'text',
+      direction: 'inbound',
+      source: 'customer',
+      type: 'text',
       waTimestamp: new Date(),
     });
 

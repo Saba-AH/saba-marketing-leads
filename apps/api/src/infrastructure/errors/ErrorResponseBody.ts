@@ -1,4 +1,4 @@
-/** Sobre `{ success: false, ... }` que producen los filtros globales (E00·10). */
+/** `{ success: false, ... }` envelope produced by the global filters (E00·10). */
 export interface ErrorResponseBody {
   success: false;
   error: string;

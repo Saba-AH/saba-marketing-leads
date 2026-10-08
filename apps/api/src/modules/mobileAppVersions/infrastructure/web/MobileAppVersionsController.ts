@@ -1,7 +1,7 @@
 import { Controller, Get, HttpStatus, Inject, Query } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import {
-  listarMobileAppVersionsQuerySchema,
+  listMobileAppVersionsQuerySchema,
   mobileAppVersionsResponseSchema,
   mobilePlatforms,
   type TMobileAppVersionsResponse,
@@ -9,22 +9,22 @@ import {
 import { Public } from '../../../../shared/decorators/Public';
 import { ZodApiResponse } from '../../../../shared/decorators/zodSwagger';
 import { createZodDto } from '../../../../shared/utils/createZodDto';
-import type { ListarMobileAppVersionsPort } from '../../application/ports/in/ListarMobileAppVersionsPort';
+import type { ListMobileAppVersionsPort } from '../../application/ports/in/ListMobileAppVersionsPort';
 import { MOBILE_APP_VERSIONS_TOKENS } from '../../tokens';
 import { toMobileAppVersionsResponse } from './MobileAppVersionPresenter';
 
-class ListarMobileAppVersionsQueryDto extends createZodDto(
-  listarMobileAppVersionsQuerySchema
+class ListMobileAppVersionsQueryDto extends createZodDto(
+  listMobileAppVersionsQuerySchema
 ) {}
 
-// La app móvil la consulta antes de iniciar sesión, para exigir actualizar.
+// The mobile app checks it before logging in, to force an update.
 @ApiTags('mobile-app-versions')
 @Controller('mobile-app-versions')
 @Public()
 export class MobileAppVersionsController {
   constructor(
-    @Inject(MOBILE_APP_VERSIONS_TOKENS.ListarMobileAppVersions)
-    private readonly listarVersiones: ListarMobileAppVersionsPort
+    @Inject(MOBILE_APP_VERSIONS_TOKENS.ListMobileAppVersions)
+    private readonly listVersions: ListMobileAppVersionsPort
   ) {}
 
   @Get()
@@ -33,11 +33,9 @@ export class MobileAppVersionsController {
   })
   @ApiQuery({ name: 'platform', required: false, enum: mobilePlatforms })
   @ZodApiResponse(HttpStatus.OK, mobileAppVersionsResponseSchema)
-  async listar(
-    @Query() query: ListarMobileAppVersionsQueryDto
+  async list(
+    @Query() query: ListMobileAppVersionsQueryDto
   ): Promise<TMobileAppVersionsResponse> {
-    return toMobileAppVersionsResponse(
-      await this.listarVersiones.execute(query)
-    );
+    return toMobileAppVersionsResponse(await this.listVersions.execute(query));
   }
 }

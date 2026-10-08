@@ -12,11 +12,11 @@ describe('assertLocalDatabase', () => {
   it.each([
     'postgresql://postgres:postgres@localhost:54332/postgres',
     'postgresql://postgres:postgres@127.0.0.1:54332/postgres',
-  ])('deja sembrar en %s', (url) => {
+  ])('allows seeding into %s', (url) => {
     expect(() => assertLocalDatabase(url, 'el seed')).not.toThrow();
   });
 
-  it('se niega a sembrar el admin de desarrollo en Supabase', () => {
+  it('refuses to seed the development admin into Supabase', () => {
     expect(() =>
       assertLocalDatabase(
         'postgresql://postgres.ref:secreto@aws-0-us-east-2.pooler.supabase.com:5432/postgres',
@@ -56,20 +56,20 @@ describe('seedDevAdmin', () => {
     await pool.end();
   });
 
-  // Después de `npm run db:sync:saba` el correo es del usuario de prod.
-  it('no crea el admin de desarrollo si su correo ya es de otro usuario', async () => {
-    const deProd = '00000000-0000-0000-0000-00000000000a';
+  // After `npm run db:sync:saba` the email belongs to the prod user.
+  it('does not create the development admin if its email already belongs to another user', async () => {
+    const fromProd = '00000000-0000-0000-0000-00000000000a';
     await pool.query('INSERT INTO auth.users (id, email) VALUES ($1, $2)', [
-      deProd,
+      fromProd,
       DEV_ADMIN.email,
     ]);
 
-    const sembrado = await seedDevAdmin(drizzle(pool));
+    const seeded = await seedDevAdmin(drizzle(pool));
 
-    expect(sembrado).toBe(false);
+    expect(seeded).toBe(false);
     const { rows } = await pool.query('SELECT id FROM auth.users');
-    expect(rows).toEqual([{ id: deProd }]);
-    const perfiles = await pool.query('SELECT * FROM public.profiles');
-    expect(perfiles.rowCount).toBe(0);
+    expect(rows).toEqual([{ id: fromProd }]);
+    const profiles = await pool.query('SELECT * FROM public.profiles');
+    expect(profiles.rowCount).toBe(0);
   });
 });

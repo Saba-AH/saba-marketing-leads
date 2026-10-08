@@ -25,7 +25,7 @@ export class DrizzleLoginAttempts implements LoginAttemptsPort {
           eq(loginAttempts.portal, STAFF_PORTAL),
           eq(loginAttempts.ip, ip),
           eq(loginAttempts.success, false),
-          // Los rechazos del propio límite no cuentan: reintentar alargaría el bloqueo.
+          // The limit's own rejections do not count: retrying would extend the lockout.
           or(
             isNull(loginAttempts.reason),
             ne(loginAttempts.reason, 'rate_limited')
@@ -39,7 +39,7 @@ export class DrizzleLoginAttempts implements LoginAttemptsPort {
   async record(attempt: LoginAttempt): Promise<void> {
     await this.db.insert(loginAttempts).values({
       portal: STAFF_PORTAL,
-      email: attempt.correo,
+      email: attempt.email,
       userId: attempt.userId,
       ip: attempt.ip,
       userAgent: attempt.userAgent?.slice(0, 500) ?? null,
@@ -63,11 +63,11 @@ export class DrizzleLoginAttempts implements LoginAttemptsPort {
 
   async saveLockout(
     lockout: StaffLockout,
-    correo: string,
+    email: string,
     now: Date
   ): Promise<void> {
     const values = {
-      email: correo,
+      email: email,
       failedCount: lockout.failedCount,
       lockedAt: lockout.lockedAt,
       updatedAt: now,

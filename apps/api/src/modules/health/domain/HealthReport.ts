@@ -1,22 +1,23 @@
 import type { TDependencyStatus } from '@repo/schemas';
 
-/** Resultado de comprobar una dependencia de la API. */
+/** Result of checking one of the API's dependencies. */
 export interface DependencyCheck {
   name: string;
   status: TDependencyStatus;
   latencyMs?: number;
   /**
-   * Motivo cuando el estado no es `up`. Es texto para operadores: nunca debe
-   * llevar credenciales, tokens ni URLs firmadas (ver E00·10).
+   * Reason when the status is not `up`. It is text for operators: it must never
+   * carry credentials, tokens or signed URLs (see E00·10).
    */
   detail?: string;
 }
 
 /**
- * Reporte de salud de la API.
+ * API health report.
  *
- * Regla: el reporte está `ok` solo si **toda** dependencia crítica responde.
- * Una dependencia no crítica en `down` degrada el reporte pero no lo tumba.
+ * Rule: the report is `ok` only if **every** critical dependency responds. A
+ * non-critical dependency that is `down` degrades the report but does not
+ * bring it down.
  */
 export class HealthReport {
   private constructor(

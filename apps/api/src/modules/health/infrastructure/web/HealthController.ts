@@ -24,8 +24,8 @@ export class HealthController {
   ) {}
 
   /**
-   * Un monitor no debe consumir cuota del rate limit, y tampoco debe recibir
-   * 200 cuando una dependencia crítica está caída — de ahí el 503.
+   * A monitor must not eat rate limit quota, nor get a 200 when a critical
+   * dependency is down — hence the 503.
    */
   @Get()
   @SkipThrottle()
@@ -54,10 +54,10 @@ export class HealthController {
   }
 
   /**
-   * Liveness: solo confirma que el proceso responde, sin tocar Postgres ni
-   * Storage — así Cloud Run puede reiniciar la instancia sin que un liveness
-   * probe dependa de la salud de una dependencia externa. El deep check con
-   * dependencias es `GET /health` (readiness).
+   * Liveness: only confirms the process responds, without touching Postgres or
+   * Storage — so Cloud Run can restart the instance without a liveness probe
+   * depending on an external dependency's health. The deep check with
+   * dependencies is `GET /health` (readiness).
    */
   @Get('live')
   @SkipThrottle()

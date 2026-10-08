@@ -11,22 +11,23 @@ import {
 } from 'drizzle-orm/pg-core';
 
 /**
- * `saba_profile_id`, `tomada_por` y `enviado_por` apuntan a `profiles.id` de
- * Saba sin FK: la tabla es de otro sistema y en Supabase la borra o recrea Saba.
+ * `saba_profile_id`, `assigned_to` and `sent_by` point to Saba's
+ * `profiles.id` without an FK: the table belongs to another system and in
+ * Supabase Saba deletes or recreates it.
  */
 
 export const whatsappContacts = pgTable(
   'whatsapp_contacts',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    // Teléfono en solo dígitos (E.164 sin "+"). Meta no lo manda si el cliente
-    // activó nombre de usuario: ahí solo llega `user_id`.
+    // Phone as digits only (E.164 without "+"). Meta does not send it if the
+    // customer enabled a username: then only `user_id` arrives.
     waId: text('wa_id').unique(),
-    // BSUID de Meta (`VE.…`): identifica al cliente aunque no comparta su teléfono.
+    // Meta's BSUID (`VE.…`): identifies the customer even if they do not share their phone.
     userId: text('user_id').unique(),
     profileName: text('profile_name'),
     sabaProfileId: uuid('saba_profile_id'),
-    vinculoOrigen: text('vinculo_origen', { enum: ['auto', 'manual'] }),
+    linkSource: text('link_source', { enum: ['auto', 'manual'] }),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -34,14 +35,14 @@ export const whatsappContacts = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (tabla) => [
+  (table) => [
     check(
-      'whatsapp_contacts_identidad_check',
-      sql`${tabla.waId} IS NOT NULL OR ${tabla.userId} IS NOT NULL`
+      'whatsapp_contacts_identity_check',
+      sql`${table.waId} IS NOT NULL OR ${table.userId} IS NOT NULL`
     ),
     check(
-      'whatsapp_contacts_vinculo_origen_check',
-      sql`${tabla.vinculoOrigen} IN ('auto', 'manual')`
+      'whatsapp_contacts_link_source_check',
+      sql`${table.linkSource} IN ('auto', 'manual')`
     ),
   ]
 );
@@ -54,16 +55,16 @@ export const whatsappConversations = pgTable(
       .notNull()
       .unique()
       .references(() => whatsappContacts.id, { onDelete: 'cascade' }),
-    estado: text('estado', { enum: ['abierta', 'resuelta'] })
+    status: text('status', { enum: ['open', 'resolved'] })
       .notNull()
-      .default('abierta'),
-    tomadaPor: uuid('tomada_por'),
-    tomadaAt: timestamp('tomada_at', { withTimezone: true }),
-    ultimoMensajeAt: timestamp('ultimo_mensaje_at', { withTimezone: true }),
-    // La ventana de 24 h se calcula desde acá: solo la mueven entrantes en vivo.
-    ultimoEntranteAt: timestamp('ultimo_entrante_at', { withTimezone: true }),
-    ultimoMensajePreview: text('ultimo_mensaje_preview'),
-    noLeidos: integer('no_leidos').notNull().default(0),
+      .default('open'),
+    assignedTo: uuid('assigned_to'),
+    assignedAt: timestamp('assigned_at', { withTimezone: true }),
+    lastMessageAt: timestamp('last_message_at', { withTimezone: true }),
+    // The 24 h window is computed from here: only live inbound messages move it.
+    lastInboundAt: timestamp('last_inbound_at', { withTimezone: true }),
+    lastMessagePreview: text('last_message_preview'),
+    unreadCount: integer('unread_count').notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -71,16 +72,16 @@ export const whatsappConversations = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (tabla) => [
+  (table) => [
     check(
-      'whatsapp_conversations_estado_check',
-      sql`${tabla.estado} IN ('abierta', 'resuelta')`
+      'whatsapp_conversations_status_check',
+      sql`${table.status} IN ('open', 'resolved')`
     ),
-    index('whatsapp_conversations_estado_ultimo_mensaje_idx').on(
-      tabla.estado,
-      tabla.ultimoMensajeAt.desc()
+    index('whatsapp_conversations_status_last_message_idx').on(
+      table.status,
+      table.lastMessageAt.desc()
     ),
-    index('whatsapp_conversations_tomada_por_idx').on(tabla.tomadaPor),
+    index('whatsapp_conversations_assigned_to_idx').on(table.assignedTo),
   ]
 );
 
@@ -91,51 +92,51 @@ export const whatsappMessages = pgTable(
     conversationId: uuid('conversation_id')
       .notNull()
       .references(() => whatsappConversations.id, { onDelete: 'cascade' }),
-    // NULL mientras el envío está pendiente: Meta asigna el wamid al aceptarlo.
+    // NULL while the send is pending: Meta assigns the wamid when it accepts it.
     wamid: text('wamid').unique(),
-    direccion: text('direccion', { enum: ['entrante', 'saliente'] }).notNull(),
-    origen: text('origen', {
-      enum: ['cliente', 'sistema', 'celular', 'historial'],
+    direction: text('direction', { enum: ['inbound', 'outbound'] }).notNull(),
+    source: text('source', {
+      enum: ['customer', 'system', 'phone', 'history'],
     }).notNull(),
-    // Tipo de Meta (text, image, audio, template, …): abierto porque Meta suma tipos.
-    tipo: text('tipo').notNull(),
-    // En plantillas, el cuerpo con las variables ya reemplazadas.
-    cuerpo: text('cuerpo'),
+    // Meta type (text, image, audio, template, …): open because Meta keeps adding types.
+    type: text('type').notNull(),
+    // For templates, the body with the variables already replaced.
+    body: text('body'),
     mediaId: text('media_id'),
-    enviadoPor: uuid('enviado_por'),
-    estado: text('estado', {
-      enum: ['pendiente', 'enviado', 'entregado', 'leido', 'fallido'],
+    sentBy: uuid('sent_by'),
+    status: text('status', {
+      enum: ['pending', 'sent', 'delivered', 'read', 'failed'],
     }),
-    errorCodigo: text('error_codigo'),
-    errorDetalle: text('error_detalle'),
-    plantillaNombre: text('plantilla_nombre'),
-    plantillaIdioma: text('plantilla_idioma'),
-    plantillaCategoria: text('plantilla_categoria'),
+    errorCode: text('error_code'),
+    errorDetail: text('error_detail'),
+    templateName: text('template_name'),
+    templateLanguage: text('template_language'),
+    templateCategory: text('template_category'),
     waTimestamp: timestamp('wa_timestamp', { withTimezone: true }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
-  (tabla) => [
+  (table) => [
     check(
-      'whatsapp_messages_direccion_check',
-      sql`${tabla.direccion} IN ('entrante', 'saliente')`
+      'whatsapp_messages_direction_check',
+      sql`${table.direction} IN ('inbound', 'outbound')`
     ),
     check(
-      'whatsapp_messages_origen_check',
-      sql`${tabla.origen} IN ('cliente', 'sistema', 'celular', 'historial')`
+      'whatsapp_messages_source_check',
+      sql`${table.source} IN ('customer', 'system', 'phone', 'history')`
     ),
     check(
-      'whatsapp_messages_estado_check',
-      sql`${tabla.estado} IN ('pendiente', 'enviado', 'entregado', 'leido', 'fallido')`
+      'whatsapp_messages_status_check',
+      sql`${table.status} IN ('pending', 'sent', 'delivered', 'read', 'failed')`
     ),
     check(
-      'whatsapp_messages_plantilla_check',
-      sql`${tabla.tipo} <> 'template' OR (${tabla.plantillaNombre} IS NOT NULL AND ${tabla.plantillaIdioma} IS NOT NULL)`
+      'whatsapp_messages_template_check',
+      sql`${table.type} <> 'template' OR (${table.templateName} IS NOT NULL AND ${table.templateLanguage} IS NOT NULL)`
     ),
     index('whatsapp_messages_conversation_wa_timestamp_idx').on(
-      tabla.conversationId,
-      tabla.waTimestamp.desc()
+      table.conversationId,
+      table.waTimestamp.desc()
     ),
   ]
 );
@@ -144,20 +145,20 @@ export const whatsappWebhookEvents = pgTable(
   'whatsapp_webhook_events',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    // Sin CHECK: Meta agrega campos de webhook y el evento se guarda igual.
-    campo: text('campo').notNull(),
+    // No CHECK: Meta adds webhook fields and the event is saved anyway.
+    field: text('field').notNull(),
     payload: jsonb('payload').notNull(),
-    recibidoAt: timestamp('recibido_at', { withTimezone: true })
+    receivedAt: timestamp('received_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
-    procesadoAt: timestamp('procesado_at', { withTimezone: true }),
-    intentos: integer('intentos').notNull().default(0),
+    processedAt: timestamp('processed_at', { withTimezone: true }),
+    attempts: integer('attempts').notNull().default(0),
     error: text('error'),
   },
-  (tabla) => [
-    index('whatsapp_webhook_events_pendientes_idx')
-      .on(tabla.recibidoAt)
-      .where(sql`${tabla.procesadoAt} IS NULL`),
+  (table) => [
+    index('whatsapp_webhook_events_pending_idx')
+      .on(table.receivedAt)
+      .where(sql`${table.processedAt} IS NULL`),
   ]
 );
 
@@ -168,22 +169,22 @@ export const whatsappAccounts = pgTable(
     wabaId: text('waba_id').notNull(),
     phoneNumberId: text('phone_number_id').notNull().unique(),
     displayPhone: text('display_phone'),
-    estado: text('estado', { enum: ['conectado', 'desconectado'] }).notNull(),
-    motivoDesconexion: text('motivo_desconexion'),
-    historialSolicitadoAt: timestamp('historial_solicitado_at', {
+    status: text('status', { enum: ['connected', 'disconnected'] }).notNull(),
+    disconnectReason: text('disconnect_reason'),
+    historyRequestedAt: timestamp('history_requested_at', {
       withTimezone: true,
     }),
-    contactosSolicitadosAt: timestamp('contactos_solicitados_at', {
+    contactsRequestedAt: timestamp('contacts_requested_at', {
       withTimezone: true,
     }),
     updatedAt: timestamp('updated_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
-  (tabla) => [
+  (table) => [
     check(
-      'whatsapp_accounts_estado_check',
-      sql`${tabla.estado} IN ('conectado', 'desconectado')`
+      'whatsapp_accounts_status_check',
+      sql`${table.status} IN ('connected', 'disconnected')`
     ),
   ]
 );

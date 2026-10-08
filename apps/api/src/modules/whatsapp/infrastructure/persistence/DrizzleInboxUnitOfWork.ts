@@ -5,15 +5,15 @@ import {
   DRIZZLE_CLIENT,
 } from '../../../../infrastructure/database/drizzle.module';
 import type {
-  EventoWebhookPendiente,
   InboxTxScope,
   InboxUnitOfWork,
+  PendingWebhookEvent,
 } from '../../application/ports/out/InboxUnitOfWork';
 import type {
-  CambioEstadoMensaje,
-  EstadoMensaje,
-  IdentidadContacto,
-  MensajeEntrante,
+  ContactIdentity,
+  InboundMessage,
+  MessageStatus,
+  MessageStatusChange,
 } from '../../domain/Inbox';
 import {
   whatsappContacts,
@@ -27,156 +27,156 @@ type ApiTx = Parameters<Parameters<ApiDb['transaction']>[0]>[0];
 class DrizzleInboxScope implements InboxTxScope {
   constructor(private readonly tx: ApiTx) {}
 
-  async tomarEvento(eventoId: string): Promise<EventoWebhookPendiente | null> {
-    const [evento] = await this.tx
+  async claimEvent(eventId: string): Promise<PendingWebhookEvent | null> {
+    const [event] = await this.tx
       .select({
         id: whatsappWebhookEvents.id,
-        campo: whatsappWebhookEvents.campo,
+        field: whatsappWebhookEvents.field,
         payload: whatsappWebhookEvents.payload,
       })
       .from(whatsappWebhookEvents)
       .where(
         and(
-          eq(whatsappWebhookEvents.id, eventoId),
-          isNull(whatsappWebhookEvents.procesadoAt)
+          eq(whatsappWebhookEvents.id, eventId),
+          isNull(whatsappWebhookEvents.processedAt)
         )
       )
       .for('update', { skipLocked: true });
-    return evento ?? null;
+    return event ?? null;
   }
 
-  async marcarProcesado(eventoId: string): Promise<void> {
+  async markProcessed(eventId: string): Promise<void> {
     await this.tx
       .update(whatsappWebhookEvents)
-      .set({ procesadoAt: new Date(), error: null })
-      .where(eq(whatsappWebhookEvents.id, eventoId));
+      .set({ processedAt: new Date(), error: null })
+      .where(eq(whatsappWebhookEvents.id, eventId));
   }
 
-  async asegurarContacto(
-    { waId, userId }: IdentidadContacto,
+  async ensureContact(
+    { waId, userId }: ContactIdentity,
     profileName: string | null
   ): Promise<string> {
-    const coincidencias: SQL[] = [];
-    if (userId) coincidencias.push(eq(whatsappContacts.userId, userId));
-    if (waId) coincidencias.push(eq(whatsappContacts.waId, waId));
+    const matches: SQL[] = [];
+    if (userId) matches.push(eq(whatsappContacts.userId, userId));
+    if (waId) matches.push(eq(whatsappContacts.waId, waId));
 
-    const existentes = await this.tx
+    const existing = await this.tx
       .select({
         id: whatsappContacts.id,
         waId: whatsappContacts.waId,
         userId: whatsappContacts.userId,
       })
       .from(whatsappContacts)
-      .where(or(...coincidencias))
+      .where(or(...matches))
       .limit(2);
 
-    if (existentes.length === 0) {
-      const [creado] = await this.tx
+    if (existing.length === 0) {
+      const [created] = await this.tx
         .insert(whatsappContacts)
         .values({ waId, userId, profileName })
         .returning({ id: whatsappContacts.id });
-      if (!creado) throw new Error('no se creó el contacto');
-      return creado.id;
+      if (!created) throw new Error('no se creó el contacto');
+      return created.id;
     }
 
-    // Si el teléfono y el user_id caen en contactos distintos, se usa el del
-    // user_id y no se completa nada: unirlos rompería el UNIQUE.
-    const porUserId = existentes.find((c) => userId && c.userId === userId);
-    const contacto = porUserId ?? existentes[0];
-    if (!contacto) throw new Error('contacto inconsistente');
-    const completar = existentes.length === 1;
+    // If the phone and the user_id land on different contacts, the user_id one is
+    // used and nothing is filled in: merging them would break the UNIQUE.
+    const byUserId = existing.find((c) => userId && c.userId === userId);
+    const contact = byUserId ?? existing[0];
+    if (!contact) throw new Error('contacto inconsistente');
+    const complete = existing.length === 1;
 
     await this.tx
       .update(whatsappContacts)
       .set({
-        ...(completar && !contacto.waId && waId ? { waId } : {}),
-        ...(completar && !contacto.userId && userId ? { userId } : {}),
+        ...(complete && !contact.waId && waId ? { waId } : {}),
+        ...(complete && !contact.userId && userId ? { userId } : {}),
         ...(profileName ? { profileName } : {}),
         updatedAt: new Date(),
       })
-      .where(eq(whatsappContacts.id, contacto.id));
-    return contacto.id;
+      .where(eq(whatsappContacts.id, contact.id));
+    return contact.id;
   }
 
-  async asegurarConversacion(contactId: string): Promise<string> {
+  async ensureConversation(contactId: string): Promise<string> {
     await this.tx
       .insert(whatsappConversations)
       .values({ contactId })
       .onConflictDoNothing({ target: whatsappConversations.contactId });
-    const [conversacion] = await this.tx
+    const [conversation] = await this.tx
       .select({ id: whatsappConversations.id })
       .from(whatsappConversations)
       .where(eq(whatsappConversations.contactId, contactId));
-    if (!conversacion) throw new Error('no se creó la conversación');
-    return conversacion.id;
+    if (!conversation) throw new Error('no se creó la conversación');
+    return conversation.id;
   }
 
-  async insertarMensajeEntrante(
+  async insertInboundMessage(
     conversationId: string,
-    mensaje: MensajeEntrante
+    message: InboundMessage
   ): Promise<boolean> {
-    const insertados = await this.tx
+    const inserted = await this.tx
       .insert(whatsappMessages)
       .values({
         conversationId,
-        wamid: mensaje.wamid,
-        direccion: 'entrante',
-        origen: 'cliente',
-        tipo: mensaje.tipo,
-        cuerpo: mensaje.cuerpo,
-        mediaId: mensaje.mediaId,
-        waTimestamp: mensaje.waTimestamp,
+        wamid: message.wamid,
+        direction: 'inbound',
+        source: 'customer',
+        type: message.type,
+        body: message.body,
+        mediaId: message.mediaId,
+        waTimestamp: message.waTimestamp,
       })
       .onConflictDoNothing({ target: whatsappMessages.wamid })
       .returning({ id: whatsappMessages.id });
-    return insertados.length > 0;
+    return inserted.length > 0;
   }
 
-  async registrarEntrante(
+  async registerInbound(
     conversationId: string,
-    mensaje: MensajeEntrante
+    message: InboundMessage
   ): Promise<void> {
     const c = whatsappConversations;
-    const momento = sql`${mensaje.waTimestamp.toISOString()}::timestamptz`;
-    // GREATEST ignora NULL. Un mensaje viejo que llega tarde no pisa la
-    // vista previa ni retrocede la ventana.
+    const moment = sql`${message.waTimestamp.toISOString()}::timestamptz`;
+    // GREATEST ignores NULL. An old message arriving late does not overwrite the
+    // preview nor move the window back.
     await this.tx
       .update(c)
       .set({
-        ultimoMensajeAt: sql`greatest(${c.ultimoMensajeAt}, ${momento})`,
-        ultimoMensajePreview: sql`case when ${c.ultimoMensajeAt} is null or ${c.ultimoMensajeAt} <= ${momento} then ${mensaje.preview} else ${c.ultimoMensajePreview} end`,
-        ...(mensaje.abreVentana
+        lastMessageAt: sql`greatest(${c.lastMessageAt}, ${moment})`,
+        lastMessagePreview: sql`case when ${c.lastMessageAt} is null or ${c.lastMessageAt} <= ${moment} then ${message.preview} else ${c.lastMessagePreview} end`,
+        ...(message.opensWindow
           ? {
-              ultimoEntranteAt: sql`greatest(${c.ultimoEntranteAt}, ${momento})`,
+              lastInboundAt: sql`greatest(${c.lastInboundAt}, ${moment})`,
             }
           : {}),
-        noLeidos: sql`${c.noLeidos} + 1`,
-        estado: 'abierta',
+        unreadCount: sql`${c.unreadCount} + 1`,
+        status: 'open',
         updatedAt: new Date(),
       })
       .where(eq(c.id, conversationId));
   }
 
-  async actualizarEstadoMensaje(
-    cambio: CambioEstadoMensaje,
-    desde: EstadoMensaje[]
+  async updateMessageStatus(
+    change: MessageStatusChange,
+    from: MessageStatus[]
   ): Promise<void> {
-    if (desde.length === 0) return;
+    if (from.length === 0) return;
     await this.tx
       .update(whatsappMessages)
       .set({
-        estado: cambio.estado,
-        ...(cambio.estado === 'fallido'
+        status: change.status,
+        ...(change.status === 'failed'
           ? {
-              errorCodigo: cambio.errorCodigo,
-              errorDetalle: cambio.errorDetalle,
+              errorCode: change.errorCode,
+              errorDetail: change.errorDetail,
             }
           : {}),
       })
       .where(
         and(
-          eq(whatsappMessages.wamid, cambio.wamid),
-          inArray(whatsappMessages.estado, desde)
+          eq(whatsappMessages.wamid, change.wamid),
+          inArray(whatsappMessages.status, from)
         )
       );
   }

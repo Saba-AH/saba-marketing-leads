@@ -9,19 +9,19 @@ import {
 } from 'drizzle-orm/pg-core';
 
 /**
- * Tablas que este repo no crea en Supabase: `profiles`, `login_attempts` y
- * `admin_login_lockouts` son de Saba, y `auth.sessions` de GoTrue. Solo las
- * columnas que usa el login.
+ * Tables this repo does not create in Supabase: `profiles`, `login_attempts`
+ * and `admin_login_lockouts` belong to Saba, and `auth.sessions` to GoTrue.
+ * Only the columns the login uses.
  *
- * El archivo no se llama `*.schema.ts` a propósito: `drizzle.config.ts` toma
- * esos para generar migraciones, y estas tablas no se migran desde acá.
+ * The file is not named `*.schema.ts` on purpose: `drizzle.config.ts` picks
+ * those up to generate migrations, and these tables are not migrated from here.
  */
 
 export const profiles = pgTable('profiles', {
   id: uuid('id').primaryKey(),
   email: text('email').notNull(),
-  nombre: text('nombre').notNull(),
-  apellido: text('apellido').notNull(),
+  name: text('nombre').notNull(),
+  lastName: text('apellido').notNull(),
   role: text('role'),
 });
 

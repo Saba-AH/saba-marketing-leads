@@ -21,7 +21,7 @@ function fakeResponse(): Response & { headers: Record<string, string> } {
 }
 
 describe('CorrelationIdMiddleware', () => {
-  it('reusa el x-correlation-id que trae el request', () => {
+  it('reuses the x-correlation-id the request brings', () => {
     const middleware = new CorrelationIdMiddleware();
     const req = fakeRequest({ [CORRELATION_ID_HEADER]: 'ya-existente' });
     const res = fakeResponse();
@@ -35,7 +35,7 @@ describe('CorrelationIdMiddleware', () => {
     expect(res.headers[CORRELATION_ID_HEADER]).toBe('ya-existente');
   });
 
-  it('genera un id nuevo cuando no llega ninguno', () => {
+  it('generates a new id when none arrives', () => {
     const middleware = new CorrelationIdMiddleware();
     const req = fakeRequest();
     const res = fakeResponse();

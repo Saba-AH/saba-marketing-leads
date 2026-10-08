@@ -1,14 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import type { WhatsAppCloudPort } from '../../application/ports/out/WhatsAppCloudPort';
-import { type ArchivoMedia, ErrorEnvioMeta } from '../../domain/Chats';
-import { WhatsAppNoConfiguradoException } from '../../domain/exceptions/whatsappExceptions';
+import { type MediaFile, MetaSendError } from '../../domain/Chats';
+import { WhatsAppNotConfiguredException } from '../../domain/exceptions/whatsappExceptions';
 import { WHATSAPP_TOKENS } from '../../tokens';
 import type { WhatsAppConfig } from '../whatsappConfig';
 
 const TIMEOUT_MS = 15_000;
 
-const respuestaEnvioSchema = z.object({
+const sendResponseSchema = z.object({
   messages: z.array(z.object({ id: z.string().min(1) })).min(1),
 });
 
@@ -18,7 +18,7 @@ const mediaSchema = z.object({
   file_size: z.coerce.number().optional(),
 });
 
-const respuestaErrorSchema = z.object({
+const errorResponseSchema = z.object({
   error: z.looseObject({
     code: z.number().optional(),
     message: z.string().optional(),
@@ -32,13 +32,13 @@ export class GraphWhatsAppCloudAdapter implements WhatsAppCloudPort {
     @Inject(WHATSAPP_TOKENS.Config) private readonly config: WhatsAppConfig
   ) {}
 
-  async enviarTexto(to: string, cuerpo: string): Promise<string> {
+  async sendText(to: string, body: string): Promise<string> {
     const { accessToken, phoneNumberId, graphVersion } = this.config;
     if (!accessToken || !phoneNumberId) {
-      throw new WhatsAppNoConfiguradoException();
+      throw new WhatsAppNotConfiguredException();
     }
 
-    const respuesta = await fetch(
+    const response = await fetch(
       `https://graph.facebook.com/${graphVersion}/${phoneNumberId}/messages`,
       {
         method: 'POST',
@@ -51,72 +51,69 @@ export class GraphWhatsAppCloudAdapter implements WhatsAppCloudPort {
           recipient_type: 'individual',
           to,
           type: 'text',
-          text: { preview_url: false, body: cuerpo },
+          text: { preview_url: false, body: body },
         }),
         signal: AbortSignal.timeout(TIMEOUT_MS),
       }
     );
-    const json: unknown = await respuesta.json().catch(() => null);
+    const json: unknown = await response.json().catch(() => null);
 
-    if (!respuesta.ok) {
-      const error = respuestaErrorSchema.safeParse(json);
-      throw new ErrorEnvioMeta(
+    if (!response.ok) {
+      const error = errorResponseSchema.safeParse(json);
+      throw new MetaSendError(
         error.success ? (error.data.error.code ?? null) : null,
         error.success
           ? (error.data.error.error_data?.details ??
               error.data.error.message ??
-              `HTTP ${respuesta.status}`)
-          : `HTTP ${respuesta.status}`
+              `HTTP ${response.status}`)
+          : `HTTP ${response.status}`
       );
     }
 
-    const ok = respuestaEnvioSchema.safeParse(json);
+    const ok = sendResponseSchema.safeParse(json);
     if (!ok.success) {
-      throw new ErrorEnvioMeta(null, 'Meta respondió sin el id del mensaje');
+      throw new MetaSendError(null, 'Meta respondió sin el id del mensaje');
     }
-    const [mensaje] = ok.data.messages;
-    if (!mensaje) throw new ErrorEnvioMeta(null, 'Meta respondió sin mensajes');
-    return mensaje.id;
+    const [message] = ok.data.messages;
+    if (!message) throw new MetaSendError(null, 'Meta respondió sin mensajes');
+    return message.id;
   }
 
-  async descargarMedia(mediaId: string): Promise<ArchivoMedia> {
+  async downloadMedia(mediaId: string): Promise<MediaFile> {
     const { accessToken, graphVersion } = this.config;
-    if (!accessToken) throw new WhatsAppNoConfiguradoException();
-    const autorizacion = { Authorization: `Bearer ${accessToken}` };
+    if (!accessToken) throw new WhatsAppNotConfiguredException();
+    const authorization = { Authorization: `Bearer ${accessToken}` };
 
-    // Paso 1: Meta da una URL temporal (~5 min) que también exige el token.
+    // Step 1: Meta gives a temporary URL (~5 min) that also requires the token.
     const info = await fetch(
       `https://graph.facebook.com/${graphVersion}/${encodeURIComponent(mediaId)}`,
-      { headers: autorizacion, signal: AbortSignal.timeout(TIMEOUT_MS) }
+      { headers: authorization, signal: AbortSignal.timeout(TIMEOUT_MS) }
     );
     const json: unknown = await info.json().catch(() => null);
-    if (!info.ok) throw this.errorDeMeta(json, info.status);
+    if (!info.ok) throw this.metaError(json, info.status);
     const media = mediaSchema.safeParse(json);
     if (!media.success) {
-      throw new ErrorEnvioMeta(null, 'Meta respondió sin la URL del archivo');
+      throw new MetaSendError(null, 'Meta respondió sin la URL del archivo');
     }
 
-    // Paso 2: el archivo. Sin timeout total: un video grande tarda en bajar.
-    const archivo = await fetch(media.data.url, { headers: autorizacion });
-    if (!archivo.ok || !archivo.body) {
-      throw new ErrorEnvioMeta(
-        null,
-        `HTTP ${archivo.status} al bajar el archivo`
-      );
+    // Step 2: the file. No overall timeout: a large video takes a while to download.
+    const file = await fetch(media.data.url, { headers: authorization });
+    if (!file.ok || !file.body) {
+      throw new MetaSendError(null, `HTTP ${file.status} al bajar el archivo`);
     }
     return {
       mimeType: media.data.mime_type,
-      tamano: media.data.file_size ?? null,
-      contenido: archivo.body,
+      size: media.data.file_size ?? null,
+      content: file.body,
     };
   }
 
-  async indicarEscribiendo(wamidEntrante: string): Promise<void> {
+  async sendTypingIndicator(inboundWamid: string): Promise<void> {
     const { accessToken, phoneNumberId, graphVersion } = this.config;
     if (!accessToken || !phoneNumberId) {
-      throw new WhatsAppNoConfiguradoException();
+      throw new WhatsAppNotConfiguredException();
     }
-    const respuesta = await fetch(
+    const response = await fetch(
       `https://graph.facebook.com/${graphVersion}/${phoneNumberId}/messages`,
       {
         method: 'POST',
@@ -127,23 +124,23 @@ export class GraphWhatsAppCloudAdapter implements WhatsAppCloudPort {
         body: JSON.stringify({
           messaging_product: 'whatsapp',
           status: 'read',
-          message_id: wamidEntrante,
+          message_id: inboundWamid,
           typing_indicator: { type: 'text' },
         }),
         signal: AbortSignal.timeout(TIMEOUT_MS),
       }
     );
-    if (!respuesta.ok) {
-      throw this.errorDeMeta(
-        await respuesta.json().catch(() => null),
-        respuesta.status
+    if (!response.ok) {
+      throw this.metaError(
+        await response.json().catch(() => null),
+        response.status
       );
     }
   }
 
-  private errorDeMeta(json: unknown, status: number): ErrorEnvioMeta {
-    const error = respuestaErrorSchema.safeParse(json);
-    return new ErrorEnvioMeta(
+  private metaError(json: unknown, status: number): MetaSendError {
+    const error = errorResponseSchema.safeParse(json);
+    return new MetaSendError(
       error.success ? (error.data.error.code ?? null) : null,
       error.success
         ? (error.data.error.error_data?.details ??

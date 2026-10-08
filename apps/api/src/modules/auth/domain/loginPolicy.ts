@@ -1,7 +1,7 @@
 /**
- * Mismos números que el login de staff de Saba (`portalLogin.js`): las tablas
- * de intentos y bloqueos son compartidas, así que una regla distinta acá
- * haría que el mismo correo se bloquee distinto según por dónde entre.
+ * Same numbers as Saba's staff login (`portalLogin.js`): the attempts and
+ * lockouts tables are shared, so a different rule here would lock the same
+ * email differently depending on where it comes in.
  */
 export const LOGIN_POLICY = {
   rateWindowMs: 15 * 60 * 1000,
@@ -9,10 +9,10 @@ export const LOGIN_POLICY = {
   maxConsecutiveStaffFailures: 5,
 } as const;
 
-/** El portal de staff de Saba: este panel cuenta los intentos ahí. */
+/** Saba's staff portal: this panel counts the attempts there. */
 export const STAFF_PORTAL = 'admin';
 
-/** Valores de `login_attempts.reason` que ya usa Saba. */
+/** `login_attempts.reason` values Saba already uses. */
 export type LoginAttemptReason =
   | 'rate_limited'
   | 'bad_credentials'
@@ -20,7 +20,7 @@ export type LoginAttemptReason =
   | 'wrong_portal';
 
 export interface LoginAttempt {
-  correo: string;
+  email: string;
   userId: string | null;
   ip: string | null;
   userAgent: string | null;
@@ -34,7 +34,7 @@ export interface StaffLockout {
   lockedAt: Date | null;
 }
 
-/** Un fallo más; al llegar al tope la cuenta queda bloqueada hasta que la desbloqueen en Saba. */
+/** One more failure; on reaching the limit the account stays locked until it is unlocked in Saba. */
 export function nextLockout(
   profile: { id: string },
   current: StaffLockout | null,

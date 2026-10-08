@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
-  crearLeadSchema,
+  createLeadSchema,
   leadResponseSchema,
   leadsResponseSchema,
   type TLeadResponse,
@@ -19,35 +19,35 @@ import {
   ZodApiResponse,
 } from '../../../../shared/decorators/zodSwagger';
 import { createZodDto } from '../../../../shared/utils/createZodDto';
-import type { CrearLeadPort } from '../../application/ports/in/CrearLeadPort';
-import type { ListarLeadsPort } from '../../application/ports/in/ListarLeadsPort';
+import type { CreateLeadPort } from '../../application/ports/in/CreateLeadPort';
+import type { ListLeadsPort } from '../../application/ports/in/ListLeadsPort';
 import { LEADS_TOKENS } from '../../tokens';
 import { toLeadResponse, toLeadsResponse } from './LeadPresenter';
 
-class CrearLeadDto extends createZodDto(crearLeadSchema) {}
+class CreateLeadDto extends createZodDto(createLeadSchema) {}
 
 @ApiTags('leads')
 @Controller('leads')
 export class LeadsController {
   constructor(
-    @Inject(LEADS_TOKENS.ListarLeads)
-    private readonly listarLeads: ListarLeadsPort,
-    @Inject(LEADS_TOKENS.CrearLead)
-    private readonly crearLead: CrearLeadPort
+    @Inject(LEADS_TOKENS.ListLeads)
+    private readonly listLeads: ListLeadsPort,
+    @Inject(LEADS_TOKENS.CreateLead)
+    private readonly createLead: CreateLeadPort
   ) {}
 
   @Get()
   @ApiOperation({ summary: 'Lista los leads, los más recientes primero' })
   @ZodApiResponse(HttpStatus.OK, leadsResponseSchema)
-  async listar(): Promise<TLeadsResponse> {
-    return toLeadsResponse(await this.listarLeads.execute());
+  async list(): Promise<TLeadsResponse> {
+    return toLeadsResponse(await this.listLeads.execute());
   }
 
   @Post()
   @ApiOperation({ summary: 'Registra un lead nuevo' })
-  @ZodApiBody(crearLeadSchema)
+  @ZodApiBody(createLeadSchema)
   @ZodApiResponse(HttpStatus.CREATED, leadResponseSchema)
-  async crear(@Body() body: CrearLeadDto): Promise<TLeadResponse> {
-    return toLeadResponse(await this.crearLead.execute(body));
+  async create(@Body() body: CreateLeadDto): Promise<TLeadResponse> {
+    return toLeadResponse(await this.createLead.execute(body));
   }
 }

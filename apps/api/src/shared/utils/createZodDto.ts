@@ -6,7 +6,7 @@ export interface ZodDtoClass<T extends z.ZodType = z.ZodType> {
 }
 
 export function createZodDto<T extends z.ZodType>(schema: T): ZodDtoClass<T> {
-  // Tiene que ser una clase: Nest usa el metatype para resolver el pipe de validación.
+  // It has to be a class: Nest uses the metatype to resolve the validation pipe.
   class ZodDto {
     static schema: T = schema;
   }

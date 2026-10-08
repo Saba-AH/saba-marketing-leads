@@ -1,31 +1,28 @@
-import type { ConversacionResumen, MensajeChat } from '../../../domain/Chats';
+import type { ChatMessage, ConversationSummary } from '../../../domain/Chats';
 
-export interface NuevoMensajeSaliente {
+export interface NewOutboundMessage {
   conversationId: string;
-  cuerpo: string;
-  enviadoPor: string;
+  body: string;
+  sentBy: string;
   waTimestamp: Date;
 }
 
 export interface ChatsRepositoryPort {
-  listarConversaciones(limite: number): Promise<ConversacionResumen[]>;
-  obtenerConversacion(id: string): Promise<ConversacionResumen | null>;
-  /** Los más recientes, devueltos en orden cronológico. */
-  listarMensajes(
-    conversationId: string,
-    limite: number
-  ): Promise<MensajeChat[]>;
-  /** Inserta el mensaje como `pendiente` y lo deja como último de la conversación. */
-  registrarSaliente(mensaje: NuevoMensajeSaliente): Promise<MensajeChat>;
-  confirmarEnvio(mensajeId: string, wamid: string): Promise<MensajeChat>;
-  registrarFalloEnvio(
-    mensajeId: string,
-    codigo: string | null,
-    detalle: string
+  listConversations(limit: number): Promise<ConversationSummary[]>;
+  getConversation(id: string): Promise<ConversationSummary | null>;
+  /** The most recent ones, returned in chronological order. */
+  listMessages(conversationId: string, limit: number): Promise<ChatMessage[]>;
+  /** Inserts the message as `pending` and makes it the conversation's last one. */
+  registerOutbound(message: NewOutboundMessage): Promise<ChatMessage>;
+  confirmSend(messageId: string, wamid: string): Promise<ChatMessage>;
+  registerSendFailure(
+    messageId: string,
+    code: string | null,
+    detail: string
   ): Promise<void>;
-  marcarLeida(conversationId: string): Promise<boolean>;
-  /** `wamid` del último mensaje que mandó el cliente; `null` si nunca escribió. */
-  ultimoWamidEntrante(conversationId: string): Promise<string | null>;
-  /** `undefined` si el mensaje no existe; `null` si existe pero no tiene archivo. */
-  mediaIdDe(mensajeId: string): Promise<string | null | undefined>;
+  markAsRead(conversationId: string): Promise<boolean>;
+  /** `wamid` of the last message the customer sent; `null` if they never wrote. */
+  lastInboundWamid(conversationId: string): Promise<string | null>;
+  /** `undefined` if the message does not exist; `null` if it exists but has no file. */
+  mediaIdOf(messageId: string): Promise<string | null | undefined>;
 }

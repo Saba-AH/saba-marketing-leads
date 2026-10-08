@@ -5,11 +5,11 @@ import { HttpExceptionFilter } from './HttpExceptionFilter';
 
 @Module({
   providers: [
-    // Orden importa, e invertido: `RouterExceptionFilters.create()` hace
-    // `filters.reverse()` antes de resolver — el primero cuyo `@Catch()`
-    // matchee es el que corre. Para que DomainExceptionFilter (específico)
-    // se pruebe antes que HttpExceptionFilter (`@Catch()` sin tipo, siempre
-    // matchea), acá va provisto DESPUÉS.
+    // Order matters, and it is inverted: `RouterExceptionFilters.create()` does
+    // `filters.reverse()` before resolving — the first one whose `@Catch()`
+    // matches is the one that runs. For DomainExceptionFilter (specific) to be
+    // tried before HttpExceptionFilter (untyped `@Catch()`, always matches), it is
+    // provided AFTER it here.
     { provide: APP_FILTER, useClass: HttpExceptionFilter },
     { provide: APP_FILTER, useClass: DomainExceptionFilter },
   ],

@@ -1,61 +1,61 @@
 import { DomainException } from '../../../../infrastructure/errors/DomainException';
 
-export class ConversacionNoEncontradaException extends DomainException {
+export class ConversationNotFoundException extends DomainException {
   constructor() {
-    super('WHATSAPP_CONVERSACION_NO_ENCONTRADA');
+    super('WHATSAPP_CONVERSATION_NOT_FOUND');
   }
 }
 
-export class MediaNoDisponibleException extends DomainException {
+export class MediaUnavailableException extends DomainException {
   constructor(cause?: unknown) {
-    super('WHATSAPP_MEDIA_NO_DISPONIBLE', cause);
+    super('WHATSAPP_MEDIA_UNAVAILABLE', cause);
   }
 }
 
-export class VentanaCerradaException extends DomainException {
+export class WindowClosedException extends DomainException {
   constructor(cause?: unknown) {
-    super('WHATSAPP_VENTANA_CERRADA', cause);
+    super('WHATSAPP_WINDOW_CLOSED', cause);
   }
 }
 
-export class ContactoSinTelefonoException extends DomainException {
+export class ContactWithoutPhoneException extends DomainException {
   constructor() {
-    super('WHATSAPP_CONTACTO_SIN_TELEFONO');
+    super('WHATSAPP_CONTACT_WITHOUT_PHONE');
   }
 }
 
-export class WhatsAppNoConfiguradoException extends DomainException {
+export class WhatsAppNotConfiguredException extends DomainException {
   constructor() {
-    super('WHATSAPP_NO_CONFIGURADO');
+    super('WHATSAPP_NOT_CONFIGURED');
   }
 }
 
-export class DestinatarioNoPermitidoException extends DomainException {
+export class RecipientNotAllowedException extends DomainException {
   constructor(cause?: unknown) {
-    super('WHATSAPP_DESTINATARIO_NO_PERMITIDO', cause);
+    super('WHATSAPP_RECIPIENT_NOT_ALLOWED', cause);
   }
 }
 
-export class NoEntregableException extends DomainException {
+export class UndeliverableException extends DomainException {
   constructor(cause?: unknown) {
-    super('WHATSAPP_NO_ENTREGABLE', cause);
+    super('WHATSAPP_UNDELIVERABLE', cause);
   }
 }
 
-export class TokenWhatsAppInvalidoException extends DomainException {
+export class InvalidWhatsAppTokenException extends DomainException {
   constructor(cause?: unknown) {
-    super('WHATSAPP_TOKEN_INVALIDO', cause);
+    super('WHATSAPP_INVALID_TOKEN', cause);
   }
 }
 
-export class DemasiadosEnviosException extends DomainException {
+export class TooManySendsException extends DomainException {
   constructor(cause?: unknown) {
-    super('WHATSAPP_DEMASIADOS_ENVIOS', cause);
+    super('WHATSAPP_TOO_MANY_SENDS', cause);
   }
 }
 
-export class EnvioRechazadoException extends DomainException {
+export class SendRejectedException extends DomainException {
   constructor(cause?: unknown) {
-    super('WHATSAPP_ENVIO_RECHAZADO', cause);
+    super('WHATSAPP_SEND_REJECTED', cause);
   }
 }

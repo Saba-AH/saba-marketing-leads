@@ -11,9 +11,9 @@ import { SYNC_USERS } from './sync/sabaSyncUsers';
 import { syncSaba } from './sync/syncSaba';
 
 /**
- * `npm run db:sync:saba` (lo lanza `scripts/localSupabase.mjs sync`, que antes
- * levanta y migra el stack local). Origen: DATABASE_SUPABASE del `.env`, solo
- * lectura. Destino: siempre el Supabase local.
+ * `npm run db:sync:saba` (launched by `scripts/localSupabase.mjs sync`, which
+ * first brings up and migrates the local stack). Source: DATABASE_SUPABASE
+ * from `.env`, read only. Target: always the local Supabase.
  */
 loadEnv({ path: resolve(__dirname, '../.env'), quiet: true });
 
@@ -35,7 +35,7 @@ async function main(): Promise<void> {
   console.log(`  Origen:  ${redactDatabaseUrl(sourceUrl)} (solo lectura)`);
   console.log(`  Destino: ${redactDatabaseUrl(targetUrl)}`);
   console.log(`  Admins:   ${SYNC_USERS.admins.join(', ')}`);
-  console.log(`  Clientes: ${SYNC_USERS.clientes.join(', ')}\n`);
+  console.log(`  Clientes: ${SYNC_USERS.customers.join(', ')}\n`);
 
   const source = new Pool({ connectionString: sourceUrl });
   const target = new Pool({ connectionString: targetUrl });

@@ -12,10 +12,10 @@ import { Throttle } from '@nestjs/throttler';
 import {
   loginResponseSchema,
   loginSchema,
-  refreshSesionResponseSchema,
-  refreshSesionSchema,
+  refreshSessionResponseSchema,
+  refreshSessionSchema,
   type TLoginResponse,
-  type TRefreshSesionResponse,
+  type TRefreshSessionResponse,
 } from '@repo/schemas';
 import type { Request } from 'express';
 import { Public } from '../../../../shared/decorators/Public';
@@ -27,18 +27,18 @@ import { extractBearerToken } from '../../../../shared/http/extractBearerToken';
 import { createZodDto } from '../../../../shared/utils/createZodDto';
 import type { LoginPort } from '../../application/ports/in/LoginPort';
 import type { LogoutPort } from '../../application/ports/in/LogoutPort';
-import type { RefreshSesionPort } from '../../application/ports/in/RefreshSesionPort';
-import { SesionInvalidaException } from '../../domain/exceptions/SesionInvalidaException';
+import type { RefreshSessionPort } from '../../application/ports/in/RefreshSessionPort';
+import { InvalidSessionException } from '../../domain/exceptions/InvalidSessionException';
 import { AUTH_TOKENS } from '../../tokens';
-import { toLoginResponse, toRefreshSesionResponse } from './AuthPresenter';
+import { toLoginResponse, toRefreshSessionResponse } from './AuthPresenter';
 
 class LoginDto extends createZodDto(loginSchema) {}
-class RefreshSesionDto extends createZodDto(refreshSesionSchema) {}
+class RefreshSessionDto extends createZodDto(refreshSessionSchema) {}
 
 /**
- * Tramo propio del rate limit, más corto que el global: frena el martilleo
- * por IP antes de llegar a Supabase. El conteo de fallos de `login_attempts`
- * es la defensa de fondo; esto es el primer filtro.
+ * Its own rate limit tier, shorter than the global one: stops per-IP hammering
+ * before it reaches Supabase. The `login_attempts` failure count is the real
+ * defense; this is the first filter.
  */
 const AUTH_THROTTLE = { global: { limit: 10, ttl: 60_000 } };
 
@@ -47,8 +47,8 @@ const AUTH_THROTTLE = { global: { limit: 10, ttl: 60_000 } };
 export class AuthController {
   constructor(
     @Inject(AUTH_TOKENS.Login) private readonly login: LoginPort,
-    @Inject(AUTH_TOKENS.RefreshSesion)
-    private readonly refreshSesion: RefreshSesionPort,
+    @Inject(AUTH_TOKENS.RefreshSession)
+    private readonly refreshSession: RefreshSessionPort,
     @Inject(AUTH_TOKENS.Logout) private readonly logout: LogoutPort
   ) {}
 
@@ -59,7 +59,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Inicia sesión de staff en el panel' })
   @ZodApiBody(loginSchema)
   @ZodApiResponse(HttpStatus.OK, loginResponseSchema)
-  async iniciar(
+  async start(
     @Body() body: LoginDto,
     @Req() request: Request
   ): Promise<TLoginResponse> {
@@ -76,13 +76,13 @@ export class AuthController {
   @Throttle(AUTH_THROTTLE)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Renueva el access token con el refresh token' })
-  @ZodApiBody(refreshSesionSchema)
-  @ZodApiResponse(HttpStatus.OK, refreshSesionResponseSchema)
-  async renovar(
-    @Body() body: RefreshSesionDto
-  ): Promise<TRefreshSesionResponse> {
-    return toRefreshSesionResponse(
-      await this.refreshSesion.execute(body.refreshToken)
+  @ZodApiBody(refreshSessionSchema)
+  @ZodApiResponse(HttpStatus.OK, refreshSessionResponseSchema)
+  async renew(
+    @Body() body: RefreshSessionDto
+  ): Promise<TRefreshSessionResponse> {
+    return toRefreshSessionResponse(
+      await this.refreshSession.execute(body.refreshToken)
     );
   }
 
@@ -90,9 +90,9 @@ export class AuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Cierra la sesión del token en Supabase' })
-  async cerrar(@Req() request: Request): Promise<void> {
+  async close(@Req() request: Request): Promise<void> {
     const token = extractBearerToken(request);
-    if (!token) throw new SesionInvalidaException();
+    if (!token) throw new InvalidSessionException();
     await this.logout.execute(token);
   }
 }

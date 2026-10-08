@@ -1,7 +1,7 @@
 export interface WebhookEventPublisherPort {
   /**
-   * Avisa que hay eventos por procesar. No lanza: si el aviso se pierde, el
-   * evento ya está guardado y el barrido periódico lo recoge.
+   * Signals there are events to process. It does not throw: if the signal is
+   * lost, the event is already saved and the periodic sweep picks it up.
    */
-  publicarRecibidos(eventoIds: string[]): void;
+  publishReceived(eventIds: string[]): void;
 }

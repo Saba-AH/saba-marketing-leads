@@ -6,9 +6,9 @@ type LeadRow = typeof leads.$inferSelect;
 export function toLeadDomain(row: LeadRow): Lead {
   return {
     id: row.id,
-    nombre: row.nombre,
-    correo: row.correo,
-    origen: row.origen,
+    name: row.name,
+    email: row.email,
+    source: row.source,
     createdAt: row.createdAt,
   };
 }

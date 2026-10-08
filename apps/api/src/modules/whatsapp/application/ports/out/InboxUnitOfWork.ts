@@ -1,40 +1,40 @@
 import type {
-  CambioEstadoMensaje,
-  EstadoMensaje,
-  IdentidadContacto,
-  MensajeEntrante,
+  ContactIdentity,
+  InboundMessage,
+  MessageStatus,
+  MessageStatusChange,
 } from '../../../domain/Inbox';
 
-export interface EventoWebhookPendiente {
+export interface PendingWebhookEvent {
   id: string;
-  campo: string;
+  field: string;
   payload: unknown;
 }
 
-/** Operaciones ligadas a una sola transacción: todo o nada por evento. */
+/** Operations bound to a single transaction: all or nothing per event. */
 export interface InboxTxScope {
-  /** Bloquea el evento si sigue sin procesar; `null` si ya se procesó o lo tiene otra instancia. */
-  tomarEvento(eventoId: string): Promise<EventoWebhookPendiente | null>;
-  marcarProcesado(eventoId: string): Promise<void>;
-  /** Busca por `user_id` o por teléfono, completa lo que falte y devuelve el id. */
-  asegurarContacto(
-    identidad: IdentidadContacto,
+  /** Locks the event if it is still unprocessed; `null` if it was already processed or another instance has it. */
+  claimEvent(eventId: string): Promise<PendingWebhookEvent | null>;
+  markProcessed(eventId: string): Promise<void>;
+  /** Looks up by `user_id` or by phone, fills in whatever is missing and returns the id. */
+  ensureContact(
+    identity: ContactIdentity,
     profileName: string | null
   ): Promise<string>;
-  asegurarConversacion(contactId: string): Promise<string>;
-  /** `false` si el `wamid` ya existía (Meta reenvía webhooks). */
-  insertarMensajeEntrante(
+  ensureConversation(contactId: string): Promise<string>;
+  /** `false` if the `wamid` already existed (Meta resends webhooks). */
+  insertInboundMessage(
     conversationId: string,
-    mensaje: MensajeEntrante
+    message: InboundMessage
   ): Promise<boolean>;
-  registrarEntrante(
+  registerInbound(
     conversationId: string,
-    mensaje: MensajeEntrante
+    message: InboundMessage
   ): Promise<void>;
-  /** Solo cambia los mensajes que están en alguno de `desde`. */
-  actualizarEstadoMensaje(
-    cambio: CambioEstadoMensaje,
-    desde: EstadoMensaje[]
+  /** Only changes the messages that are in one of `from`. */
+  updateMessageStatus(
+    change: MessageStatusChange,
+    from: MessageStatus[]
   ): Promise<void>;
 }
 

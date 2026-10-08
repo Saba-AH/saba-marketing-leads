@@ -4,28 +4,28 @@ import { syncSaba } from '../../../scripts/sync/syncSaba';
 import { testBaseDatabaseUrl } from '../../infrastructure/database/migrator';
 
 /**
- * Copia entre dos bases locales: `prod` hace de Supabase de Saba y `local` de
- * destino. El esquema es mínimo (solo las columnas que el sync filtra o que los
- * casos necesitan) pero imita lo que importa del real: `auth` con columnas
- * generadas, FKs entre tablas y una tabla del plan que en local no existe
- * (`stores`).
+ * Copy between two local databases: `prod` plays Saba's Supabase and `local`
+ * the target. The schema is minimal (only the columns the sync filters on or
+ * the cases need) but mimics what matters from the real one: `auth` with
+ * generated columns, FKs between tables and a plan table that does not exist
+ * locally (`stores`).
  */
 const SOURCE_DB = 'app_sync_prod_test';
 const TARGET_DB = 'app_sync_local_test';
 
 const ADMIN = 'angel.hernandez@sabatransporte.com';
-const CLIENTE = 'angel.hernandez+user-test@sabatransporte.com';
-const USERS = { admins: [ADMIN], clientes: [CLIENTE] };
+const CUSTOMER = 'angel.hernandez+user-test@sabatransporte.com';
+const USERS = { admins: [ADMIN], customers: [CUSTOMER] };
 
 const ID = {
   admin: '00000000-0000-0000-0000-00000000000a',
-  cliente: '00000000-0000-0000-0000-00000000000c',
-  otro: '00000000-0000-0000-0000-0000000000ff',
+  customer: '00000000-0000-0000-0000-00000000000c',
+  other: '00000000-0000-0000-0000-0000000000ff',
   seed: 'de000000-0000-0000-0000-000000000001',
   app1: '00000000-0000-0000-0000-0000000000a1',
-  appOtro: '00000000-0000-0000-0000-0000000000a9',
-  pago1: '00000000-0000-0000-0000-0000000000b1',
-  cuota1: '00000000-0000-0000-0000-0000000000c1',
+  otherApp: '00000000-0000-0000-0000-0000000000a9',
+  payment1: '00000000-0000-0000-0000-0000000000b1',
+  installment1: '00000000-0000-0000-0000-0000000000c1',
 };
 
 const SCHEMA = `
@@ -103,35 +103,35 @@ let target: Pool;
 async function seedProd(): Promise<void> {
   await source.query(
     `INSERT INTO auth.users (id, email, encrypted_password, email_confirmed_at) VALUES
-       ($1, $4, 'hash-admin', now()), ($2, $5, 'hash-cliente', now()), ($3, 'otro@x.com', 'hash-otro', now())`,
-    [ID.admin, ID.cliente, ID.otro, ADMIN, CLIENTE]
+       ($1, $4, 'hash-admin', now()), ($2, $5, 'customer-hash', now()), ($3, 'otro@x.com', 'hash-otro', now())`,
+    [ID.admin, ID.customer, ID.other, ADMIN, CUSTOMER]
   );
   await source.query(
     `INSERT INTO auth.identities (id, user_id, provider_id, identity_data) VALUES
        ($1, $1, $3, jsonb_build_object('email', $3::text)), ($2, $2, $4, jsonb_build_object('email', $4::text))`,
-    [ID.admin, ID.cliente, ADMIN, CLIENTE]
+    [ID.admin, ID.customer, ADMIN, CUSTOMER]
   );
   await source.query(
     `INSERT INTO public.profiles (id, email, nombre, role) VALUES
        ($1, $4, 'Angel', 'admin'), ($2, $5, 'Angel Test', 'standard'), ($3, 'otro@x.com', 'Otro', 'standard')`,
-    [ID.admin, ID.cliente, ID.otro, ADMIN, CLIENTE]
+    [ID.admin, ID.customer, ID.other, ADMIN, CUSTOMER]
   );
   await source.query(
     `INSERT INTO public.applications (id, user_id, status, metadata) VALUES
        ($1, $2, 'aprobada', '{"canal":"web"}'), ($3, $4, 'pendiente', null)`,
-    [ID.app1, ID.cliente, ID.appOtro, ID.otro]
+    [ID.app1, ID.customer, ID.otherApp, ID.other]
   );
   await source.query(
     'INSERT INTO public.payments (id, application_id, amount) VALUES ($1, $2, 125.50)',
-    [ID.pago1, ID.app1]
+    [ID.payment1, ID.app1]
   );
   await source.query(
     'INSERT INTO public.installments (id, application_id, payment_id, numero) VALUES ($1, $2, $3, 1)',
-    [ID.cuota1, ID.app1, ID.pago1]
+    [ID.installment1, ID.app1, ID.payment1]
   );
   await source.query(
     'INSERT INTO public.payments_installments (id, payment_id, installment_id) VALUES (gen_random_uuid(), $1, $2)',
-    [ID.pago1, ID.cuota1]
+    [ID.payment1, ID.installment1]
   );
   await source.query(
     `INSERT INTO public.products (id, model) VALUES (gen_random_uuid(), 'Bera 150'), (gen_random_uuid(), 'Empire 200')`
@@ -174,16 +174,16 @@ describe('syncSaba', () => {
     await seedProd();
   });
 
-  it('copia los usuarios de la lista con sus solicitudes, y los catálogos completos', async () => {
+  it('copies the listed users with their applications, and the full catalogs', async () => {
     const report = await syncSaba({ source, target, users: USERS });
 
     expect(await count(target, 'SELECT * FROM auth.users')).toBe(2);
-    const { rows: usuarios } = await target.query(
+    const { rows: users } = await target.query(
       'SELECT email, encrypted_password FROM auth.users ORDER BY email COLLATE "C"'
     );
-    // El hash real: se entra con la contraseña de prod.
-    expect(usuarios).toEqual([
-      { email: CLIENTE, encrypted_password: 'hash-cliente' },
+    // The real hash: you log in with the prod password.
+    expect(users).toEqual([
+      { email: CUSTOMER, encrypted_password: 'customer-hash' },
       { email: ADMIN, encrypted_password: 'hash-admin' },
     ]);
     expect(await count(target, 'SELECT * FROM auth.identities')).toBe(2);
@@ -192,16 +192,16 @@ describe('syncSaba', () => {
       'SELECT status, metadata FROM public.applications'
     );
     expect(apps).toEqual([{ status: 'aprobada', metadata: { canal: 'web' } }]);
-    const { rows: pagos } = await target.query(
+    const { rows: payments } = await target.query(
       'SELECT amount::text FROM public.payments'
     );
-    expect(pagos).toEqual([{ amount: '125.50' }]);
+    expect(payments).toEqual([{ amount: '125.50' }]);
     expect(await count(target, 'SELECT * FROM public.installments')).toBe(1);
     expect(
       await count(target, 'SELECT * FROM public.payments_installments')
     ).toBe(1);
     expect(await count(target, 'SELECT * FROM public.products')).toBe(2);
-    // Nada del usuario que no está en la lista.
+    // Nothing from the user who is not on the list.
     expect(
       await count(target, "SELECT * FROM auth.users WHERE email = 'otro@x.com'")
     ).toBe(0);
@@ -210,17 +210,17 @@ describe('syncSaba', () => {
     ).toBe(1);
   });
 
-  it('al re-sincronizar, prod manda dentro del alcance y lo de afuera no se toca', async () => {
+  it('when re-syncing, prod wins within scope and what is outside is untouched', async () => {
     await syncSaba({ source, target, users: USERS });
-    // En local: una solicitud de prueba del cliente (alcance) y un usuario propio (afuera).
+    // Locally: a test application of the customer (in scope) and a local-only user (out of scope).
     await target.query(
       "INSERT INTO public.applications (id, user_id, status) VALUES (gen_random_uuid(), $1, 'local')",
-      [ID.cliente]
+      [ID.customer]
     );
     await target.query(
       "INSERT INTO auth.users (id, email) VALUES ('11111111-1111-1111-1111-111111111111', 'mio@local.dev')"
     );
-    // En prod: cambia el estado de la solicitud.
+    // In prod: the application's status changes.
     await source.query(
       "UPDATE public.applications SET status = 'pagada' WHERE id = $1",
       [ID.app1]
@@ -240,7 +240,7 @@ describe('syncSaba', () => {
     ).toBe(1);
   });
 
-  it('el usuario de prod reemplaza al del seed con el mismo correo y se lleva sus sesiones', async () => {
+  it('the prod user replaces the seed one with the same email and takes its sessions along', async () => {
     await target.query(
       "INSERT INTO auth.users (id, email, encrypted_password) VALUES ($1, $2, 'hash-seed')",
       [ID.seed, ADMIN]
@@ -274,7 +274,7 @@ describe('syncSaba', () => {
     expect(await count(target, 'SELECT * FROM auth.refresh_tokens')).toBe(0);
   });
 
-  it('salta lo que no existe de un lado y lo avisa', async () => {
+  it('skips what does not exist on one side and reports it', async () => {
     await source.query(
       'ALTER TABLE public.profiles ADD COLUMN columna_nueva text'
     );
@@ -282,7 +282,7 @@ describe('syncSaba', () => {
       const report = await syncSaba({
         source,
         target,
-        users: { admins: [ADMIN], clientes: [CLIENTE, 'no-existe@saba.com'] },
+        users: { admins: [ADMIN], customers: [CUSTOMER, 'no-existe@saba.com'] },
       });
 
       expect(report.warnings).toEqual(
@@ -292,7 +292,7 @@ describe('syncSaba', () => {
           expect.stringContaining('columna_nueva'),
         ])
       );
-      // Las generadas existen en los dos lados: no son una diferencia.
+      // Generated columns exist on both sides: they are not a difference.
       expect(report.warnings.join('\n')).not.toMatch(/confirmed_at|\(email\)/);
       expect(await count(target, 'SELECT * FROM public.profiles')).toBe(2);
     } finally {
@@ -302,14 +302,14 @@ describe('syncSaba', () => {
     }
   });
 
-  it('avisa si los roles no coinciden con la lista', async () => {
+  it('warns if the roles do not match the list', async () => {
     await source.query(
       "UPDATE public.profiles SET role = 'standard' WHERE id = $1",
       [ID.admin]
     );
     await source.query(
       "UPDATE public.profiles SET role = 'cajero' WHERE id = $1",
-      [ID.cliente]
+      [ID.customer]
     );
 
     const report = await syncSaba({ source, target, users: USERS });
@@ -322,13 +322,13 @@ describe('syncSaba', () => {
     );
   });
 
-  it('si algo falla al cargar, la copia anterior queda intacta', async () => {
+  it('if loading fails, the previous copy stays intact', async () => {
     await syncSaba({ source, target, users: USERS });
     await source.query(
       "UPDATE public.applications SET status = 'nueva' WHERE id = $1",
       [ID.app1]
     );
-    // Una columna obligatoria en local que prod no trae: el INSERT falla.
+    // A required column locally that prod does not have: the INSERT fails.
     await target.query(
       "ALTER TABLE public.payments ADD COLUMN obligatoria text NOT NULL DEFAULT 'x'"
     );
@@ -350,7 +350,7 @@ describe('syncSaba', () => {
     }
   });
 
-  it('lee prod en una transacción de solo lectura', async () => {
+  it('reads prod in a read-only transaction', async () => {
     const queries: string[] = [];
     const spy = new Proxy(source, {
       get(pool, prop, receiver) {

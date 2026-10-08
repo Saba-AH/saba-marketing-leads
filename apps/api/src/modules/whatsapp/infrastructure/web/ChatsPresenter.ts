@@ -1,65 +1,65 @@
 import type {
-  TClienteSabaChatResponse,
-  TConversacionesResponse,
-  TConversacionResumen,
-  TMensajeChat,
-  TMensajeResponse,
-  TMensajesResponse,
+  TChatMessage,
+  TChatSabaCustomersResponse,
+  TConversationSummary,
+  TConversationsResponse,
+  TMessageResponse,
+  TMessagesResponse,
 } from '@repo/schemas';
-import type { ClienteSabaDelChat } from '../../application/ports/in/ObtenerClienteSabaPort';
+import type { ChatSabaCustomers } from '../../application/ports/in/GetSabaCustomerPort';
 import {
-  type ConversacionResumen,
-  type MensajeChat,
-  ventanaExpiraAt,
+  type ChatMessage,
+  type ConversationSummary,
+  windowExpiresAt,
 } from '../../domain/Chats';
 
-function toConversacion(c: ConversacionResumen): TConversacionResumen {
+function toConversation(c: ConversationSummary): TConversationSummary {
   return {
     id: c.id,
-    contacto: {
-      id: c.contacto.id,
-      telefono: c.contacto.waId,
-      nombreWhatsApp: c.contacto.profileName,
-      vinculadoASaba: c.contacto.sabaProfileId !== null,
+    contact: {
+      id: c.contact.id,
+      phone: c.contact.waId,
+      whatsAppName: c.contact.profileName,
+      linkedToSaba: c.contact.sabaProfileId !== null,
     },
-    estado: c.estado,
-    noLeidos: c.noLeidos,
-    ultimoMensajeAt: c.ultimoMensajeAt?.toISOString() ?? null,
-    ultimoMensajePreview: c.ultimoMensajePreview,
-    ventanaExpiraAt: ventanaExpiraAt(c.ultimoEntranteAt)?.toISOString() ?? null,
+    status: c.status,
+    unreadCount: c.unreadCount,
+    lastMessageAt: c.lastMessageAt?.toISOString() ?? null,
+    lastMessagePreview: c.lastMessagePreview,
+    windowExpiresAt: windowExpiresAt(c.lastInboundAt)?.toISOString() ?? null,
   };
 }
 
-function toMensaje(m: MensajeChat): TMensajeChat {
+function toMessage(m: ChatMessage): TChatMessage {
   return {
     id: m.id,
-    direccion: m.direccion,
-    origen: m.origen,
-    tipo: m.tipo,
-    cuerpo: m.cuerpo,
-    estado: m.estado,
-    errorDetalle: m.errorDetalle,
-    tieneMedia: m.tieneMedia,
+    direction: m.direction,
+    source: m.source,
+    type: m.type,
+    body: m.body,
+    status: m.status,
+    errorDetail: m.errorDetail,
+    hasMedia: m.hasMedia,
     waTimestamp: m.waTimestamp.toISOString(),
   };
 }
 
-export function toConversacionesResponse(
-  conversaciones: ConversacionResumen[]
-): TConversacionesResponse {
-  return { success: true, data: conversaciones.map(toConversacion) };
+export function toConversationsResponse(
+  conversations: ConversationSummary[]
+): TConversationsResponse {
+  return { success: true, data: conversations.map(toConversation) };
 }
 
-export function toMensajesResponse(mensajes: MensajeChat[]): TMensajesResponse {
-  return { success: true, data: mensajes.map(toMensaje) };
+export function toMessagesResponse(messages: ChatMessage[]): TMessagesResponse {
+  return { success: true, data: messages.map(toMessage) };
 }
 
-export function toMensajeResponse(mensaje: MensajeChat): TMensajeResponse {
-  return { success: true, data: toMensaje(mensaje) };
+export function toMessageResponse(message: ChatMessage): TMessageResponse {
+  return { success: true, data: toMessage(message) };
 }
 
-export function toClienteSabaChatResponse(
-  resultado: ClienteSabaDelChat
-): TClienteSabaChatResponse {
-  return { success: true, data: resultado };
+export function toChatSabaCustomersResponse(
+  result: ChatSabaCustomers
+): TChatSabaCustomersResponse {
+  return { success: true, data: result };
 }

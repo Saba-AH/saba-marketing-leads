@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { AuthenticateRequestUseCase } from '../../modules/auth/application/use-cases/AuthenticateRequestUseCase';
 import { LogoutUseCase } from '../../modules/auth/application/use-cases/LogoutUseCase';
-import { RefreshSesionUseCase } from '../../modules/auth/application/use-cases/RefreshSesionUseCase';
-import { SesionInvalidaException } from '../../modules/auth/domain/exceptions/SesionInvalidaException';
-import { SinAccesoException } from '../../modules/auth/domain/exceptions/SinAccesoException';
+import { RefreshSessionUseCase } from '../../modules/auth/application/use-cases/RefreshSessionUseCase';
+import { InvalidSessionException } from '../../modules/auth/domain/exceptions/InvalidSessionException';
+import { NoAccessException } from '../../modules/auth/domain/exceptions/NoAccessException';
 import type { StaffProfile } from '../../modules/auth/domain/StaffProfile';
-import { claims, FakeAuthProvider, perfil } from '../support/fakeAuthPorts';
+import { claims, FakeAuthProvider, profile } from '../support/fakeAuthPorts';
 
 function authenticate(
   token: { valid: boolean },
@@ -19,54 +19,54 @@ function authenticate(
 }
 
 describe('AuthenticateRequestUseCase', () => {
-  it('devuelve el usuario de una sesión viva con acceso al panel', async () => {
-    const usuario = await authenticate({ valid: true }, perfil()).execute('t');
+  it('returns the user of a live session with panel access', async () => {
+    const user = await authenticate({ valid: true }, profile()).execute('t');
 
-    expect(usuario).toEqual({
+    expect(user).toEqual({
       id: 'u-1',
-      correo: 'angel.hernandez@sabatransporte.com',
-      nombre: 'Angel Hernández',
-      rol: 'admin',
+      email: 'angel.hernandez@sabatransporte.com',
+      name: 'Angel Hernández',
+      role: 'admin',
     });
   });
 
-  it('rechaza un token que no verifica', async () => {
+  it('rejects a token that does not verify', async () => {
     await expect(
-      authenticate({ valid: false }, perfil()).execute('t')
-    ).rejects.toThrow(SesionInvalidaException);
+      authenticate({ valid: false }, profile()).execute('t')
+    ).rejects.toThrow(InvalidSessionException);
   });
 
-  it('rechaza un token de una sesión cerrada o revocada', async () => {
+  it('rejects a token from a closed or revoked session', async () => {
     await expect(
       authenticate({ valid: true }, null).execute('t')
-    ).rejects.toThrow(SesionInvalidaException);
+    ).rejects.toThrow(InvalidSessionException);
   });
 
-  it('rechaza a quien perdió el rol de staff con la sesión abierta', async () => {
+  it('rejects someone who lost the staff role while the session was open', async () => {
     await expect(
-      authenticate({ valid: true }, perfil({ rol: 'standard' })).execute('t')
-    ).rejects.toThrow(SinAccesoException);
+      authenticate({ valid: true }, profile({ role: 'standard' })).execute('t')
+    ).rejects.toThrow(NoAccessException);
   });
 });
 
-describe('RefreshSesionUseCase', () => {
+describe('RefreshSessionUseCase', () => {
   it('entrega tokens nuevos', async () => {
-    const sesion = await new RefreshSesionUseCase(
+    const session = await new RefreshSessionUseCase(
       new FakeAuthProvider()
     ).execute('refresh-valido');
 
-    expect(sesion.accessToken).toBe('access-u-1');
+    expect(session.accessToken).toBe('access-u-1');
   });
 
-  it('rechaza un refresh token que ya no sirve', async () => {
+  it('rejects a refresh token that is no longer valid', async () => {
     await expect(
-      new RefreshSesionUseCase(new FakeAuthProvider()).execute('usado')
-    ).rejects.toThrow(SesionInvalidaException);
+      new RefreshSessionUseCase(new FakeAuthProvider()).execute('usado')
+    ).rejects.toThrow(InvalidSessionException);
   });
 });
 
 describe('LogoutUseCase', () => {
-  it('revoca la sesión del token', async () => {
+  it('revokes the token session', async () => {
     const provider = new FakeAuthProvider();
 
     await new LogoutUseCase(provider).execute('access-u-1');

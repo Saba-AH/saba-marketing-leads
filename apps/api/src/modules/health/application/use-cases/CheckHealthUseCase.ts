@@ -15,8 +15,8 @@ export class CheckHealthUseCase implements CheckHealthPort {
   ) {}
 
   async execute(): Promise<HealthReport> {
-    // Una dependencia caída no debe impedir comprobar las demás: el reporte
-    // sirve para saber *qué* falló, no solo que algo falló.
+    // A dependency that is down must not prevent checking the others: the report
+    // is for knowing *what* failed, not just that something failed.
     const checks = await Promise.all(this.probes.map((probe) => probe.check()));
 
     return HealthReport.from({

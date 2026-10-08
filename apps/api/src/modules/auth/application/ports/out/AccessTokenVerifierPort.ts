@@ -4,6 +4,6 @@ export interface AccessTokenClaims {
 }
 
 export interface AccessTokenVerifierPort {
-  /** `null` si el token no es válido (firma, vencimiento, emisor o audiencia). */
+  /** `null` if the token is not valid (signature, expiry, issuer or audience). */
   verify(token: string): Promise<AccessTokenClaims | null>;
 }

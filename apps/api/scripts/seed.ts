@@ -11,13 +11,13 @@ import {
 } from '../src/modules/auth/infrastructure/persistence/seedDevAdmin';
 
 /**
- * Siembra la base local de desarrollo. Idempotente y solo aditiva (segura de
- * correr sobre una base en uso). Se niega a correr contra una base remota: lo
- * que siembra (un admin con contraseña trivial) no puede llegar a Supabase.
+ * Seeds the local development database. Idempotent and additive only (safe to
+ * run on a database in use). It refuses to run against a remote database: what
+ * it seeds (an admin with a trivial password) must never reach Supabase.
  *
- * Para sembrar algo real, escribe una función `seedX(db)` en el módulo dueño de
- * la tabla (p. ej. `modules/<modulo>/infrastructure/persistence/seedX.ts`),
- * impórtala acá y llámala dentro del `try`.
+ * To seed something real, write a `seedX(db)` function in the module that owns
+ * the table (e.g. `modules/<module>/infrastructure/persistence/seedX.ts`),
+ * import it here and call it inside the `try`.
  */
 async function main(): Promise<void> {
   const url = databaseUrl();

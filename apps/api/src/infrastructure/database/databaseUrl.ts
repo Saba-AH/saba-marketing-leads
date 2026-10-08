@@ -1,18 +1,18 @@
 /**
- * Resolución de la cadena de conexión. Única fuente para la API, los scripts
- * de migración y drizzle-kit: si cada uno decidiera por su cuenta, un
- * `db:migrate` podría ir a una base y la API a otra.
+ * Connection string resolution. Single source for the API, the migration
+ * scripts and drizzle-kit: if each one decided on its own, a `db:migrate`
+ * could go to one database and the API to another.
  *
- * Precedencia:
- *   1. `DATABASE` — explícita, gana siempre (despliegue, CI, tests).
- *   2. `DB_TARGET` — `local` (default) o `supabase`; lo fija el comando
- *      (`npm run dev:local` / `dev:supabase`), no el `.env`. Elige entre
- *      `DATABASE_LOCAL` y `DATABASE_SUPABASE`.
+ * Precedence:
+ *   1. `DATABASE` — explicit, always wins (deploy, CI, tests).
+ *   2. `DB_TARGET` — `local` (default) or `supabase`; set by the command
+ *      (`npm run dev:local` / `dev:supabase`), not by `.env`. Chooses between
+ *      `DATABASE_LOCAL` and `DATABASE_SUPABASE`.
  *
- * No carga `.env`: eso lo hace quien llama, una sola vez.
+ * It does not load `.env`: the caller does that, once.
  */
 
-/** Postgres del stack local de Supabase (`supabase/config.toml`, `[db] port`). */
+/** Postgres of the local Supabase stack (`supabase/config.toml`, `[db] port`). */
 export const DEFAULT_LOCAL_DATABASE_URL =
   'postgresql://postgres:postgres@localhost:54332/postgres';
 
@@ -20,13 +20,13 @@ const DB_TARGETS = ['local', 'supabase'] as const;
 export type DbTarget = (typeof DB_TARGETS)[number];
 
 export function dbTarget(): DbTarget {
-  const valor = (process.env.DB_TARGET ?? 'local').trim().toLowerCase();
-  if (!(DB_TARGETS as readonly string[]).includes(valor)) {
+  const value = (process.env.DB_TARGET ?? 'local').trim().toLowerCase();
+  if (!(DB_TARGETS as readonly string[]).includes(value)) {
     throw new Error(
       `DB_TARGET="${process.env.DB_TARGET}" no es válido. Usar: ${DB_TARGETS.join(' | ')}.`
     );
   }
-  return valor as DbTarget;
+  return value as DbTarget;
 }
 
 export function localDatabaseUrl(): string {
@@ -40,8 +40,8 @@ export function resolveDatabaseUrl(): string {
   if (dbTarget() === 'local') {
     return localDatabaseUrl();
   }
-  // Sin fallback a local a propósito: pedir Supabase y caer en silencio en
-  // el stack local haría creer que se está mirando producción.
+  // No fallback to local on purpose: asking for Supabase and silently landing on
+  // the local stack would make people believe they are looking at production.
   const supabase = process.env.DATABASE_SUPABASE;
   if (!supabase) {
     throw new Error(
@@ -53,21 +53,21 @@ export function resolveDatabaseUrl(): string {
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
 
-/** Si la base está en esta máquina (el stack local), sin importar cómo se eligió. */
+/** Whether the database is on this machine (the local stack), regardless of how it was chosen. */
 export function isLocalDatabaseUrl(url: string): boolean {
   return LOCAL_HOSTS.has(new URL(url).hostname);
 }
 
-/** Guarda de los comandos que escriben datos de prueba: nunca contra una base remota. */
-export function assertLocalDatabase(url: string, operacion: string): void {
+/** Guard for commands that write test data: never against a remote database. */
+export function assertLocalDatabase(url: string, operation: string): void {
   if (!isLocalDatabaseUrl(url)) {
     throw new Error(
-      `${operacion} solo escribe en una base local (host: ${new URL(url).hostname})`
+      `${operation} solo escribe en una base local (host: ${new URL(url).hostname})`
     );
   }
 }
 
-/** Para logs: nunca imprimir credenciales. */
+/** For logs: never print credentials. */
 export function redactDatabaseUrl(url: string): string {
   return url.replace(/\/\/[^@]*@/, '//***@');
 }

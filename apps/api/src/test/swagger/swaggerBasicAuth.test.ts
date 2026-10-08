@@ -11,7 +11,7 @@ function basic(user: string, password: string): string {
 }
 
 describe('resolveSwaggerAccess', () => {
-  it('protege cuando hay usuario y contraseña', () => {
+  it('protects when there is a user and a password', () => {
     expect(
       resolveSwaggerAccess({ SWAGGER_USER: 'admin', SWAGGER_PASSWORD: 'x' })
     ).toEqual({
@@ -20,13 +20,13 @@ describe('resolveSwaggerAccess', () => {
     });
   });
 
-  it('queda abierto en desarrollo sin credenciales', () => {
+  it('stays open in development without credentials', () => {
     expect(resolveSwaggerAccess({ NODE_ENV: 'development' })).toEqual({
       mode: 'open',
     });
   });
 
-  it('se desactiva en producción sin credenciales (fail-closed)', () => {
+  it('is disabled in production without credentials (fail-closed)', () => {
     expect(
       resolveSwaggerAccess({ NODE_ENV: 'production', SWAGGER_USER: 'admin' })
     ).toEqual({ mode: 'disabled' });
@@ -34,20 +34,20 @@ describe('resolveSwaggerAccess', () => {
 });
 
 describe('isAuthorized', () => {
-  it('acepta las credenciales correctas, aunque la contraseña tenga ":"', () => {
+  it('accepts the correct credentials, even if the password contains ":"', () => {
     expect(
       isAuthorized(basic('admin', credentials.password), credentials)
     ).toBe(true);
   });
 
-  it('rechaza contraseña o usuario incorrectos', () => {
-    expect(isAuthorized(basic('admin', 'otra'), credentials)).toBe(false);
-    expect(isAuthorized(basic('otro', credentials.password), credentials)).toBe(
-      false
-    );
+  it('rejects a wrong password or user', () => {
+    expect(isAuthorized(basic('admin', 'other'), credentials)).toBe(false);
+    expect(
+      isAuthorized(basic('other', credentials.password), credentials)
+    ).toBe(false);
   });
 
-  it('rechaza sin header o con otro esquema', () => {
+  it('rejects without a header or with another scheme', () => {
     expect(isAuthorized(undefined, credentials)).toBe(false);
     expect(isAuthorized('Bearer abc', credentials)).toBe(false);
   });

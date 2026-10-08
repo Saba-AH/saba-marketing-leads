@@ -3,7 +3,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AuthenticateRequestUseCase } from './application/use-cases/AuthenticateRequestUseCase';
 import { LoginUseCase } from './application/use-cases/LoginUseCase';
 import { LogoutUseCase } from './application/use-cases/LogoutUseCase';
-import { RefreshSesionUseCase } from './application/use-cases/RefreshSesionUseCase';
+import { RefreshSessionUseCase } from './application/use-cases/RefreshSessionUseCase';
 import { PANEL_ALLOWED_EMAILS } from './domain/panelAccess';
 import { loadAuthConfig } from './infrastructure/authConfig';
 import { GoTrueAuthProvider } from './infrastructure/external/GoTrueAuthProvider';
@@ -41,8 +41,8 @@ import { AUTH_TOKENS } from './tokens';
     },
     LoginUseCase,
     { provide: AUTH_TOKENS.Login, useExisting: LoginUseCase },
-    RefreshSesionUseCase,
-    { provide: AUTH_TOKENS.RefreshSesion, useExisting: RefreshSesionUseCase },
+    RefreshSessionUseCase,
+    { provide: AUTH_TOKENS.RefreshSession, useExisting: RefreshSessionUseCase },
     LogoutUseCase,
     { provide: AUTH_TOKENS.Logout, useExisting: LogoutUseCase },
     AuthenticateRequestUseCase,
@@ -50,8 +50,8 @@ import { AUTH_TOKENS } from './tokens';
       provide: AUTH_TOKENS.AuthenticateRequest,
       useExisting: AuthenticateRequestUseCase,
     },
-    // Después del ThrottlerGuard (SecurityModule va antes en AppModule): el
-    // rate limit corta antes de gastar una consulta en validar la sesión.
+    // After the ThrottlerGuard (SecurityModule comes first in AppModule): the rate
+    // limit cuts in before a query is spent validating the session.
     { provide: APP_GUARD, useClass: AuthGuard },
   ],
 })

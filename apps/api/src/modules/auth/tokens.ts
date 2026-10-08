@@ -1,6 +1,6 @@
 export const AUTH_TOKENS = {
   Login: Symbol('LoginPort'),
-  RefreshSesion: Symbol('RefreshSesionPort'),
+  RefreshSession: Symbol('RefreshSessionPort'),
   Logout: Symbol('LogoutPort'),
   AuthenticateRequest: Symbol('AuthenticateRequestPort'),
   AuthProvider: Symbol('AuthProviderPort'),

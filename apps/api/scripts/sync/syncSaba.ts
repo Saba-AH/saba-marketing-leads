@@ -15,9 +15,9 @@ export interface SyncReport {
 }
 
 export interface SyncSabaOptions {
-  /** Prod. Solo se lee, en una transacción READ ONLY. */
+  /** Prod. Read only, inside a READ ONLY transaction. */
   source: Pool;
-  /** El Supabase local. Quien llama garantiza que sea local. */
+  /** The local Supabase. The caller guarantees it is local. */
   target: Pool;
   users: SyncUsers;
   plan?: readonly SyncStep[];
@@ -28,29 +28,29 @@ type Keys = Record<SyncKey, string[]>;
 interface ReadStep {
   step: SyncStep;
   columns: string[];
-  /** Filas como JSON de Postgres: así cada tipo vuelve tal cual al insertar. */
+  /** Rows as Postgres JSON: that way every type comes back as-is on insert. */
   json: string;
   rows: Array<Record<string, unknown>>;
 }
 
 /**
- * Copia de prod al Supabase local los usuarios de la lista con todo lo que
- * cuelga de ellos (ver `syncPlan.ts`). Prod manda: dentro del alcance, lo
- * local se borra y se vuelve a cargar, todo en una transacción; si algo falla,
- * queda la copia anterior.
+ * Copies the listed users from prod into the local Supabase with everything
+ * hanging from them (see `syncPlan.ts`). Prod wins: within scope, local data is
+ * deleted and reloaded, all in one transaction; if anything fails, the
+ * previous copy stays.
  */
 export async function syncSaba(options: SyncSabaOptions): Promise<SyncReport> {
   const plan = options.plan ?? SYNC_PLAN;
   const warnings: string[] = [];
-  const emails = [...options.users.admins, ...options.users.clientes].map(
+  const emails = [...options.users.admins, ...options.users.customers].map(
     (email) => email.trim().toLowerCase()
   );
 
   const source = await options.source.connect();
   const target = await options.target.connect();
   try {
-    // Todo lo que toca prod va en una sola foto consistente y sin poder
-    // escribir por error, incluso leer qué columnas tiene.
+    // Everything that touches prod goes in one consistent snapshot that cannot
+    // write by mistake, even reading which columns it has.
     await source.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
     let read: ReadStep[];
     try {
@@ -77,9 +77,9 @@ export async function syncSaba(options: SyncSabaOptions): Promise<SyncReport> {
 }
 
 /**
- * Columnas a copiar por tabla: las que existen en los dos lados y se pueden
- * insertar en local (no generadas). Las versiones de Saba y de GoTrue pueden
- * diferir de nuestras migraciones: lo que no calza se avisa y se salta.
+ * Columns to copy per table: those that exist on both sides and can be
+ * inserted locally (not generated). Saba's and GoTrue's versions may differ
+ * from our migrations: whatever does not match is reported and skipped.
  */
 async function resolveColumns(
   plan: readonly SyncStep[],
@@ -112,7 +112,7 @@ async function resolveColumns(
         `${step.table}: prod tiene columnas que local no (${onlyInSource.join(', ')}), no se copian`
       );
     }
-    // Las generadas existen en los dos lados pero las calcula Postgres.
+    // Generated columns exist on both sides but Postgres computes them.
     result.set(
       step.table,
       insertable.filter((column) => sourceSet.has(column))
@@ -187,7 +187,7 @@ function checkUsers(users: SyncUsers, read: ReadStep[]): string[] {
   );
 
   const warnings: string[] = [];
-  for (const email of [...users.admins, ...users.clientes]) {
+  for (const email of [...users.admins, ...users.customers]) {
     if (!found.has(email.toLowerCase())) {
       warnings.push(`${email}: no existe en prod`);
     }
@@ -200,7 +200,7 @@ function checkUsers(users: SyncUsers, read: ReadStep[]): string[] {
       );
     }
   }
-  for (const email of users.clientes) {
+  for (const email of users.customers) {
     const role = roles.get(email.toLowerCase());
     if (role && STAFF_ROLES.has(role)) {
       warnings.push(
@@ -212,12 +212,12 @@ function checkUsers(users: SyncUsers, read: ReadStep[]): string[] {
 }
 
 /**
- * Borra el alcance en local y carga lo leído. El alcance local se calcula con
- * los ids de prod **y** los de local: el admin del seed tiene el mismo correo
- * que el de prod pero otro id, y también tiene que irse.
+ * Deletes the scope locally and loads what was read. The local scope is
+ * computed with the prod ids **and** the local ones: the seed admin has the
+ * same email as the prod one but a different id, and it has to go too.
  *
- * Las FKs van apagadas (`session_replication_role = replica`): el corte es
- * parcial y hay referencias a filas que no se copian (cuentas, almacenes…).
+ * FKs are off (`session_replication_role = replica`): the cut is partial and
+ * there are references to rows that are not copied (accounts, warehouses…).
  */
 async function load(
   plan: readonly SyncStep[],

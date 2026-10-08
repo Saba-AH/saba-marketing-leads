@@ -8,11 +8,11 @@ import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../../../../shared/decorators/Public';
 import { extractBearerToken } from '../../../../shared/http/extractBearerToken';
 import type { AuthenticateRequestPort } from '../../application/ports/in/AuthenticateRequestPort';
-import { SesionInvalidaException } from '../../domain/exceptions/SesionInvalidaException';
+import { InvalidSessionException } from '../../domain/exceptions/InvalidSessionException';
 import { AUTH_TOKENS } from '../../tokens';
 import type { AuthenticatedRequest } from './AuthenticatedRequest';
 
-/** Global: toda ruta exige sesión salvo las marcadas con `@Public()`. */
+/** Global: every route requires a session except those marked `@Public()`. */
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
@@ -30,7 +30,7 @@ export class AuthGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const token = extractBearerToken(request);
-    if (!token) throw new SesionInvalidaException();
+    if (!token) throw new InvalidSessionException();
 
     request.user = await this.authenticate.execute(token);
     return true;

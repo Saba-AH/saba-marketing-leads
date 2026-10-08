@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '../../domain/AuthSession';
-import { SesionInvalidaException } from '../../domain/exceptions/SesionInvalidaException';
-import { SinAccesoException } from '../../domain/exceptions/SinAccesoException';
+import { InvalidSessionException } from '../../domain/exceptions/InvalidSessionException';
+import { NoAccessException } from '../../domain/exceptions/NoAccessException';
 import { canEnterPanel } from '../../domain/panelAccess';
 import { toAuthenticatedUser } from '../../domain/toAuthenticatedUser';
 import { AUTH_TOKENS } from '../../tokens';
@@ -10,9 +10,9 @@ import type { AccessTokenVerifierPort } from '../ports/out/AccessTokenVerifierPo
 import type { ActiveSessionReaderPort } from '../ports/out/ActiveSessionReaderPort';
 
 /**
- * Corre en cada petición. La firma del JWT no alcanza: un logout, una sesión
- * revocada o un rol quitado en Saba tienen que aplicar en la petición
- * siguiente, no cuando venza el token.
+ * Runs on every request. The JWT signature is not enough: a logout, a revoked
+ * session or a role removed in Saba must apply on the next request, not when
+ * the token expires.
  */
 @Injectable()
 export class AuthenticateRequestUseCase implements AuthenticateRequestPort {
@@ -27,15 +27,15 @@ export class AuthenticateRequestUseCase implements AuthenticateRequestPort {
 
   async execute(accessToken: string): Promise<AuthenticatedUser> {
     const claims = await this.tokens.verify(accessToken);
-    if (!claims) throw new SesionInvalidaException();
+    if (!claims) throw new InvalidSessionException();
 
     const profile = await this.sessions.findProfileBySession(
       claims.userId,
       claims.sessionId
     );
-    if (!profile) throw new SesionInvalidaException();
+    if (!profile) throw new InvalidSessionException();
     if (!canEnterPanel(profile, this.allowedEmails)) {
-      throw new SinAccesoException();
+      throw new NoAccessException();
     }
 
     return toAuthenticatedUser(profile);

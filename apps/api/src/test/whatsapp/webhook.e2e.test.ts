@@ -8,7 +8,7 @@ import { BusModule } from '../../bus.module';
 import { DrizzleModule } from '../../infrastructure/database/drizzle.module';
 import { ErrorsModule } from '../../infrastructure/errors/ErrorsModule';
 import { LoggingModule } from '../../infrastructure/logging/LoggingModule';
-import { WebhookEventoRecibido } from '../../modules/whatsapp/domain/events/WebhookEventoRecibido';
+import { WebhookEventReceived } from '../../modules/whatsapp/domain/events/WebhookEventReceived';
 import { whatsappWebhookEvents } from '../../modules/whatsapp/infrastructure/persistence/whatsapp.schema';
 import type { WhatsAppConfig } from '../../modules/whatsapp/infrastructure/whatsappConfig';
 import { WhatsAppModule } from '../../modules/whatsapp/module';
@@ -31,19 +31,19 @@ const CONFIG: WhatsAppConfig = {
   graphVersion: 'v26.0',
 };
 
-const publicados: string[] = [];
-let handlerFalla = false;
+const published: string[] = [];
+let failingHandler = false;
 
-@EventsHandler(WebhookEventoRecibido)
-class HandlerDePrueba implements IEventHandler<WebhookEventoRecibido> {
-  handle(evento: WebhookEventoRecibido): void {
-    if (handlerFalla) throw new Error('el procesador explotó');
-    publicados.push(evento.eventoId);
+@EventsHandler(WebhookEventReceived)
+class TestHandler implements IEventHandler<WebhookEventReceived> {
+  handle(event: WebhookEventReceived): void {
+    if (failingHandler) throw new Error('el procesador explotó');
+    published.push(event.eventId);
   }
 }
 
-// Forma real de un mensaje de texto entrante (developers.facebook.com, webhooks de WhatsApp).
-const webhookTexto = JSON.stringify({
+// Real shape of an inbound text message (developers.facebook.com, WhatsApp webhooks).
+const textWebhook = JSON.stringify({
   object: 'whatsapp_business_account',
   entry: [
     {
@@ -81,14 +81,11 @@ const webhookTexto = JSON.stringify({
   ],
 });
 
-function firmar(
-  body: string,
-  secreto: string = CONFIG.appSecret ?? ''
-): string {
-  return `sha256=${createHmac('sha256', secreto).update(body).digest('hex')}`;
+function sign(body: string, secret: string = CONFIG.appSecret ?? ''): string {
+  return `sha256=${createHmac('sha256', secret).update(body).digest('hex')}`;
 }
 
-describe('webhook de WhatsApp', () => {
+describe('WhatsApp webhook', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
@@ -100,15 +97,15 @@ describe('webhook de WhatsApp', () => {
         BusModule,
         WhatsAppModule,
       ],
-      providers: [HandlerDePrueba],
+      providers: [TestHandler],
     })
       .overrideProvider(WHATSAPP_TOKENS.Config)
       .useValue(CONFIG)
-      // Acá se prueba la recepción: el procesamiento en segundo plano chocaría
-      // con el TRUNCATE entre tests (tiene su propio test).
-      .overrideProvider(WHATSAPP_TOKENS.ProcesarWebhookEvento)
-      .useValue({ execute: async () => 'omitido' })
-      .overrideProvider(WHATSAPP_TOKENS.ReprocesarPendientes)
+      // Reception is tested here: background processing would clash with the
+      // TRUNCATE between tests (it has its own test).
+      .overrideProvider(WHATSAPP_TOKENS.ProcessWebhookEvent)
+      .useValue({ execute: async () => 'skipped' })
+      .overrideProvider(WHATSAPP_TOKENS.ReprocessPending)
       .useValue({ execute: async () => 0 })
       .compile();
 
@@ -124,20 +121,20 @@ describe('webhook de WhatsApp', () => {
 
   beforeEach(async () => {
     await resetDatabase();
-    publicados.length = 0;
-    handlerFalla = false;
+    published.length = 0;
+    failingHandler = false;
   });
 
-  function enviar(body: string, firma?: string) {
+  function send(body: string, signature?: string) {
     const req = request(app.getHttpServer())
       .post('/whatsapp/webhook')
       .set('Content-Type', 'application/json');
-    if (firma) req.set('X-Hub-Signature-256', firma);
+    if (signature) req.set('X-Hub-Signature-256', signature);
     return req.send(body);
   }
 
-  describe('GET (suscripción)', () => {
-    it('devuelve el challenge en texto plano si el verify token coincide', async () => {
+  describe('GET (subscription)', () => {
+    it('returns the challenge as plain text if the verify token matches', async () => {
       const res = await request(app.getHttpServer())
         .get('/whatsapp/webhook')
         .query({
@@ -151,44 +148,44 @@ describe('webhook de WhatsApp', () => {
       expect(res.text).toBe('1158201444');
     });
 
-    it('responde 403 si el verify token no coincide', async () => {
+    it('answers 403 if the verify token does not match', async () => {
       const res = await request(app.getHttpServer())
         .get('/whatsapp/webhook')
         .query({
           'hub.mode': 'subscribe',
-          'hub.verify_token': 'otro',
+          'hub.verify_token': 'other',
           'hub.challenge': '1158201444',
         });
 
       expect(res.status).toBe(403);
-      expect(res.body.code).toBe('WHATSAPP_SUSCRIPCION_WEBHOOK_RECHAZADA');
+      expect(res.body.code).toBe('WHATSAPP_WEBHOOK_SUBSCRIPTION_REJECTED');
     });
   });
 
   describe('POST (eventos)', () => {
-    it('guarda un evento por cambio, lo publica y responde 200', async () => {
-      const res = await enviar(webhookTexto, firmar(webhookTexto));
+    it('saves one event per change, publishes it and answers 200', async () => {
+      const res = await send(textWebhook, sign(textWebhook));
 
       expect(res.status).toBe(200);
-      const filas = await getTestDb().select().from(whatsappWebhookEvents);
-      expect(filas).toHaveLength(2);
-      expect(filas.every((f) => f.campo === 'messages')).toBe(true);
-      expect(filas.map((f) => f.payload)).toContainEqual(
+      const rows = await getTestDb().select().from(whatsappWebhookEvents);
+      expect(rows).toHaveLength(2);
+      expect(rows.every((f) => f.field === 'messages')).toBe(true);
+      expect(rows.map((f) => f.payload)).toContainEqual(
         expect.objectContaining({
           messages: [expect.objectContaining({ id: 'wamid.HBgM' })],
         })
       );
-      expect(publicados.sort()).toEqual(filas.map((f) => f.id).sort());
+      expect(published.sort()).toEqual(rows.map((f) => f.id).sort());
     });
 
     it.each([
       ['ausente', undefined],
-      ['de otro secreto', firmar(webhookTexto, 'otro')],
-      ['de otro cuerpo', firmar('{}')],
+      ['from another secret', sign(textWebhook, 'other')],
+      ['from another body', sign('{}')],
     ])(
-      'responde 401 sin guardar nada con una firma %s',
-      async (_caso, firma) => {
-        const res = await enviar(webhookTexto, firma);
+      'answers 401 without saving anything with a %s signature',
+      async (_case, signature) => {
+        const res = await send(textWebhook, signature);
 
         expect(res.status).toBe(401);
         expect(await getTestDb().select().from(whatsappWebhookEvents)).toEqual(
@@ -197,10 +194,10 @@ describe('webhook de WhatsApp', () => {
       }
     );
 
-    it('responde 200 aunque el procesador del evento falle', async () => {
-      handlerFalla = true;
+    it('answers 200 even if the event processor fails', async () => {
+      failingHandler = true;
 
-      const res = await enviar(webhookTexto, firmar(webhookTexto));
+      const res = await send(textWebhook, sign(textWebhook));
 
       expect(res.status).toBe(200);
       expect(

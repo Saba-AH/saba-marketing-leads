@@ -4,7 +4,7 @@ import { Pool } from 'pg';
 import { localDatabaseUrl, resolveDatabaseUrl } from './databaseUrl';
 
 /**
- * Infraestructura compartida por los comandos de migración.
+ * Infrastructure shared by the migration commands.
  */
 
 const API_ROOT = resolve(__dirname, '../../..');
@@ -16,17 +16,17 @@ function loadApiEnv(): void {
   loadEnv({ path: resolve(API_ROOT, '.env'), quiet: true });
 }
 
-/** La base que eligen `DATABASE` / `DB_TARGET` (ver `databaseUrl.ts`). */
+/** The database chosen by `DATABASE` / `DB_TARGET` (see `databaseUrl.ts`). */
 export function databaseUrl(): string {
   loadApiEnv();
   return resolveDatabaseUrl();
 }
 
 /**
- * La base para los tests: siempre la local (o la `DATABASE` explícita del
- * CI), **nunca** la que elige `DB_TARGET`. La suite crea una base aparte y
- * trunca tablas: con `DB_TARGET=supabase` en el `.env` no puede terminar
- * corriendo contra Supabase.
+ * The database for tests: always the local one (or CI's explicit
+ * `DATABASE`), **never** the one `DB_TARGET` picks. The suite creates a
+ * separate database and truncates tables: with `DB_TARGET=supabase` in `.env`
+ * it must never end up running against Supabase.
  */
 export function testBaseDatabaseUrl(): string {
   loadApiEnv();
@@ -38,11 +38,11 @@ export function createPool(url = databaseUrl()): Pool {
 }
 
 /**
- * Extensiones que el esquema necesita para siquiera crearse: sin `vector` la
- * columna `embedding` no existe como tipo.
+ * Extensions the schema needs to even be created: without `vector` the
+ * `embedding` column does not exist as a type.
  *
- * Una base nueva (la de tests, o Cloud SQL) no las trae. Es idempotente, así
- * que corre siempre antes de migrar.
+ * A new database (the test one, or Cloud SQL) does not have them. It is
+ * idempotent, so it always runs before migrating.
  */
 export async function ensureExtensions(pool: Pool): Promise<void> {
   await pool.query('CREATE EXTENSION IF NOT EXISTS vector');

@@ -1,28 +1,28 @@
 /**
- * Puente entre el stack local de Supabase y las tareas del monorepo.
+ * Bridge between the local Supabase stack and the monorepo tasks.
  *
- *   node scripts/localSupabase.mjs dev <destino>    `npm run dev:local` / `dev:supabase`
- *   node scripts/localSupabase.mjs sync             `npm run db:sync:saba` (ver `sync()`)
- *   node scripts/localSupabase.mjs start            levanta el stack (salida corta)
- *   node scripts/localSupabase.mjs exec <cmd...>    corre <cmd> con el entorno local
+ *   node scripts/localSupabase.mjs dev <target>     `npm run dev:local` / `dev:supabase`
+ *   node scripts/localSupabase.mjs sync             `npm run db:sync:saba` (see `sync()`)
+ *   node scripts/localSupabase.mjs start            brings up the stack (short output)
+ *   node scripts/localSupabase.mjs exec <cmd...>    runs <cmd> with the local environment
  *
- * `exec` lee `supabase status` y exporta lo que la API necesita para hablar con
- * el stack: así nadie copia puertos ni llaves a su `.env`, y no se
- * desincronizan si cambia `supabase/config.toml`. Solo cuando la base elegida
- * es la local: con `npm run dev:supabase` (o una `DATABASE` explícita) no toca
- * nada y manda el `.env`.
+ * `exec` reads `supabase status` and exports what the API needs to talk to the
+ * stack: that way nobody copies ports or keys into their `.env`, and they do
+ * not drift if `supabase/config.toml` changes. Only when the chosen database is
+ * the local one: with `npm run dev:supabase` (or an explicit `DATABASE`) it
+ * touches nothing and `.env` wins.
  */
 import { execFileSync, spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { parse } from 'dotenv';
 
-/** Variable de la API ← clave de `supabase status -o json`. */
+/** API variable ← key in `supabase status -o json`. */
 const FROM_STATUS = {
   DATABASE_LOCAL: 'DB_URL',
-  // Solo para el banner de arranque de la API.
+  // Only for the API's startup banner.
   SUPABASE_STUDIO_URL: 'STUDIO_URL',
-  // `modules/auth/infrastructure/authConfig.ts`. `API_URL` de Supabase se
-  // renombra: en el monorepo `API_URL` es la de NestJS (BFF del cliente).
+  // `modules/auth/infrastructure/authConfig.ts`. Supabase's `API_URL` is renamed:
+  // in the monorepo `API_URL` is the NestJS one (the client's BFF).
   SUPABASE_URL: 'API_URL',
   SUPABASE_PUBLISHABLE_KEY: 'PUBLISHABLE_KEY',
   SUPABASE_JWT_SECRET: 'JWT_SECRET',
@@ -39,9 +39,9 @@ function apiEnvFile() {
 }
 
 /**
- * El destino lo elige el comando (`npm run dev:local` / `dev:supabase`), que
- * fija DB_TARGET para el proceso; no se configura en el `.env`. Una
- * `DATABASE` explícita (despliegue, CI) gana sobre todo.
+ * The target is chosen by the command (`npm run dev:local` / `dev:supabase`),
+ * which sets DB_TARGET for the process; it is not configured in `.env`. An
+ * explicit `DATABASE` (deploy, CI) wins over everything.
  */
 function usesLocalStack() {
   const target = process.env.DB_TARGET ?? 'local';
@@ -58,12 +58,12 @@ function status() {
   return JSON.parse(json);
 }
 
-/** Avisos de `supabase start` que no aportan: apagamos esos servicios a propósito. */
+/** `supabase start` warnings that add nothing: we turn those services off on purpose. */
 const NOISE = [/^Stopped services:/];
 
 function start() {
-  // La tabla de `supabase start` sale en cada `npm run dev`: se descarta
-  // stdout y de stderr queda lo útil (progreso de imágenes, errores).
+  // The `supabase start` table comes out on every `npm run dev`: stdout is
+  // discarded and only the useful part of stderr stays (image progress, errors).
   const child = spawn('supabase', ['start'], {
     stdio: ['ignore', 'ignore', 'pipe'],
     shell: SHELL,
@@ -98,14 +98,14 @@ function localEnv() {
   if (usesLocalStack()) {
     const local = status();
     for (const [name, key] of Object.entries(FROM_STATUS)) {
-      // Lo que ya venga del shell manda: sirve para forzar un valor puntual.
+      // Whatever already comes from the shell wins: useful to force a specific value.
       env[name] ??= local[key];
     }
   }
   return env;
 }
 
-/** Corre el comando y resuelve si sale bien; si falla, termina con su código. */
+/** Runs the command and resolves if it succeeds; if it fails, exits with its code. */
 function run(command, args, env) {
   const child = spawn(command, args, { stdio: 'inherit', env, shell: SHELL });
   return new Promise((resolve) => {
@@ -120,9 +120,9 @@ function run(command, args, env) {
 const TARGETS = ['local', 'supabase'];
 
 /**
- * `npm run dev:local` / `dev:supabase`. Levantar el stack, migrar y sembrar
- * solo tiene sentido contra la base local: contra Supabase, migrar en cada
- * arranque tocaría producción. Ahí solo arrancan las apps.
+ * `npm run dev:local` / `dev:supabase`. Bringing up the stack, migrating and
+ * seeding only make sense against the local database: against Supabase,
+ * migrating on every start would touch production. There only the apps start.
  */
 async function dev(target = 'local') {
   if (!TARGETS.includes(target)) {
@@ -140,14 +140,14 @@ async function dev(target = 'local') {
       '· Supabase remoto: sin stack local ni migraciones (migrar a mano con `npm run db:migrate:supabase`)'
     );
   }
-  // `dev:info` es el resumen de la API en el sidebar de turbo.
+  // `dev:info` is the API summary in turbo's sidebar.
   await run('turbo', ['run', 'dev', 'dev:info'], localEnv());
 }
 
 /**
- * `npm run db:sync:saba`: copia de prod los usuarios de
- * `apps/api/scripts/sync/sabaSyncUsers.ts`. Fuerza el destino local: el
- * `db:migrate` previo nunca puede apuntar a prod.
+ * `npm run db:sync:saba`: copies the users from
+ * `apps/api/scripts/sync/sabaSyncUsers.ts` from prod. It forces the local
+ * target: the preceding `db:migrate` can never point to prod.
  */
 async function sync() {
   process.env.DB_TARGET = 'local';

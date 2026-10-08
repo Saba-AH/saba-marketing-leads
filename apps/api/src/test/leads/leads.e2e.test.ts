@@ -16,8 +16,8 @@ import {
 process.env.DATABASE = testDatabaseUrl();
 
 /**
- * Integración contra Postgres real (Supabase local): el índice único del
- * correo y el orden del listado solo existen en la base.
+ * Integration against real Postgres (local Supabase): the unique index on the
+ * email and the list order only exist in the database.
  */
 describe('/leads', () => {
   let app: INestApplication;
@@ -41,45 +41,45 @@ describe('/leads', () => {
     await resetDatabase();
   });
 
-  it('crea un lead y lo devuelve en el listado', async () => {
-    const creado = await request(app.getHttpServer())
+  it('creates a lead and returns it in the list', async () => {
+    const created = await request(app.getHttpServer())
       .post('/leads')
-      .send({ nombre: 'Ana', correo: 'Ana@Saba.com', origen: 'web' });
+      .send({ name: 'Ana', email: 'Ana@Saba.com', source: 'web' });
 
-    expect(creado.status).toBe(201);
-    expect(creado.body.data).toMatchObject({
-      nombre: 'Ana',
-      correo: 'ana@saba.com',
-      origen: 'web',
+    expect(created.status).toBe(201);
+    expect(created.body.data).toMatchObject({
+      name: 'Ana',
+      email: 'ana@saba.com',
+      source: 'web',
     });
 
-    const listado = await request(app.getHttpServer()).get('/leads');
+    const listing = await request(app.getHttpServer()).get('/leads');
 
-    expect(listado.status).toBe(200);
-    expect(listado.body.data).toHaveLength(1);
+    expect(listing.status).toBe(200);
+    expect(listing.body.data).toHaveLength(1);
   });
 
-  it('responde 409 con el mensaje de dominio si el correo ya existe', async () => {
+  it('answers 409 with the domain message if the email already exists', async () => {
     await request(app.getHttpServer())
       .post('/leads')
-      .send({ nombre: 'Ana', correo: 'ana@saba.com' });
+      .send({ name: 'Ana', email: 'ana@saba.com' });
 
-    const duplicado = await request(app.getHttpServer())
+    const duplicate = await request(app.getHttpServer())
       .post('/leads')
-      .send({ nombre: 'Ana bis', correo: 'ANA@saba.com' });
+      .send({ name: 'Ana bis', email: 'ANA@saba.com' });
 
-    expect(duplicado.status).toBe(409);
-    expect(duplicado.body).toMatchObject({
+    expect(duplicate.status).toBe(409);
+    expect(duplicate.body).toMatchObject({
       success: false,
-      code: 'LEADS_CORREO_DUPLICADO',
+      code: 'LEADS_DUPLICATE_EMAIL',
       error: 'Ya existe un lead con ese correo.',
     });
   });
 
-  it('responde 400 si el body no cumple el contrato', async () => {
+  it('answers 400 if the body does not meet the contract', async () => {
     const response = await request(app.getHttpServer())
       .post('/leads')
-      .send({ nombre: '', correo: 'no-es-correo' });
+      .send({ name: '', email: 'not-an-email' });
 
     expect(response.status).toBe(400);
   });

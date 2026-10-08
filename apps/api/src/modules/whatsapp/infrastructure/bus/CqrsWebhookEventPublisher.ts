@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { EventBus } from '@nestjs/cqrs';
 import { StructuredLogger } from '../../../../infrastructure/logging/StructuredLogger';
 import type { WebhookEventPublisherPort } from '../../application/ports/out/WebhookEventPublisherPort';
-import { WebhookEventoRecibido } from '../../domain/events/WebhookEventoRecibido';
+import { WebhookEventReceived } from '../../domain/events/WebhookEventReceived';
 
 @Injectable()
 export class CqrsWebhookEventPublisher implements WebhookEventPublisherPort {
@@ -11,13 +11,13 @@ export class CqrsWebhookEventPublisher implements WebhookEventPublisherPort {
     private readonly logger: StructuredLogger
   ) {}
 
-  publicarRecibidos(eventoIds: string[]): void {
+  publishReceived(eventIds: string[]): void {
     try {
       this.eventBus.publishAll(
-        eventoIds.map((id) => new WebhookEventoRecibido(id))
+        eventIds.map((id) => new WebhookEventReceived(id))
       );
     } catch (error: unknown) {
-      // El evento ya está guardado: el barrido lo procesa igual.
+      // The event is already saved: the sweep processes it anyway.
       void this.logger.error(
         'no se pudo publicar WebhookEventoRecibido',
         error instanceof Error ? error.stack : String(error),

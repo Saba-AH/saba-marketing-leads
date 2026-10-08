@@ -1,9 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { CaptchaInvalidoException } from '../../domain/exceptions/CaptchaInvalidoException';
-import { CredencialesInvalidasException } from '../../domain/exceptions/CredencialesInvalidasException';
-import { CuentaBloqueadaException } from '../../domain/exceptions/CuentaBloqueadaException';
-import { DemasiadosIntentosException } from '../../domain/exceptions/DemasiadosIntentosException';
-import { SinAccesoException } from '../../domain/exceptions/SinAccesoException';
+import { AccountLockedException } from '../../domain/exceptions/AccountLockedException';
+import { InvalidCaptchaException } from '../../domain/exceptions/InvalidCaptchaException';
+import { InvalidCredentialsException } from '../../domain/exceptions/InvalidCredentialsException';
+import { NoAccessException } from '../../domain/exceptions/NoAccessException';
+import { TooManyAttemptsException } from '../../domain/exceptions/TooManyAttemptsException';
 import {
   LOGIN_POLICY,
   type LoginAttempt,
@@ -25,10 +25,10 @@ import type { LoginAttemptsPort } from '../ports/out/LoginAttemptsPort';
 import type { StaffDirectoryPort } from '../ports/out/StaffDirectoryPort';
 
 /**
- * Login de staff, portado de `loginAdmin` de Saba (`portalLogin.js`). Lo
- * delicado es qué se revela y cuándo: el bloqueo y el "sin acceso" solo se
- * informan después de una contraseña correcta, así que a quien adivina solo le
- * llega "credenciales inválidas".
+ * Staff login, ported from Saba's `loginAdmin` (`portalLogin.js`). The
+ * delicate part is what gets revealed and when: the lockout and the "no
+ * access" are only reported after a correct password, so someone guessing only
+ * ever gets "invalid credentials".
  */
 @Injectable()
 export class LoginUseCase implements LoginPort {
@@ -49,13 +49,13 @@ export class LoginUseCase implements LoginPort {
 
   async execute(command: LoginCommand): Promise<LoginResult> {
     if (!(await this.captcha.verify(command.captchaToken, command.ip))) {
-      throw new CaptchaInvalidoException();
+      throw new InvalidCaptchaException();
     }
 
     const now = this.clock.now();
     const attempt = (fields: Partial<LoginAttempt>): Promise<void> =>
       this.attempts.record({
-        correo: command.correo,
+        email: command.email,
         userId: null,
         ip: command.ip,
         userAgent: command.userAgent,
@@ -72,23 +72,23 @@ export class LoginUseCase implements LoginPort {
       );
       if (failures >= LOGIN_POLICY.maxFailuresPerIp) {
         await attempt({ reason: 'rate_limited' });
-        throw new DemasiadosIntentosException();
+        throw new TooManyAttemptsException();
       }
     }
 
-    const profile = await this.staff.findByEmail(command.correo);
-    const staffProfile = profile && isStaffRole(profile.rol) ? profile : null;
+    const profile = await this.staff.findByEmail(command.email);
+    const staffProfile = profile && isStaffRole(profile.role) ? profile : null;
     const lockout = staffProfile
       ? await this.attempts.findLockout(staffProfile.id)
       : null;
 
-    const session = await this.auth.signIn(command.correo, command.contrasena);
+    const session = await this.auth.signIn(command.email, command.password);
 
     if (staffProfile && lockout?.lockedAt) {
       await attempt({ userId: staffProfile.id, reason: 'locked' });
-      if (!session) throw new CredencialesInvalidasException();
+      if (!session) throw new InvalidCredentialsException();
       await this.auth.revoke(session.accessToken);
-      throw new CuentaBloqueadaException();
+      throw new AccountLockedException();
     }
 
     if (!session) {
@@ -96,19 +96,19 @@ export class LoginUseCase implements LoginPort {
       if (staffProfile) {
         await this.attempts.saveLockout(
           nextLockout(staffProfile, lockout, now),
-          staffProfile.correo,
+          staffProfile.email,
           now
         );
       }
-      throw new CredencialesInvalidasException();
+      throw new InvalidCredentialsException();
     }
 
-    // El dueño real de la sesión manda, no el perfil que coincidió por correo.
+    // The real owner of the session wins, not the profile that matched by email.
     const owner = await this.staff.findById(session.userId);
     if (!owner || !canEnterPanel(owner, this.allowedEmails)) {
       await this.auth.revoke(session.accessToken);
       await attempt({ userId: session.userId, reason: 'wrong_portal' });
-      throw new SinAccesoException();
+      throw new NoAccessException();
     }
 
     if (lockout?.failedCount) {
@@ -116,6 +116,6 @@ export class LoginUseCase implements LoginPort {
     }
     await attempt({ userId: owner.id, success: true });
 
-    return { sesion: session, usuario: toAuthenticatedUser(owner) };
+    return { session: session, user: toAuthenticatedUser(owner) };
   }
 }

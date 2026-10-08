@@ -13,13 +13,13 @@ import { profiles } from './sabaAuthTables';
 export class DrizzleStaffDirectory implements StaffDirectoryPort {
   constructor(@Inject(DRIZZLE_CLIENT) private readonly db: ApiDb) {}
 
-  async findByEmail(correo: string): Promise<StaffProfile | null> {
-    // `profiles.email` no está normalizado en Saba (mayúsculas, espacios), y
-    // el builder no trae `lower`/`trim`: comparación cruda parametrizada.
+  async findByEmail(email: string): Promise<StaffProfile | null> {
+    // `profiles.email` is not normalized in Saba (uppercase, spaces), and the
+    // builder has no `lower`/`trim`: parameterized raw comparison.
     const [row] = await this.db
       .select(staffProfileColumns)
       .from(profiles)
-      .where(sql`lower(trim(${profiles.email})) = ${correo}`)
+      .where(sql`lower(trim(${profiles.email})) = ${email}`)
       .limit(1);
     return row ? toStaffProfile(row) : null;
   }

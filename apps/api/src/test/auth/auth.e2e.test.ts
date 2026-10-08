@@ -18,9 +18,9 @@ import {
 } from '../support/e2eStaffUser';
 import { useLocalAuthEnv } from '../support/localSupabase';
 
-// Contra el stack local completo: GoTrue emite y revoca sesiones de verdad y
-// `auth.sessions` vive en la base del stack, no en la de tests. Usa su propio
-// usuario (lo crea y lo borra) y su propia lista de acceso al panel.
+// Against the full local stack: GoTrue really issues and revokes sessions and
+// `auth.sessions` lives in the stack's database, not the test one. It uses its
+// own user (creates and deletes it) and its own panel access list.
 process.env.DATABASE = localDatabaseUrl();
 useLocalAuthEnv();
 
@@ -40,7 +40,7 @@ describe('auth (contra Supabase local)', () => {
         HealthModule,
       ],
     })
-      // Cloudflare no se llama desde los tests.
+      // Cloudflare is not called from the tests.
       .overrideProvider(AUTH_TOKENS.CaptchaVerifier)
       .useValue({ verify: async () => captchaOk })
       .overrideProvider(AUTH_TOKENS.PanelAllowedEmails)
@@ -59,84 +59,84 @@ describe('auth (contra Supabase local)', () => {
   });
 
   function login(
-    contrasena: string = E2E_STAFF.password,
-    correo: string = E2E_STAFF.email
+    password: string = E2E_STAFF.password,
+    email: string = E2E_STAFF.email
   ) {
     return request(app.getHttpServer())
       .post('/auth/login')
-      .send({ correo, contrasena, captchaToken: 'x' });
+      .send({ email, password, captchaToken: 'x' });
   }
 
-  it('inicia sesión, identifica al usuario, renueva y cierra la sesión', async () => {
-    const entrada = await login();
-    expect(entrada.status).toBe(200);
-    expect(entrada.body.data.usuario).toEqual({
+  it('logs in, identifies the user, refreshes and logs out', async () => {
+    const input = await login();
+    expect(input.status).toBe(200);
+    expect(input.body.data.user).toEqual({
       id: E2E_STAFF.id,
-      correo: E2E_STAFF.email,
-      nombre: 'E2E Auth',
-      rol: 'admin',
+      email: E2E_STAFF.email,
+      name: 'E2E Auth',
+      role: 'admin',
     });
-    const { accessToken, refreshToken } = entrada.body.data.sesion;
+    const { accessToken, refreshToken } = input.body.data.session;
 
     const me = await request(app.getHttpServer())
       .get('/me')
       .set('Authorization', `Bearer ${accessToken}`);
     expect(me.status).toBe(200);
-    expect(me.body.data.correo).toBe(E2E_STAFF.email);
+    expect(me.body.data.email).toBe(E2E_STAFF.email);
 
-    const renovada = await request(app.getHttpServer())
+    const renewed = await request(app.getHttpServer())
       .post('/auth/refresh')
       .send({ refreshToken });
-    expect(renovada.status).toBe(200);
-    const nuevoAccess = renovada.body.data.accessToken;
+    expect(renewed.status).toBe(200);
+    const newAccess = renewed.body.data.accessToken;
 
-    const salida = await request(app.getHttpServer())
+    const output = await request(app.getHttpServer())
       .post('/auth/logout')
-      .set('Authorization', `Bearer ${nuevoAccess}`);
-    expect(salida.status).toBe(204);
+      .set('Authorization', `Bearer ${newAccess}`);
+    expect(output.status).toBe(204);
 
-    // El JWT sigue firmado y vigente, pero su sesión ya no existe.
-    const despues = await request(app.getHttpServer())
+    // The JWT is still signed and valid, but its session no longer exists.
+    const after = await request(app.getHttpServer())
       .get('/me')
-      .set('Authorization', `Bearer ${nuevoAccess}`);
-    expect(despues.status).toBe(401);
-    expect(despues.body.code).toBe('AUTH_SESION_INVALIDA');
+      .set('Authorization', `Bearer ${newAccess}`);
+    expect(after.status).toBe(401);
+    expect(after.body.code).toBe('AUTH_INVALID_SESSION');
 
-    const reuso = await request(app.getHttpServer())
+    const reuse = await request(app.getHttpServer())
       .post('/auth/refresh')
       .send({ refreshToken });
-    expect(reuso.status).toBe(401);
+    expect(reuse.status).toBe(401);
   });
 
-  it('responde lo mismo a un correo inexistente que a una contraseña mala', async () => {
-    const respuesta = await login('mala', 'nadie@ejemplo.com');
+  it('answers the same to a nonexistent email as to a wrong password', async () => {
+    const response = await login('mala', 'nadie@ejemplo.com');
 
-    expect(respuesta.status).toBe(401);
-    expect(respuesta.body).toMatchObject({
+    expect(response.status).toBe(401);
+    expect(response.body).toMatchObject({
       success: false,
-      code: 'AUTH_CREDENCIALES_INVALIDAS',
+      code: 'AUTH_INVALID_CREDENTIALS',
     });
   });
 
-  it('rechaza el login si el CAPTCHA no valida', async () => {
+  it('rejects the login if the CAPTCHA does not validate', async () => {
     captchaOk = false;
     try {
-      const respuesta = await login();
-      expect(respuesta.status).toBe(400);
-      expect(respuesta.body.code).toBe('AUTH_CAPTCHA_INVALIDO');
+      const response = await login();
+      expect(response.status).toBe(400);
+      expect(response.body.code).toBe('AUTH_INVALID_CAPTCHA');
     } finally {
       captchaOk = true;
     }
   });
 
-  it('exige sesión en toda ruta que no sea pública', async () => {
-    const sinToken = await request(app.getHttpServer()).get('/me');
-    expect(sinToken.status).toBe(401);
+  it('requires a session on every route that is not public', async () => {
+    const withoutToken = await request(app.getHttpServer()).get('/me');
+    expect(withoutToken.status).toBe(401);
 
-    const basura = await request(app.getHttpServer())
+    const garbage = await request(app.getHttpServer())
       .get('/me')
       .set('Authorization', 'Bearer no-es-un-jwt');
-    expect(basura.status).toBe(401);
+    expect(garbage.status).toBe(401);
 
     const health = await request(app.getHttpServer()).get('/health/live');
     expect(health.status).toBe(200);

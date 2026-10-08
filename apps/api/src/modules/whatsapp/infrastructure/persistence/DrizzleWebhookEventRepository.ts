@@ -5,7 +5,7 @@ import {
   DRIZZLE_CLIENT,
 } from '../../../../infrastructure/database/drizzle.module';
 import type { WebhookEventRepositoryPort } from '../../application/ports/out/WebhookEventRepositoryPort';
-import type { WebhookCambio } from '../../domain/WebhookCambio';
+import type { WebhookChange } from '../../domain/WebhookChange';
 import { whatsappWebhookEvents } from './whatsapp.schema';
 
 @Injectable()
@@ -14,41 +14,41 @@ export class DrizzleWebhookEventRepository
 {
   constructor(@Inject(DRIZZLE_CLIENT) private readonly db: ApiDb) {}
 
-  async guardar(cambios: WebhookCambio[]): Promise<string[]> {
-    const filas = await this.db
+  async save(changes: WebhookChange[]): Promise<string[]> {
+    const rows = await this.db
       .insert(whatsappWebhookEvents)
       .values(
-        cambios.map((cambio) => ({
-          campo: cambio.campo,
-          payload: cambio.payload,
+        changes.map((change) => ({
+          field: change.field,
+          payload: change.payload,
         }))
       )
       .returning({ id: whatsappWebhookEvents.id });
-    return filas.map((fila) => fila.id);
+    return rows.map((row) => row.id);
   }
 
-  async registrarFallo(eventoId: string, error: string): Promise<void> {
+  async registerFailure(eventId: string, error: string): Promise<void> {
     await this.db
       .update(whatsappWebhookEvents)
       .set({
-        intentos: sql`${whatsappWebhookEvents.intentos} + 1`,
+        attempts: sql`${whatsappWebhookEvents.attempts} + 1`,
         error: error.slice(0, 2000),
       })
-      .where(eq(whatsappWebhookEvents.id, eventoId));
+      .where(eq(whatsappWebhookEvents.id, eventId));
   }
 
-  async pendientes(maxIntentos: number, limite: number): Promise<string[]> {
-    const filas = await this.db
+  async pending(maxAttempts: number, limit: number): Promise<string[]> {
+    const rows = await this.db
       .select({ id: whatsappWebhookEvents.id })
       .from(whatsappWebhookEvents)
       .where(
         and(
-          isNull(whatsappWebhookEvents.procesadoAt),
-          lt(whatsappWebhookEvents.intentos, maxIntentos)
+          isNull(whatsappWebhookEvents.processedAt),
+          lt(whatsappWebhookEvents.attempts, maxAttempts)
         )
       )
-      .orderBy(asc(whatsappWebhookEvents.recibidoAt))
-      .limit(limite);
-    return filas.map((fila) => fila.id);
+      .orderBy(asc(whatsappWebhookEvents.receivedAt))
+      .limit(limit);
+    return rows.map((row) => row.id);
   }
 }

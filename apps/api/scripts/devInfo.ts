@@ -13,10 +13,10 @@ import { loadAuthConfig } from '../src/modules/auth/infrastructure/authConfig';
 import { DEV_ADMIN } from '../src/modules/auth/infrastructure/persistence/seedDevAdmin';
 
 /**
- * Tarea `@repo/api#dev:info` del sidebar de turbo: el mismo resumen que
- * imprime la API al arrancar, solo y sin logs encima. Lee lo mismo que la API
- * (`.env` + lo que inyecta `scripts/localSupabase.mjs`), así que muestra
- * contra qué va a correr, y avisa lo que falta antes de que la API se caiga.
+ * Turbo sidebar task `@repo/api#dev:info`: the same summary the API prints at
+ * startup, on its own and without logs on top. It reads the same as the API
+ * (`.env` + what `scripts/localSupabase.mjs` injects), so it shows what it
+ * will run against, and warns about what is missing before the API crashes.
  */
 loadEnv({ path: resolve(__dirname, '../.env'), quiet: true });
 
@@ -28,7 +28,7 @@ try {
   warnings.push(error instanceof Error ? error.message : String(error));
 }
 
-// La API no arranca sin la config de auth: mejor verlo acá con el motivo.
+// The API does not start without the auth config: better to see it here with the reason.
 let authUrl: string | undefined;
 try {
   authUrl = loadAuthConfig().supabaseUrl;
@@ -45,9 +45,9 @@ console.log(
     panelUrl: allowedOrigins()[0],
     studioUrl: process.env.SUPABASE_STUDIO_URL,
     authUrl,
-    devLogin: { correo: DEV_ADMIN.email, contrasena: DEV_ADMIN.password },
+    devLogin: { email: DEV_ADMIN.email, password: DEV_ADMIN.password },
     warnings,
-    // Turbo no le da una TTY a la tarea, pero su TUI muestra los colores.
+    // Turbo does not give the task a TTY, but its TUI shows colors.
     color: shouldColor(),
   })
 );

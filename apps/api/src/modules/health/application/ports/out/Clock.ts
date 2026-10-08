@@ -1,11 +1,11 @@
 /**
- * Puerto de salida: el paso del tiempo.
+ * Outbound port: the passage of time.
  *
- * Existe para que el caso de uso sea determinista en tests — no para abstraer
- * `Date` por gusto.
+ * It exists so the use case is deterministic in tests — not to abstract `Date`
+ * for its own sake.
  */
 export interface Clock {
   now(): Date;
-  /** Segundos que el proceso lleva vivo. */
+  /** Seconds the process has been alive. */
   uptimeSeconds(): number;
 }

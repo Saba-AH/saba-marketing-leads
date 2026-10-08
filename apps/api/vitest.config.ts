@@ -7,11 +7,11 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['src/test/**/*.test.ts'],
-    // Crea y migra la base de tests una sola vez por corrida.
+    // Creates and migrates the test database once per run.
     globalSetup: ['src/test/support/globalSetup.ts'],
-    // Los tests de integración truncan tablas compartidas: en paralelo se pisan.
+    // Integration tests truncate shared tables: in parallel they step on each other.
     fileParallelism: false,
-    // Migrar una base desde cero pasa del default de 5 s en un arranque en frío.
+    // Migrating a database from scratch exceeds the 5 s default on a cold start.
     hookTimeout: 60_000,
     testTimeout: 20_000,
     coverage: {

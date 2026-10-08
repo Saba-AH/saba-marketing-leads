@@ -9,9 +9,9 @@ import {
 } from 'drizzle-orm/pg-core';
 
 /**
- * Espejo de `public.mobile_app_versions`, que ya existía en Supabase antes de
- * este repo. Los nombres de columnas y del CHECK son los de esa tabla: si
- * divergen, `db:generate` propone cambios que Supabase no necesita.
+ * Mirror of `public.mobile_app_versions`, which already existed in Supabase
+ * before this repo. The column and CHECK names are that table's: if they
+ * diverge, `db:generate` proposes changes Supabase does not need.
  */
 export const mobileAppVersions = pgTable(
   'mobile_app_versions',
@@ -26,10 +26,10 @@ export const mobileAppVersions = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (tabla) => [
+  (table) => [
     check(
       'mobile_app_versions_platform_check',
-      sql`${tabla.platform} = ANY (ARRAY['ios'::text, 'android'::text])`
+      sql`${table.platform} = ANY (ARRAY['ios'::text, 'android'::text])`
     ),
   ]
 );

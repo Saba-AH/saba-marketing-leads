@@ -1,23 +1,23 @@
-/** Conjuntos de ids que un paso aporta y los siguientes usan para filtrar. */
+/** Id sets a step contributes and the following steps use to filter. */
 export type SyncKey = 'emails' | 'userIds' | 'applicationIds' | 'paymentIds';
 
 export interface SyncStep {
   /** `esquema.tabla`. */
   table: string;
   /**
-   * Filtro con `$1` = los valores de `key`. Sin filtro, la tabla va completa
-   * (catálogos sin datos personales).
+   * Filter with `$1` = the values of `key`. Without a filter, the whole table is
+   * copied (catalogs with no personal data).
    */
   where?: { sql: string; key: SyncKey };
-  /** Los `id` de las filas copiadas alimentan este conjunto. */
+  /** The `id`s of the copied rows feed this set. */
   produces?: SyncKey;
-  /** Solo se limpia en local (sesiones de los usuarios reemplazados); no se copia. */
+  /** Only cleaned up locally (sessions of the replaced users); never copied. */
   deleteOnly?: boolean;
 }
 
 /**
- * Qué se copia y en qué orden: cada paso filtra con los ids que dejaron los
- * anteriores. El borrado en local recorre la lista al revés.
+ * What gets copied and in which order: each step filters with the ids the
+ * previous ones left. Local deletion walks the list backwards.
  */
 export const SYNC_PLAN: readonly SyncStep[] = [
   // Cuenta
@@ -44,7 +44,7 @@ export const SYNC_PLAN: readonly SyncStep[] = [
     table: 'public.profiles',
     where: { sql: 'id = ANY($1::uuid[])', key: 'userIds' },
   },
-  // Del usuario
+  // The user's own data
   {
     table: 'public.user_documents',
     where: { sql: 'user_id = ANY($1::uuid[])', key: 'userIds' },
@@ -53,7 +53,7 @@ export const SYNC_PLAN: readonly SyncStep[] = [
     table: 'public.notifications',
     where: { sql: 'user_id = ANY($1::uuid[])', key: 'userIds' },
   },
-  // Solicitudes y lo que cuelga de cada una
+  // Applications and everything hanging from each one
   {
     table: 'public.applications',
     where: { sql: 'user_id = ANY($1::uuid[])', key: 'userIds' },
@@ -84,7 +84,7 @@ export const SYNC_PLAN: readonly SyncStep[] = [
     table: 'public.appointments',
     where: { sql: 'application_id = ANY($1::uuid[])', key: 'applicationIds' },
   },
-  // Catálogos completos
+  // Full catalogs
   { table: 'public.products' },
   { table: 'public.product_variant_attributes' },
   { table: 'public.product_variant_attribute_values' },

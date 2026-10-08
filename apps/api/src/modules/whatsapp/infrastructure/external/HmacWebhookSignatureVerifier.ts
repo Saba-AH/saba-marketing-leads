@@ -4,9 +4,9 @@ import type { WebhookSignatureVerifierPort } from '../../application/ports/out/W
 import { WHATSAPP_TOKENS } from '../../tokens';
 import type { WhatsAppConfig } from '../whatsappConfig';
 
-const PREFIJO = 'sha256=';
+const PREFIX = 'sha256=';
 
-/** `X-Hub-Signature-256: sha256=<HMAC-SHA256 del cuerpo crudo con el app secret>`. */
+/** `X-Hub-Signature-256: sha256=<HMAC-SHA256 of the raw body with the app secret>`. */
 @Injectable()
 export class HmacWebhookSignatureVerifier
   implements WebhookSignatureVerifierPort
@@ -15,15 +15,15 @@ export class HmacWebhookSignatureVerifier
     @Inject(WHATSAPP_TOKENS.Config) private readonly config: WhatsAppConfig
   ) {}
 
-  esValida(rawBody: Buffer | undefined, firma: string | undefined): boolean {
-    const secreto = this.config.appSecret;
-    if (!secreto || !rawBody || !firma?.startsWith(PREFIJO)) return false;
+  isValid(rawBody: Buffer | undefined, signature: string | undefined): boolean {
+    const secret = this.config.appSecret;
+    if (!secret || !rawBody || !signature?.startsWith(PREFIX)) return false;
 
-    const recibida = Buffer.from(firma.slice(PREFIJO.length), 'hex');
-    const esperada = createHmac('sha256', secreto).update(rawBody).digest();
-    // timingSafeEqual lanza si los largos difieren.
+    const received = Buffer.from(signature.slice(PREFIX.length), 'hex');
+    const expected = createHmac('sha256', secret).update(rawBody).digest();
+    // timingSafeEqual throws if the lengths differ.
     return (
-      recibida.length === esperada.length && timingSafeEqual(recibida, esperada)
+      received.length === expected.length && timingSafeEqual(received, expected)
     );
   }
 }

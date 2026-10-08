@@ -17,12 +17,12 @@ import { DrizzleModule } from '../../infrastructure/database/drizzle.module';
 import { ErrorsModule } from '../../infrastructure/errors/ErrorsModule';
 import { LoggingModule } from '../../infrastructure/logging/LoggingModule';
 import type { AuthenticatedUser } from '../../modules/auth/domain/AuthSession';
-import type { ClienteSaba } from '../../modules/sabaClientes/domain/ClienteSaba';
-import { SabaSinPermisoException } from '../../modules/sabaClientes/domain/exceptions/sabaClientesExceptions';
-import { SABA_CLIENTES_TOKENS } from '../../modules/sabaClientes/tokens';
+import { SabaForbiddenException } from '../../modules/sabaCustomers/domain/exceptions/sabaCustomersExceptions';
+import type { SabaCustomer } from '../../modules/sabaCustomers/domain/SabaCustomer';
+import { SABA_CUSTOMERS_TOKENS } from '../../modules/sabaCustomers/tokens';
 import {
-  type ArchivoMedia,
-  ErrorEnvioMeta,
+  type MediaFile,
+  MetaSendError,
 } from '../../modules/whatsapp/domain/Chats';
 import {
   whatsappContacts,
@@ -41,28 +41,28 @@ import {
 
 process.env.DATABASE = testDatabaseUrl();
 
-const AHORA = new Date('2026-10-07T20:00:00Z');
-const HACE_UNA_HORA = new Date(AHORA.getTime() - 60 * 60 * 1000);
-const HACE_DOS_DIAS = new Date(AHORA.getTime() - 48 * 60 * 60 * 1000);
-const AGENTE: AuthenticatedUser = {
+const NOW = new Date('2026-10-07T20:00:00Z');
+const ONE_HOUR_AGO = new Date(NOW.getTime() - 60 * 60 * 1000);
+const TWO_DAYS_AGO = new Date(NOW.getTime() - 48 * 60 * 60 * 1000);
+const AGENT: AuthenticatedUser = {
   id: '11111111-1111-1111-1111-111111111111',
-  correo: 'agente@sabatransporte.com',
-  nombre: 'Agente',
-  rol: 'admin',
+  email: 'agente@sabatransporte.com',
+  name: 'Agente',
+  role: 'admin',
 };
 
-const enviarTexto = vi.fn<(to: string, cuerpo: string) => Promise<string>>();
-const descargarMedia = vi.fn<(mediaId: string) => Promise<ArchivoMedia>>();
-const indicarEscribiendo = vi.fn<(wamid: string) => Promise<void>>();
-const buscarPorTelefono =
-  vi.fn<(telefono: string, credencial: string) => Promise<ClienteSaba[]>>();
+const sendText = vi.fn<(to: string, body: string) => Promise<string>>();
+const downloadMedia = vi.fn<(mediaId: string) => Promise<MediaFile>>();
+const sendTypingIndicator = vi.fn<(wamid: string) => Promise<void>>();
+const findByPhone =
+  vi.fn<(phone: string, credential: string) => Promise<SabaCustomer[]>>();
 
-function archivo(mimeType: string, contenido: string): ArchivoMedia {
-  const bytes = new TextEncoder().encode(contenido);
+function file(mimeType: string, content: string): MediaFile {
+  const bytes = new TextEncoder().encode(content);
   return {
     mimeType,
-    tamano: bytes.length,
-    contenido: new ReadableStream({
+    size: bytes.length,
+    content: new ReadableStream({
       start(controller) {
         controller.enqueue(bytes);
         controller.close();
@@ -71,37 +71,37 @@ function archivo(mimeType: string, contenido: string): ArchivoMedia {
   };
 }
 
-async function crearChat(datos: {
+async function createChat(data: {
   waId?: string | null;
   userId?: string | null;
-  ultimoEntranteAt: Date | null;
-  ultimoMensajeAt?: Date;
-  noLeidos?: number;
+  lastInboundAt: Date | null;
+  lastMessageAt?: Date;
+  unreadCount?: number;
 }): Promise<string> {
   const db = getTestDb();
-  const [contacto] = await db
+  const [contact] = await db
     .insert(whatsappContacts)
     .values({
-      waId: datos.waId === undefined ? '584140000001' : datos.waId,
-      userId: datos.userId ?? null,
+      waId: data.waId === undefined ? '584140000001' : data.waId,
+      userId: data.userId ?? null,
       profileName: 'Cliente',
     })
     .returning();
-  if (!contacto) throw new Error('sin contacto');
-  const [conversacion] = await db
+  if (!contact) throw new Error('sin contacto');
+  const [conversation] = await db
     .insert(whatsappConversations)
     .values({
-      contactId: contacto.id,
-      ultimoEntranteAt: datos.ultimoEntranteAt,
-      ultimoMensajeAt: datos.ultimoMensajeAt ?? datos.ultimoEntranteAt,
-      noLeidos: datos.noLeidos ?? 0,
+      contactId: contact.id,
+      lastInboundAt: data.lastInboundAt,
+      lastMessageAt: data.lastMessageAt ?? data.lastInboundAt,
+      unreadCount: data.unreadCount ?? 0,
     })
     .returning();
-  if (!conversacion) throw new Error('sin conversación');
-  return conversacion.id;
+  if (!conversation) throw new Error('sin conversación');
+  return conversation.id;
 }
 
-describe('chats de WhatsApp (API)', () => {
+describe('WhatsApp chats (API)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
@@ -115,22 +115,22 @@ describe('chats de WhatsApp (API)', () => {
       ],
     })
       .overrideProvider(WHATSAPP_TOKENS.WhatsAppCloud)
-      .useValue({ enviarTexto, descargarMedia, indicarEscribiendo })
-      .overrideProvider(SABA_CLIENTES_TOKENS.Reader)
-      .useValue({ buscarPorTelefono })
+      .useValue({ sendText, downloadMedia, sendTypingIndicator })
+      .overrideProvider(SABA_CUSTOMERS_TOKENS.Reader)
+      .useValue({ findByPhone })
       .overrideProvider(WHATSAPP_TOKENS.Clock)
-      .useValue({ now: () => AHORA })
+      .useValue({ now: () => NOW })
       .compile();
 
     app = moduleRef.createNestApplication();
-    // Lo que en la app real deja el AuthGuard.
+    // What the AuthGuard leaves in the real app.
     app.use(
       (
         req: Request & { user?: AuthenticatedUser },
         _res: Response,
         next: NextFunction
       ) => {
-        req.user = AGENTE;
+        req.user = AGENT;
         next();
       }
     );
@@ -145,407 +145,402 @@ describe('chats de WhatsApp (API)', () => {
 
   beforeEach(async () => {
     await resetDatabase();
-    enviarTexto.mockReset();
-    descargarMedia.mockReset();
-    indicarEscribiendo.mockReset();
-    buscarPorTelefono.mockReset();
+    sendText.mockReset();
+    downloadMedia.mockReset();
+    sendTypingIndicator.mockReset();
+    findByPhone.mockReset();
   });
 
-  it('lista las conversaciones con la de actividad más reciente primero y su ventana', async () => {
-    const vieja = await crearChat({
+  it('lists the conversations with the most recently active first and their window', async () => {
+    const old = await createChat({
       waId: '584140000001',
-      ultimoEntranteAt: HACE_DOS_DIAS,
+      lastInboundAt: TWO_DAYS_AGO,
     });
-    const reciente = await crearChat({
+    const recent = await createChat({
       waId: '584140000002',
-      ultimoEntranteAt: HACE_UNA_HORA,
-      noLeidos: 2,
+      lastInboundAt: ONE_HOUR_AGO,
+      unreadCount: 2,
     });
 
     const res = await request(app.getHttpServer()).get(
-      '/whatsapp/conversaciones'
+      '/whatsapp/conversations'
     );
 
     expect(res.status).toBe(200);
     expect(res.body.data.map((c: { id: string }) => c.id)).toEqual([
-      reciente,
-      vieja,
+      recent,
+      old,
     ]);
     expect(res.body.data[0]).toMatchObject({
-      noLeidos: 2,
-      contacto: {
-        telefono: '584140000002',
-        nombreWhatsApp: 'Cliente',
-        vinculadoASaba: false,
+      unreadCount: 2,
+      contact: {
+        phone: '584140000002',
+        whatsAppName: 'Cliente',
+        linkedToSaba: false,
       },
-      ventanaExpiraAt: new Date(
-        HACE_UNA_HORA.getTime() + 24 * 3600 * 1000
+      windowExpiresAt: new Date(
+        ONE_HOUR_AGO.getTime() + 24 * 3600 * 1000
       ).toISOString(),
     });
   });
 
-  it('devuelve los mensajes en orden cronológico y 404 si la conversación no existe', async () => {
-    const id = await crearChat({ ultimoEntranteAt: HACE_UNA_HORA });
+  it('returns the messages in chronological order and 404 if the conversation does not exist', async () => {
+    const id = await createChat({ lastInboundAt: ONE_HOUR_AGO });
     await getTestDb()
       .insert(whatsappMessages)
       .values([
         {
           conversationId: id,
           wamid: 'w2',
-          direccion: 'entrante',
-          origen: 'cliente',
-          tipo: 'text',
-          cuerpo: 'segundo',
-          waTimestamp: HACE_UNA_HORA,
+          direction: 'inbound',
+          source: 'customer',
+          type: 'text',
+          body: 'segundo',
+          waTimestamp: ONE_HOUR_AGO,
         },
         {
           conversationId: id,
           wamid: 'w1',
-          direccion: 'entrante',
-          origen: 'cliente',
-          tipo: 'text',
-          cuerpo: 'primero',
-          waTimestamp: HACE_DOS_DIAS,
+          direction: 'inbound',
+          source: 'customer',
+          type: 'text',
+          body: 'primero',
+          waTimestamp: TWO_DAYS_AGO,
         },
       ]);
 
     const res = await request(app.getHttpServer()).get(
-      `/whatsapp/conversaciones/${id}/mensajes`
+      `/whatsapp/conversations/${id}/messages`
     );
-    const noExiste = await request(app.getHttpServer()).get(
-      '/whatsapp/conversaciones/00000000-0000-0000-0000-000000000000/mensajes'
+    const missing = await request(app.getHttpServer()).get(
+      '/whatsapp/conversations/00000000-0000-0000-0000-000000000000/messages'
     );
 
-    expect(res.body.data.map((m: { cuerpo: string }) => m.cuerpo)).toEqual([
+    expect(res.body.data.map((m: { body: string }) => m.body)).toEqual([
       'primero',
       'segundo',
     ]);
-    expect(noExiste.status).toBe(404);
+    expect(missing.status).toBe(404);
   });
 
-  it('responde dentro de la ventana: envía a Meta y guarda el mensaje como enviado', async () => {
-    const id = await crearChat({ ultimoEntranteAt: HACE_UNA_HORA });
-    enviarTexto.mockResolvedValue('wamid.RESPUESTA');
+  it('replies within the window: sends to Meta and saves the message as sent', async () => {
+    const id = await createChat({ lastInboundAt: ONE_HOUR_AGO });
+    sendText.mockResolvedValue('wamid.REPLY');
 
     const res = await request(app.getHttpServer())
-      .post(`/whatsapp/conversaciones/${id}/mensajes`)
-      .send({ cuerpo: '  Hola, ¿en qué te ayudo?  ' });
+      .post(`/whatsapp/conversations/${id}/messages`)
+      .send({ body: '  Hola, ¿en qué te ayudo?  ' });
 
     expect(res.status).toBe(201);
     expect(res.body.data).toMatchObject({
-      direccion: 'saliente',
-      origen: 'sistema',
-      cuerpo: 'Hola, ¿en qué te ayudo?',
-      estado: 'enviado',
+      direction: 'outbound',
+      source: 'system',
+      body: 'Hola, ¿en qué te ayudo?',
+      status: 'sent',
     });
-    expect(enviarTexto).toHaveBeenCalledWith(
+    expect(sendText).toHaveBeenCalledWith(
       '584140000001',
       'Hola, ¿en qué te ayudo?'
     );
-    const [guardado] = await getTestDb().select().from(whatsappMessages);
-    expect(guardado).toMatchObject({
-      wamid: 'wamid.RESPUESTA',
-      enviadoPor: AGENTE.id,
+    const [saved] = await getTestDb().select().from(whatsappMessages);
+    expect(saved).toMatchObject({
+      wamid: 'wamid.REPLY',
+      sentBy: AGENT.id,
     });
-    const [conversacion] = await getTestDb()
+    const [conversation] = await getTestDb()
       .select()
       .from(whatsappConversations);
-    expect(conversacion?.ultimoMensajePreview).toBe('Hola, ¿en qué te ayudo?');
+    expect(conversation?.lastMessagePreview).toBe('Hola, ¿en qué te ayudo?');
   });
 
-  it('no envía con la ventana de 24 h cerrada', async () => {
-    const id = await crearChat({ ultimoEntranteAt: HACE_DOS_DIAS });
+  it('does not send with the 24 h window closed', async () => {
+    const id = await createChat({ lastInboundAt: TWO_DAYS_AGO });
 
     const res = await request(app.getHttpServer())
-      .post(`/whatsapp/conversaciones/${id}/mensajes`)
-      .send({ cuerpo: 'Hola' });
+      .post(`/whatsapp/conversations/${id}/messages`)
+      .send({ body: 'Hola' });
 
     expect(res.status).toBe(409);
-    expect(res.body.code).toBe('WHATSAPP_VENTANA_CERRADA');
-    expect(enviarTexto).not.toHaveBeenCalled();
+    expect(res.body.code).toBe('WHATSAPP_WINDOW_CLOSED');
+    expect(sendText).not.toHaveBeenCalled();
     expect(await getTestDb().select().from(whatsappMessages)).toEqual([]);
   });
 
-  it('deja el mensaje como fallido y explica el error si Meta lo rechaza', async () => {
-    const id = await crearChat({ ultimoEntranteAt: HACE_UNA_HORA });
-    enviarTexto.mockRejectedValue(
-      new ErrorEnvioMeta(131030, 'Recipient phone number not in allowed list')
+  it('leaves the message as failed and explains the error if Meta rejects it', async () => {
+    const id = await createChat({ lastInboundAt: ONE_HOUR_AGO });
+    sendText.mockRejectedValue(
+      new MetaSendError(131030, 'Recipient phone number not in allowed list')
     );
 
     const res = await request(app.getHttpServer())
-      .post(`/whatsapp/conversaciones/${id}/mensajes`)
-      .send({ cuerpo: 'Hola' });
+      .post(`/whatsapp/conversations/${id}/messages`)
+      .send({ body: 'Hola' });
 
     expect(res.status).toBe(422);
-    expect(res.body.code).toBe('WHATSAPP_DESTINATARIO_NO_PERMITIDO');
+    expect(res.body.code).toBe('WHATSAPP_RECIPIENT_NOT_ALLOWED');
     expect(res.body.error).toContain('destinatarios permitidos');
-    const [guardado] = await getTestDb().select().from(whatsappMessages);
-    expect(guardado).toMatchObject({
-      estado: 'fallido',
-      errorCodigo: '131030',
-      errorDetalle: 'Recipient phone number not in allowed list',
+    const [saved] = await getTestDb().select().from(whatsappMessages);
+    expect(saved).toMatchObject({
+      status: 'failed',
+      errorCode: '131030',
+      errorDetail: 'Recipient phone number not in allowed list',
     });
   });
 
-  it('no responde a un contacto que solo comparte su nombre de usuario', async () => {
-    const id = await crearChat({
+  it('does not reply to a contact who only shares their username', async () => {
+    const id = await createChat({
       waId: null,
       userId: 'VE.1',
-      ultimoEntranteAt: HACE_UNA_HORA,
+      lastInboundAt: ONE_HOUR_AGO,
     });
 
     const res = await request(app.getHttpServer())
-      .post(`/whatsapp/conversaciones/${id}/mensajes`)
-      .send({ cuerpo: 'Hola' });
+      .post(`/whatsapp/conversations/${id}/messages`)
+      .send({ body: 'Hola' });
 
     expect(res.status).toBe(422);
-    expect(res.body.code).toBe('WHATSAPP_CONTACTO_SIN_TELEFONO');
+    expect(res.body.code).toBe('WHATSAPP_CONTACT_WITHOUT_PHONE');
   });
 
-  it('rechaza un mensaje vacío', async () => {
-    const id = await crearChat({ ultimoEntranteAt: HACE_UNA_HORA });
+  it('rejects an empty message', async () => {
+    const id = await createChat({ lastInboundAt: ONE_HOUR_AGO });
 
     const res = await request(app.getHttpServer())
-      .post(`/whatsapp/conversaciones/${id}/mensajes`)
-      .send({ cuerpo: '   ' });
+      .post(`/whatsapp/conversations/${id}/messages`)
+      .send({ body: '   ' });
 
     expect(res.status).toBe(400);
-    expect(enviarTexto).not.toHaveBeenCalled();
+    expect(sendText).not.toHaveBeenCalled();
   });
 
-  it('marca la conversación como leída', async () => {
-    const id = await crearChat({
-      ultimoEntranteAt: HACE_UNA_HORA,
-      noLeidos: 3,
+  it('marks the conversation as read', async () => {
+    const id = await createChat({
+      lastInboundAt: ONE_HOUR_AGO,
+      unreadCount: 3,
     });
 
     const res = await request(app.getHttpServer()).post(
-      `/whatsapp/conversaciones/${id}/leida`
+      `/whatsapp/conversations/${id}/read`
     );
 
     expect(res.status).toBe(200);
-    const [conversacion] = await getTestDb()
+    const [conversation] = await getTestDb()
       .select()
       .from(whatsappConversations)
       .where(eq(whatsappConversations.id, id));
-    expect(conversacion?.noLeidos).toBe(0);
+    expect(conversation?.unreadCount).toBe(0);
   });
 
-  describe('archivos de los mensajes', () => {
-    let contactos = 0;
-    async function mensajeConMedia(
-      tipo: string,
+  describe('message files', () => {
+    let contacts = 0;
+    async function messageWithMedia(
+      type: string,
       mediaId: string | null
     ): Promise<string> {
-      contactos++;
-      const conversationId = await crearChat({
-        waId: `58414000${String(contactos).padStart(4, '0')}`,
-        ultimoEntranteAt: HACE_UNA_HORA,
+      contacts++;
+      const conversationId = await createChat({
+        waId: `58414000${String(contacts).padStart(4, '0')}`,
+        lastInboundAt: ONE_HOUR_AGO,
       });
-      const [mensaje] = await getTestDb()
+      const [message] = await getTestDb()
         .insert(whatsappMessages)
         .values({
           conversationId,
-          wamid: `w-${tipo}`,
-          direccion: 'entrante',
-          origen: 'cliente',
-          tipo,
+          wamid: `w-${type}`,
+          direction: 'inbound',
+          source: 'customer',
+          type,
           mediaId,
-          waTimestamp: HACE_UNA_HORA,
+          waTimestamp: ONE_HOUR_AGO,
         })
         .returning();
-      if (!mensaje) throw new Error('sin mensaje');
-      return mensaje.id;
+      if (!message) throw new Error('sin mensaje');
+      return message.id;
     }
 
-    it('marca qué mensajes tienen archivo', async () => {
-      const id = await mensajeConMedia('image', 'MEDIA1');
+    it('marks which messages have a file', async () => {
+      const id = await messageWithMedia('image', 'MEDIA1');
       const [{ conversationId }] = await getTestDb()
         .select({ conversationId: whatsappMessages.conversationId })
         .from(whatsappMessages)
         .where(eq(whatsappMessages.id, id));
 
       const res = await request(app.getHttpServer()).get(
-        `/whatsapp/conversaciones/${conversationId}/mensajes`
+        `/whatsapp/conversations/${conversationId}/messages`
       );
 
       expect(res.body.data[0]).toMatchObject({
-        tipo: 'image',
-        tieneMedia: true,
+        type: 'image',
+        hasMedia: true,
       });
     });
 
-    it('pasa la imagen de Meta tal cual, para mostrarla en el panel', async () => {
-      const id = await mensajeConMedia('image', 'MEDIA1');
-      descargarMedia.mockResolvedValue(
-        archivo('image/jpeg', 'bytes-de-la-foto')
-      );
+    it('passes the Meta image through as-is, to show it in the panel', async () => {
+      const id = await messageWithMedia('image', 'MEDIA1');
+      downloadMedia.mockResolvedValue(file('image/jpeg', 'photo-bytes'));
 
       const res = await request(app.getHttpServer())
-        .get(`/whatsapp/mensajes/${id}/media`)
+        .get(`/whatsapp/messages/${id}/media`)
         .buffer(true)
         .parse((r, done) => {
-          let datos = '';
+          let data = '';
           r.on('data', (c: Buffer) => {
-            datos += c.toString();
+            data += c.toString();
           });
-          r.on('end', () => done(null, datos));
+          r.on('end', () => done(null, data));
         });
 
       expect(res.status).toBe(200);
-      expect(descargarMedia).toHaveBeenCalledWith('MEDIA1');
+      expect(downloadMedia).toHaveBeenCalledWith('MEDIA1');
       expect(res.headers['content-type']).toBe('image/jpeg');
       expect(res.headers['content-disposition']).toBe('inline');
       expect(res.headers['cache-control']).toBe('private, max-age=3600');
-      expect(res.body).toBe('bytes-de-la-foto');
+      expect(res.body).toBe('photo-bytes');
     });
 
-    it('sirve como descarga lo que podría ejecutar código en el navegador', async () => {
-      const id = await mensajeConMedia('document', 'MEDIA2');
-      descargarMedia.mockResolvedValue(
-        archivo('text/html', '<script>alert(1)</script>')
+    it('serves as a download whatever could run code in the browser', async () => {
+      const id = await messageWithMedia('document', 'MEDIA2');
+      downloadMedia.mockResolvedValue(
+        file('text/html', '<script>alert(1)</script>')
       );
 
       const res = await request(app.getHttpServer()).get(
-        `/whatsapp/mensajes/${id}/media`
+        `/whatsapp/messages/${id}/media`
       );
 
       expect(res.headers['content-disposition']).toBe('attachment');
       expect(res.headers['content-security-policy']).toContain('sandbox');
     });
 
-    it('responde 404 si el mensaje no tiene archivo o Meta ya no lo guarda', async () => {
-      const sinArchivo = await mensajeConMedia('text', null);
-      const vencido = await mensajeConMedia('image', 'MEDIA_VIEJO');
-      descargarMedia.mockRejectedValue(
-        new ErrorEnvioMeta(100, 'Unsupported get request')
+    it('answers 404 if the message has no file or Meta no longer keeps it', async () => {
+      const withoutFile = await messageWithMedia('text', null);
+      const expired = await messageWithMedia('image', 'MEDIA_VIEJO');
+      downloadMedia.mockRejectedValue(
+        new MetaSendError(100, 'Unsupported get request')
       );
 
       const a = await request(app.getHttpServer()).get(
-        `/whatsapp/mensajes/${sinArchivo}/media`
+        `/whatsapp/messages/${withoutFile}/media`
       );
       const b = await request(app.getHttpServer()).get(
-        `/whatsapp/mensajes/${vencido}/media`
+        `/whatsapp/messages/${expired}/media`
       );
 
       expect(a.status).toBe(404);
       expect(b.status).toBe(404);
-      expect(b.body.code).toBe('WHATSAPP_MEDIA_NO_DISPONIBLE');
+      expect(b.body.code).toBe('WHATSAPP_MEDIA_UNAVAILABLE');
     });
   });
 
-  describe('indicador de escribiendo', () => {
-    async function entrante(
+  describe('typing indicator', () => {
+    async function inbound(
       conversationId: string,
       wamid: string,
-      cuando: Date
+      when: Date
     ): Promise<void> {
       await getTestDb().insert(whatsappMessages).values({
         conversationId,
         wamid,
-        direccion: 'entrante',
-        origen: 'cliente',
-        tipo: 'text',
-        cuerpo: 'hola',
-        waTimestamp: cuando,
+        direction: 'inbound',
+        source: 'customer',
+        type: 'text',
+        body: 'hola',
+        waTimestamp: when,
       });
     }
 
-    it('lo manda a Meta con el último mensaje del cliente', async () => {
-      const id = await crearChat({ ultimoEntranteAt: HACE_UNA_HORA });
-      await entrante(id, 'wamid.viejo', HACE_DOS_DIAS);
-      await entrante(id, 'wamid.ultimo', HACE_UNA_HORA);
-      indicarEscribiendo.mockResolvedValue();
+    it('sends it to Meta with the customer last message', async () => {
+      const id = await createChat({ lastInboundAt: ONE_HOUR_AGO });
+      await inbound(id, 'wamid.old', TWO_DAYS_AGO);
+      await inbound(id, 'wamid.last', ONE_HOUR_AGO);
+      sendTypingIndicator.mockResolvedValue();
 
       const res = await request(app.getHttpServer()).post(
-        `/whatsapp/conversaciones/${id}/escribiendo`
+        `/whatsapp/conversations/${id}/typing`
       );
 
       expect(res.status).toBe(200);
-      expect(indicarEscribiendo).toHaveBeenCalledWith('wamid.ultimo');
+      expect(sendTypingIndicator).toHaveBeenCalledWith('wamid.last');
     });
 
-    it('no hace nada con la ventana cerrada', async () => {
-      const id = await crearChat({ ultimoEntranteAt: HACE_DOS_DIAS });
-      await entrante(id, 'wamid.viejo', HACE_DOS_DIAS);
+    it('does nothing with the window closed', async () => {
+      const id = await createChat({ lastInboundAt: TWO_DAYS_AGO });
+      await inbound(id, 'wamid.old', TWO_DAYS_AGO);
 
       const res = await request(app.getHttpServer()).post(
-        `/whatsapp/conversaciones/${id}/escribiendo`
+        `/whatsapp/conversations/${id}/typing`
       );
 
       expect(res.status).toBe(200);
-      expect(indicarEscribiendo).not.toHaveBeenCalled();
+      expect(sendTypingIndicator).not.toHaveBeenCalled();
     });
 
-    it('responde 200 aunque Meta lo rechace: es solo cortesía', async () => {
-      const id = await crearChat({ ultimoEntranteAt: HACE_UNA_HORA });
-      await entrante(id, 'wamid.ultimo', HACE_UNA_HORA);
-      indicarEscribiendo.mockRejectedValue(
-        new ErrorEnvioMeta(100, 'Invalid parameter')
+    it('answers 200 even if Meta rejects it: it is only a courtesy', async () => {
+      const id = await createChat({ lastInboundAt: ONE_HOUR_AGO });
+      await inbound(id, 'wamid.last', ONE_HOUR_AGO);
+      sendTypingIndicator.mockRejectedValue(
+        new MetaSendError(100, 'Invalid parameter')
       );
 
       const res = await request(app.getHttpServer()).post(
-        `/whatsapp/conversaciones/${id}/escribiendo`
+        `/whatsapp/conversations/${id}/typing`
       );
 
       expect(res.status).toBe(200);
     });
   });
 
-  describe('cliente de Saba del chat', () => {
-    const ana: ClienteSaba = {
+  describe('chat Saba customer', () => {
+    const ana: SabaCustomer = {
       id: 'p1',
-      nombre: 'Ana Pérez',
-      cedula: 'V12345678',
-      correo: null,
-      telefono: '04140000001',
-      ciudad: 'Caracas',
-      origen: 'web',
-      clienteDesde: '2026-01-01T00:00:00Z',
-      solicitudes: [],
+      name: 'Ana Pérez',
+      idNumber: 'V12345678',
+      email: null,
+      phone: '04140000001',
+      city: 'Caracas',
+      source: 'web',
+      customerSince: '2026-01-01T00:00:00Z',
+      applications: [],
     };
 
-    it('busca en Saba con el teléfono del chat y la sesión del agente', async () => {
-      const id = await crearChat({ ultimoEntranteAt: HACE_UNA_HORA });
-      buscarPorTelefono.mockResolvedValue([ana]);
+    it('searches Saba with the chat phone and the agent session', async () => {
+      const id = await createChat({ lastInboundAt: ONE_HOUR_AGO });
+      findByPhone.mockResolvedValue([ana]);
 
       const res = await request(app.getHttpServer())
-        .get(`/whatsapp/conversaciones/${id}/cliente-saba`)
-        .set('Authorization', 'Bearer token-del-agente');
+        .get(`/whatsapp/conversations/${id}/saba-customer`)
+        .set('Authorization', 'Bearer agent-token');
 
       expect(res.status).toBe(200);
-      expect(buscarPorTelefono).toHaveBeenCalledWith(
-        '584140000001',
-        'token-del-agente'
-      );
-      expect(res.body.data).toEqual({ sinTelefono: false, clientes: [ana] });
+      expect(findByPhone).toHaveBeenCalledWith('584140000001', 'agent-token');
+      expect(res.body.data).toEqual({ noPhone: false, customers: [ana] });
     });
 
-    it('no consulta Saba si el contacto solo comparte su nombre de usuario', async () => {
-      const id = await crearChat({
+    it('does not query Saba if the contact only shares their username', async () => {
+      const id = await createChat({
         waId: null,
         userId: 'VE.1',
-        ultimoEntranteAt: HACE_UNA_HORA,
+        lastInboundAt: ONE_HOUR_AGO,
       });
 
       const res = await request(app.getHttpServer())
-        .get(`/whatsapp/conversaciones/${id}/cliente-saba`)
+        .get(`/whatsapp/conversations/${id}/saba-customer`)
         .set('Authorization', 'Bearer t');
 
-      expect(res.body.data).toEqual({ sinTelefono: true, clientes: [] });
-      expect(buscarPorTelefono).not.toHaveBeenCalled();
+      expect(res.body.data).toEqual({ noPhone: true, customers: [] });
+      expect(findByPhone).not.toHaveBeenCalled();
     });
 
-    it('explica cuando Saba no le da permiso al agente', async () => {
-      const id = await crearChat({ ultimoEntranteAt: HACE_UNA_HORA });
-      buscarPorTelefono.mockRejectedValue(new SabaSinPermisoException());
+    it('explains when Saba does not give the agent permission', async () => {
+      const id = await createChat({ lastInboundAt: ONE_HOUR_AGO });
+      findByPhone.mockRejectedValue(new SabaForbiddenException());
 
       const res = await request(app.getHttpServer())
-        .get(`/whatsapp/conversaciones/${id}/cliente-saba`)
+        .get(`/whatsapp/conversations/${id}/saba-customer`)
         .set('Authorization', 'Bearer t');
 
       expect(res.status).toBe(403);
-      expect(res.body.code).toBe('SABA_CLIENTES_SIN_PERMISO');
+      expect(res.body.code).toBe('SABA_CUSTOMERS_FORBIDDEN');
     });
   });
 });

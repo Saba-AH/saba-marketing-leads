@@ -1,3 +1,3 @@
 export interface WebhookSignatureVerifierPort {
-  esValida(rawBody: Buffer | undefined, firma: string | undefined): boolean;
+  isValid(rawBody: Buffer | undefined, signature: string | undefined): boolean;
 }

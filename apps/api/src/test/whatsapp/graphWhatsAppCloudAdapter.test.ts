@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ErrorEnvioMeta } from '../../modules/whatsapp/domain/Chats';
-import { WhatsAppNoConfiguradoException } from '../../modules/whatsapp/domain/exceptions/whatsappExceptions';
+import { MetaSendError } from '../../modules/whatsapp/domain/Chats';
+import { WhatsAppNotConfiguredException } from '../../modules/whatsapp/domain/exceptions/whatsappExceptions';
 import { GraphWhatsAppCloudAdapter } from '../../modules/whatsapp/infrastructure/external/GraphWhatsAppCloudAdapter';
 import type { WhatsAppConfig } from '../../modules/whatsapp/infrastructure/whatsappConfig';
 
@@ -12,7 +12,7 @@ const CONFIG: WhatsAppConfig = {
   graphVersion: 'v26.0',
 };
 
-function respuesta(status: number, body: unknown): Response {
+function response(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), { status });
 }
 
@@ -21,13 +21,13 @@ describe('GraphWhatsAppCloudAdapter', () => {
     vi.unstubAllGlobals();
   });
 
-  it('manda el texto al número y devuelve el wamid', async () => {
+  it('sends the text to the number and returns the wamid', async () => {
     const fetchMock = vi.fn(async () =>
-      respuesta(200, { messages: [{ id: 'wamid.OK' }] })
+      response(200, { messages: [{ id: 'wamid.OK' }] })
     );
     vi.stubGlobal('fetch', fetchMock);
 
-    const wamid = await new GraphWhatsAppCloudAdapter(CONFIG).enviarTexto(
+    const wamid = await new GraphWhatsAppCloudAdapter(CONFIG).sendText(
       '584140000001',
       'Hola'
     );
@@ -49,11 +49,11 @@ describe('GraphWhatsAppCloudAdapter', () => {
     });
   });
 
-  it('traduce el error de Meta a código y detalle', async () => {
+  it('translates the Meta error into code and detail', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () =>
-        respuesta(400, {
+        response(400, {
           error: {
             code: 131030,
             message: 'Recipient not allowed',
@@ -64,17 +64,17 @@ describe('GraphWhatsAppCloudAdapter', () => {
     );
 
     const error = await new GraphWhatsAppCloudAdapter(CONFIG)
-      .enviarTexto('584140000001', 'Hola')
+      .sendText('584140000001', 'Hola')
       .catch((e: unknown) => e);
 
-    expect(error).toBeInstanceOf(ErrorEnvioMeta);
+    expect(error).toBeInstanceOf(MetaSendError);
     expect(error).toMatchObject({
-      codigo: 131030,
-      detalle: 'not in allowed list',
+      code: 131030,
+      detail: 'not in allowed list',
     });
   });
 
-  it('no llama a Meta sin credenciales', async () => {
+  it('does not call Meta without credentials', async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
 
@@ -82,15 +82,15 @@ describe('GraphWhatsAppCloudAdapter', () => {
       new GraphWhatsAppCloudAdapter({
         ...CONFIG,
         accessToken: null,
-      }).enviarTexto('5841', 'Hola')
-    ).rejects.toBeInstanceOf(WhatsAppNoConfiguradoException);
+      }).sendText('5841', 'Hola')
+    ).rejects.toBeInstanceOf(WhatsAppNotConfiguredException);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('baja un archivo en dos pasos, los dos con el token', async () => {
+  it('downloads a file in two steps, both with the token', async () => {
     const fetchMock = vi.fn(async (url: string) =>
       url.endsWith('/MEDIA1')
-        ? respuesta(200, {
+        ? response(200, {
             url: 'https://lookaside.fbsbx.com/whatsapp_business/attachments/?mid=1',
             mime_type: 'image/jpeg',
             file_size: 4,
@@ -99,42 +99,42 @@ describe('GraphWhatsAppCloudAdapter', () => {
     );
     vi.stubGlobal('fetch', fetchMock);
 
-    const archivo = await new GraphWhatsAppCloudAdapter(CONFIG).descargarMedia(
+    const file = await new GraphWhatsAppCloudAdapter(CONFIG).downloadMedia(
       'MEDIA1'
     );
 
-    expect(archivo).toMatchObject({ mimeType: 'image/jpeg', tamano: 4 });
-    expect(await new Response(archivo.contenido).text()).toBe('foto');
-    const llamadas = fetchMock.mock.calls as unknown as [string, RequestInit][];
-    expect(llamadas.map(([url]) => url)).toEqual([
+    expect(file).toMatchObject({ mimeType: 'image/jpeg', size: 4 });
+    expect(await new Response(file.content).text()).toBe('foto');
+    const calls = fetchMock.mock.calls as unknown as [string, RequestInit][];
+    expect(calls.map(([url]) => url)).toEqual([
       'https://graph.facebook.com/v26.0/MEDIA1',
       'https://lookaside.fbsbx.com/whatsapp_business/attachments/?mid=1',
     ]);
-    for (const [, init] of llamadas) {
+    for (const [, init] of calls) {
       expect(init.headers).toMatchObject({ Authorization: 'Bearer token' });
     }
   });
 
-  it('reporta el error de Meta si el archivo ya no existe', async () => {
+  it('reports the Meta error if the file no longer exists', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () =>
-        respuesta(400, {
+        response(400, {
           error: { code: 100, message: 'Unsupported get request' },
         })
       )
     );
 
     await expect(
-      new GraphWhatsAppCloudAdapter(CONFIG).descargarMedia('MEDIA_VIEJO')
-    ).rejects.toMatchObject({ codigo: 100 });
+      new GraphWhatsAppCloudAdapter(CONFIG).downloadMedia('MEDIA_VIEJO')
+    ).rejects.toMatchObject({ code: 100 });
   });
 
-  it('manda el indicador de escribiendo atado al mensaje del cliente', async () => {
-    const fetchMock = vi.fn(async () => respuesta(200, { success: true }));
+  it('sends the typing indicator tied to the customer message', async () => {
+    const fetchMock = vi.fn(async () => response(200, { success: true }));
     vi.stubGlobal('fetch', fetchMock);
 
-    await new GraphWhatsAppCloudAdapter(CONFIG).indicarEscribiendo('wamid.IN');
+    await new GraphWhatsAppCloudAdapter(CONFIG).sendTypingIndicator('wamid.IN');
 
     const [url, init] = fetchMock.mock.calls[0] as unknown as [
       string,

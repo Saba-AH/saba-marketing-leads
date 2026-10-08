@@ -5,7 +5,7 @@ import type { AuthSession } from '../../domain/AuthSession';
 import { AUTH_TOKENS } from '../../tokens';
 import type { AuthConfig } from '../authConfig';
 
-/** GoTrue describe sus errores con un código estable; nunca trae credenciales. */
+/** GoTrue describes its errors with a stable code; it never includes credentials. */
 const errorResponseSchema = z.object({ error_code: z.string() }).partial();
 
 const tokenResponseSchema = z.object({
@@ -15,15 +15,15 @@ const tokenResponseSchema = z.object({
   user: z.object({ id: z.string() }),
 });
 
-/** GoTrue responde 400 a credenciales o refresh tokens que no sirven. */
+/** GoTrue answers 400 to credentials or refresh tokens that are not valid. */
 const REJECTED = 400;
-/** Al revocar, un token ya inválido no es un error: el resultado es el mismo. */
+/** When revoking, an already invalid token is not an error: the outcome is the same. */
 const ALREADY_GONE = new Set([401, 403, 404]);
 const TIMEOUT_MS = 10_000;
 
 /**
- * Supabase Auth por su API HTTP, con la llave publicable: el login, el refresh
- * y el logout no necesitan la llave de servicio, así que la API no la tiene.
+ * Supabase Auth through its HTTP API, with the publishable key: login, refresh
+ * and logout do not need the service key, so the API does not have it.
  */
 @Injectable()
 export class GoTrueAuthProvider implements AuthProviderPort {
@@ -31,11 +31,8 @@ export class GoTrueAuthProvider implements AuthProviderPort {
     @Inject(AUTH_TOKENS.Config) private readonly config: AuthConfig
   ) {}
 
-  async signIn(
-    correo: string,
-    contrasena: string
-  ): Promise<AuthSession | null> {
-    return this.token('password', { email: correo, password: contrasena });
+  async signIn(email: string, password: string): Promise<AuthSession | null> {
+    return this.token('password', { email: email, password: password });
   }
 
   async refresh(refreshToken: string): Promise<AuthSession | null> {

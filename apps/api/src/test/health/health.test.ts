@@ -28,7 +28,7 @@ function failingProbe(name: string, message: string): DependencyProbe {
 }
 
 describe('CheckHealthUseCase', () => {
-  it('reporta ok cuando toda dependencia responde', async () => {
+  it('reports ok when every dependency responds', async () => {
     const useCase = new CheckHealthUseCase(
       [probe('postgres', { name: 'postgres', status: 'up', latencyMs: 3 })],
       clock
@@ -41,7 +41,7 @@ describe('CheckHealthUseCase', () => {
     expect(report.checks).toHaveLength(1);
   });
 
-  it('reporta error si una sola dependencia está caída', async () => {
+  it('reports error if a single dependency is down', async () => {
     const useCase = new CheckHealthUseCase(
       [
         probe('postgres', { name: 'postgres', status: 'up', latencyMs: 3 }),
@@ -56,7 +56,7 @@ describe('CheckHealthUseCase', () => {
     expect(report.checks.map((check) => check.status)).toEqual(['up', 'down']);
   });
 
-  it('trunca el uptime a segundos enteros y usa el reloj inyectado', async () => {
+  it('truncates the uptime to whole seconds and uses the injected clock', async () => {
     const useCase = new CheckHealthUseCase([], clock);
 
     const report = await useCase.execute();
@@ -67,7 +67,7 @@ describe('CheckHealthUseCase', () => {
 });
 
 describe('toHealthResponse', () => {
-  it('produce el sobre que el cliente espera y omite los campos vacíos', async () => {
+  it('produces the envelope the client expects and omits empty fields', async () => {
     const useCase = new CheckHealthUseCase(
       [probe('postgres', { name: 'postgres', status: 'up', latencyMs: 3 })],
       clock
@@ -88,7 +88,7 @@ describe('toHealthResponse', () => {
     });
   });
 
-  it('cumple el contrato compartido de @repo/schemas', async () => {
+  it('meets the shared @repo/schemas contract', async () => {
     const useCase = new CheckHealthUseCase(
       [failingProbe('postgres', 'connection refused')],
       clock
@@ -96,13 +96,13 @@ describe('toHealthResponse', () => {
 
     const response = toHealthResponse(await useCase.execute());
 
-    // Si el contrato cambia sin que la API se entere, este parse falla.
+    // If the contract changes without the API noticing, this parse fails.
     expect(healthResponseSchema.safeParse(response).success).toBe(true);
   });
 });
 
 describe('toLivenessResponse', () => {
-  it('siempre responde ok, sin depender de ninguna comprobación', () => {
+  it('always answers ok, without depending on any check', () => {
     const response = toLivenessResponse();
 
     expect(response).toEqual({ success: true, data: { status: 'ok' } });

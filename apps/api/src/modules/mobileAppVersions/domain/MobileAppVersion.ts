@@ -1,6 +1,6 @@
 export type MobilePlatform = 'ios' | 'android';
 
-/** Versión publicada de la app móvil. Ver `@repo/schemas` para el contrato. */
+/** Published version of the mobile app. See `@repo/schemas` for the contract. */
 export interface MobileAppVersion {
   id: string;
   platform: MobilePlatform;
@@ -11,6 +11,6 @@ export interface MobileAppVersion {
   createdAt: Date;
 }
 
-export interface FiltroMobileAppVersions {
+export interface MobileAppVersionsFilter {
   platform?: MobilePlatform;
 }

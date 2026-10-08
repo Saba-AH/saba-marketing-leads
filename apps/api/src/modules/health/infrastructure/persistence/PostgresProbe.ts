@@ -8,10 +8,10 @@ import type { DependencyProbe } from '../../application/ports/out/DependencyProb
 import type { DependencyCheck } from '../../domain/HealthReport';
 
 /**
- * Comprueba Postgres con la consulta más barata que existe.
+ * Checks Postgres with the cheapest query there is.
  *
- * No verifica `pgvector` ni tablas: eso es trabajo de las migraciones (E00·02).
- * Aquí solo interesa si la conexión está viva.
+ * It does not verify `pgvector` or tables: that is the migrations' job
+ * (E00·02). Here we only care whether the connection is alive.
  */
 @Injectable()
 export class PostgresProbe implements DependencyProbe {
@@ -33,8 +33,8 @@ export class PostgresProbe implements DependencyProbe {
         name: this.name,
         status: 'down',
         latencyMs: Date.now() - startedAt,
-        // El mensaje de pg no lleva credenciales; la connection string nunca se
-        // interpola aquí.
+        // pg's message carries no credentials; the connection string is never
+        // interpolated here.
         detail: error instanceof Error ? error.message : 'error desconocido',
       };
     }

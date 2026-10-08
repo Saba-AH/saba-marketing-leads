@@ -17,10 +17,10 @@ const AUDIENCE = 'authenticated';
 const ASYMMETRIC_ALGORITHMS = ['ES256', 'RS256'];
 
 /**
- * Verifica localmente los JWT de Supabase Auth, sin ir a GoTrue por petición.
- * Acepta las dos firmas que puede emitir un proyecto: las llaves asimétricas
- * (JWKS, cacheadas por `jose`) y el secreto HS256 legado, que convive con
- * ellas mientras se rota.
+ * Verifies Supabase Auth JWTs locally, without going to GoTrue per request.
+ * It accepts both signatures a project can issue: the asymmetric keys (JWKS,
+ * cached by `jose`) and the legacy HS256 secret, which coexists with them
+ * while rotating.
  */
 @Injectable()
 export class JoseAccessTokenVerifier implements AccessTokenVerifierPort {
@@ -44,7 +44,7 @@ export class JoseAccessTokenVerifier implements AccessTokenVerifierPort {
       if (typeof sub !== 'string' || typeof sessionId !== 'string') return null;
       return { userId: sub, sessionId };
     } catch (error: unknown) {
-      // Un token malo es un 401; no poder bajar las llaves no lo es.
+      // A bad token is a 401; failing to download the keys is not.
       if (
         error instanceof errors.JOSEError &&
         !(error instanceof errors.JWKSTimeout) &&
@@ -80,7 +80,7 @@ function algorithmOf(token: string): string | null {
   try {
     return decodeProtectedHeader(token).alg ?? null;
   } catch {
-    // Ni siquiera tiene forma de JWT.
+    // It does not even look like a JWT.
     return null;
   }
 }

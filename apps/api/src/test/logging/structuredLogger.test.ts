@@ -26,7 +26,7 @@ describe('StructuredLogger', () => {
     stderr.mockRestore();
   });
 
-  it('escribe INFO en stdout con severidad y mensaje', () => {
+  it('writes INFO to stdout with severity and message', () => {
     logger.log('API arriba', 'Bootstrap');
 
     const entry = lastJsonLineFrom(stdout);
@@ -38,7 +38,7 @@ describe('StructuredLogger', () => {
     expect(typeof entry.timestamp).toBe('string');
   });
 
-  it('escribe ERROR en stderr con traza', () => {
+  it('writes ERROR to stderr with a trace', () => {
     logger.error('fallo inesperado', 'Error: boom\n  at x', 'AlgunModulo');
 
     const entry = lastJsonLineFrom(stderr);
@@ -50,7 +50,7 @@ describe('StructuredLogger', () => {
     });
   });
 
-  it('incluye el correlationId del AsyncLocalStorage cuando hay uno activo', () => {
+  it('includes the AsyncLocalStorage correlationId when one is active', () => {
     CorrelationContext.run('corr-123', () => {
       logger.log('con contexto');
     });
@@ -59,17 +59,17 @@ describe('StructuredLogger', () => {
     expect(entry.correlationId).toBe('corr-123');
   });
 
-  it('no incluye correlationId fuera de un request', () => {
+  it('does not include correlationId outside a request', () => {
     logger.log('sin contexto');
 
     const entry = lastJsonLineFrom(stdout);
     expect(entry.correlationId).toBeUndefined();
   });
 
-  it('event() tapa campos sensibles y agrega los campos propios', () => {
+  it('event() masks sensitive fields and adds its own fields', () => {
     logger.event('ingesta procesada', {
       assetId: 'a1',
-      password: 'no-deberia-salir',
+      password: 'must-not-leak',
     });
 
     const entry = lastJsonLineFrom(stdout);
@@ -81,7 +81,7 @@ describe('StructuredLogger', () => {
     });
   });
 
-  it('event() no permite que fields sobrescriba severity, message ni correlationId', () => {
+  it('event() does not let fields overwrite severity, message or correlationId', () => {
     CorrelationContext.run('corr-real', () => {
       logger.event('ingesta procesada', {
         severity: 'ERROR',
@@ -100,18 +100,18 @@ describe('StructuredLogger', () => {
     expect(entry.timestamp).not.toBe('falso');
   });
 
-  it('tapa un objeto no-string en el mensaje antes de serializarlo', () => {
-    logger.log({ evento: 'login', password: 'no-deberia-salir' });
+  it('masks a non-string object in the message before serializing it', () => {
+    logger.log({ event: 'login', password: 'must-not-leak' });
 
     const entry = lastJsonLineFrom(stdout);
-    expect(entry.message).not.toContain('no-deberia-salir');
+    expect(entry.message).not.toContain('must-not-leak');
     expect(JSON.parse(String(entry.message))).toMatchObject({
-      evento: 'login',
+      event: 'login',
       password: '[REDACTED]',
     });
   });
 
-  it('tapa un token filtrado en el mensaje de error() y en la traza, no solo en event()', () => {
+  it('masks a token leaked in the error() message and in the trace, not only in event()', () => {
     logger.error(
       'fallo al llamar con Bearer eyJhbGciOiJIUzI1NiJ9.payload.signature',
       'Error: boom\n  Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.payload.signature',
@@ -125,7 +125,7 @@ describe('StructuredLogger', () => {
     );
   });
 
-  it('serializa un bigint como texto en vez de lanzar', () => {
+  it('serializes a bigint as text instead of throwing', () => {
     expect(() =>
       logger.event('con bigint', { size: 9007199254740993n })
     ).not.toThrow();

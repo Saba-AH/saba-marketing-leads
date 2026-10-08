@@ -1,56 +1,57 @@
-export type EstadoMensaje =
-  | 'pendiente'
-  | 'enviado'
-  | 'entregado'
-  | 'leido'
-  | 'fallido';
+export type MessageStatus =
+  | 'pending'
+  | 'sent'
+  | 'delivered'
+  | 'read'
+  | 'failed';
 
-/** Al menos uno de los dos viene siempre; con nombre de usuario puede faltar el teléfono. */
-export interface IdentidadContacto {
+/** At least one of the two always comes; with a username the phone may be missing. */
+export interface ContactIdentity {
   waId: string | null;
   userId: string | null;
 }
 
-export interface MensajeEntrante {
+export interface InboundMessage {
   wamid: string;
-  identidad: IdentidadContacto;
+  identity: ContactIdentity;
   profileName: string | null;
-  tipo: string;
-  cuerpo: string | null;
+  type: string;
+  body: string | null;
   mediaId: string | null;
   waTimestamp: Date;
-  /** Lo que se ve en la lista de conversaciones. */
+  /** What shows in the conversation list. */
   preview: string;
-  /** Si abre (o renueva) la ventana de 24 h para responder con texto libre. */
-  abreVentana: boolean;
+  /** Whether it opens (or renews) the 24 h window to reply with free text. */
+  opensWindow: boolean;
 }
 
-export interface CambioEstadoMensaje {
+export interface MessageStatusChange {
   wamid: string;
-  estado: EstadoMensaje;
-  errorCodigo: string | null;
-  errorDetalle: string | null;
+  status: MessageStatus;
+  errorCode: string | null;
+  errorDetail: string | null;
 }
 
-export type AccionInbox =
-  | { tipo: 'mensajeEntrante'; mensaje: MensajeEntrante }
-  | { tipo: 'estadoMensaje'; cambio: CambioEstadoMensaje };
+export type InboxAction =
+  | { type: 'inboundMessage'; message: InboundMessage }
+  | { type: 'statusChange'; change: MessageStatusChange };
 
 /**
- * Estados desde los que un mensaje puede pasar a `nuevo`. Meta no garantiza el
- * orden de los avisos: un "entregado" que llega después de "leído" no retrocede.
+ * Statuses from which a message can move to `next`. Meta does not guarantee
+ * the order of the notifications: a "delivered" arriving after "read" does not
+ * go backwards.
  */
-export function estadosQueAvanzanA(nuevo: EstadoMensaje): EstadoMensaje[] {
-  switch (nuevo) {
-    case 'pendiente':
+export function statusesThatAdvanceTo(next: MessageStatus): MessageStatus[] {
+  switch (next) {
+    case 'pending':
       return [];
-    case 'enviado':
-      return ['pendiente'];
-    case 'entregado':
-      return ['pendiente', 'enviado'];
-    case 'leido':
-      return ['pendiente', 'enviado', 'entregado'];
-    case 'fallido':
-      return ['pendiente', 'enviado'];
+    case 'sent':
+      return ['pending'];
+    case 'delivered':
+      return ['pending', 'sent'];
+    case 'read':
+      return ['pending', 'sent', 'delivered'];
+    case 'failed':
+      return ['pending', 'sent'];
   }
 }

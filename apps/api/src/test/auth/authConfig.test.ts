@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { loadAuthConfig } from '../../modules/auth/infrastructure/authConfig';
 
-const COMPLETA = {
+const COMPLETE = {
   SUPABASE_URL: 'https://ref.supabase.co/',
   SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_x',
   SUPABASE_JWT_SECRET: 'secreto-legado',
@@ -9,25 +9,25 @@ const COMPLETA = {
 };
 
 describe('loadAuthConfig', () => {
-  it('arma el emisor de los JWT desde la URL del proyecto', () => {
-    const config = loadAuthConfig(COMPLETA);
+  it('builds the JWT issuer from the project URL', () => {
+    const config = loadAuthConfig(COMPLETE);
 
     expect(config.supabaseUrl).toBe('https://ref.supabase.co');
     expect(config.issuer).toBe('https://ref.supabase.co/auth/v1');
     expect(config.jwtSecret).toBe('secreto-legado');
   });
 
-  // El `.env` trae los bloques de las dos bases con los de Supabase en blanco.
-  it('toma un secreto JWT vacío como no definido', () => {
+  // `.env` ships the blocks for both databases with the Supabase ones blank.
+  it('treats an empty JWT secret as undefined', () => {
     expect(
-      loadAuthConfig({ ...COMPLETA, SUPABASE_JWT_SECRET: '' }).jwtSecret
+      loadAuthConfig({ ...COMPLETE, SUPABASE_JWT_SECRET: '' }).jwtSecret
     ).toBeNull();
   });
 
-  it('falla al arrancar si las obligatorias están en blanco', () => {
+  it('fails at startup if the required ones are blank', () => {
     expect(() =>
       loadAuthConfig({
-        ...COMPLETA,
+        ...COMPLETE,
         SUPABASE_URL: '',
         SUPABASE_PUBLISHABLE_KEY: '',
       })
