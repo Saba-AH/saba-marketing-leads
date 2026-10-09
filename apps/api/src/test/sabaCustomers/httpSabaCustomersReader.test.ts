@@ -6,7 +6,7 @@ import {
 } from '../../modules/sabaCustomers/domain/exceptions/sabaCustomersExceptions';
 import { HttpSabaCustomersReader } from '../../modules/sabaCustomers/infrastructure/external/HttpSabaCustomersReader';
 
-const CONFIG = { apiUrl: 'http://saba.test' };
+const CONFIG = { apiUrl: 'http://saba.test', serviceKey: 'service-key' };
 
 const sabaCustomer = {
   id: 'p1',
@@ -57,9 +57,12 @@ describe('HttpSabaCustomersReader', () => {
       RequestInit,
     ];
     expect(String(url)).toBe(
-      'http://saba.test/api/admin/marketing/customers/by-phone?phone=584141234567'
+      'http://saba.test/api/marketing/customers/by-phone?phone=584141234567'
     );
-    expect(init.headers).toEqual({ Authorization: 'Bearer agent-token' });
+    expect(init.headers).toEqual({
+      Authorization: 'Bearer agent-token',
+      'X-Saba-Service-Key': 'service-key',
+    });
     expect(customers[0]).toMatchObject({
       name: 'Ana Pérez',
       idNumber: 'V12345678',
@@ -87,7 +90,18 @@ describe('HttpSabaCustomersReader', () => {
     ).rejects.toBeInstanceOf(exception);
   });
 
-  it('reports Saba as unavailable if it fails, changes its response or is not configured', async () => {
+  it('reports a wrong service key as Saba unavailable, not as an expired session', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => reply(401, { ok: false, code: 'invalid_service_key' }))
+    );
+
+    await expect(
+      new HttpSabaCustomersReader(CONFIG).findByPhone('5841', 't')
+    ).rejects.toBeInstanceOf(SabaUnavailableException);
+  });
+
+  it('reports Saba as unavailable if it fails or changes its response', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => reply(500, { ok: false }))
@@ -112,10 +126,6 @@ describe('HttpSabaCustomersReader', () => {
     );
     await expect(
       new HttpSabaCustomersReader(CONFIG).findByPhone('5841', 't')
-    ).rejects.toBeInstanceOf(SabaUnavailableException);
-
-    await expect(
-      new HttpSabaCustomersReader({ apiUrl: null }).findByPhone('5841', 't')
     ).rejects.toBeInstanceOf(SabaUnavailableException);
   });
 });

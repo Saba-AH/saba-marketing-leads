@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
+import { loadSabaApiConfig } from '../../infrastructure/saba/sabaApi';
 import { HttpSabaCustomersReader } from './infrastructure/external/HttpSabaCustomersReader';
-import { loadSabaConfig } from './infrastructure/sabaConfig';
 import { SABA_CUSTOMERS_TOKENS } from './tokens';
 
 /** Read-only catalog of Saba customers, served by Saba's own server. */
@@ -8,7 +8,7 @@ import { SABA_CUSTOMERS_TOKENS } from './tokens';
   providers: [
     {
       provide: SABA_CUSTOMERS_TOKENS.Config,
-      useFactory: () => loadSabaConfig(),
+      useFactory: () => loadSabaApiConfig(),
     },
     {
       provide: SABA_CUSTOMERS_TOKENS.Reader,

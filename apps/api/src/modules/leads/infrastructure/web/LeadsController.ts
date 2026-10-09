@@ -14,6 +14,7 @@ import {
   type TLeadResponse,
   type TLeadsResponse,
 } from '@repo/schemas';
+import { RequirePermissions } from '../../../../shared/decorators/RequirePermissions';
 import {
   ZodApiBody,
   ZodApiResponse,
@@ -27,6 +28,7 @@ import { toLeadResponse, toLeadsResponse } from './LeadPresenter';
 class CreateLeadDto extends createZodDto(createLeadSchema) {}
 
 @ApiTags('leads')
+@RequirePermissions({ permissions: ['marketing:access'] })
 @Controller('leads')
 export class LeadsController {
   constructor(

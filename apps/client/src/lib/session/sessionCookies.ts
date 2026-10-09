@@ -4,7 +4,7 @@ import type { NextResponse } from 'next/server';
 type ResponseCookies = NextResponse['cookies'];
 
 /**
- * Supabase Auth tokens live only in these `httpOnly` cookies: the browser's JS
+ * Saba session tokens live only in these `httpOnly` cookies: the browser's JS
  * never sees them, so an XSS cannot steal them.
  */
 export const SESSION_COOKIES = {

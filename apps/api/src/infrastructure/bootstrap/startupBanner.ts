@@ -1,23 +1,13 @@
-import {
-  type DbTarget,
-  isLocalDatabaseUrl,
-  redactDatabaseUrl,
-} from '../database/databaseUrl';
+import { isLocalDatabaseUrl, redactDatabaseUrl } from '../database/databaseUrl';
 
 export interface StartupBannerInput {
   port: number;
-  /** `null` if it could not be resolved (e.g. empty DATABASE_SUPABASE). */
+  /** `null` if it could not be resolved (e.g. empty DATABASE in production). */
   databaseUrl: string | null;
-  dbTarget: DbTarget;
-  explicitDatabase: boolean;
   /** Panel origin (the first one in CORS_ALLOWED_ORIGINS). */
   panelUrl?: string;
-  /** Local stack Studio; exported by `scripts/localSupabase.mjs`. */
-  studioUrl?: string;
-  /** Supabase Auth that sessions are validated against (`SUPABASE_URL`). */
-  authUrl?: string;
-  /** Seed admin credentials: only shown when the database is local. */
-  devLogin?: { email: string; password: string };
+  /** Saba's server: login, sessions and customers (`SABA_API_URL`). */
+  sabaUrl?: string;
   /** What is missing or wrong in the configuration. */
   warnings?: string[];
   color: boolean;
@@ -48,43 +38,29 @@ export function shouldColor(env: NodeJS.ProcessEnv = process.env): boolean {
 
 /**
  * What gets printed at startup, for humans: which database it runs against and
- * what can be opened. Mixing up the local stack with Supabase is the expensive
+ * what can be opened. Mixing up the local database with a remote one is the expensive
  * mistake, so it goes in the title, in uppercase and in color (green local,
  * red remote). Used by the API at startup and by turbo's `dev:info` task.
  */
 export function startupBanner(input: StartupBannerInput): string {
+  // Unresolved only happens in production, where DATABASE is mandatory.
   const local = input.databaseUrl
     ? isLocalDatabaseUrl(input.databaseUrl)
-    : input.dbTarget === 'local';
+    : false;
   const api = `http://localhost:${input.port}`;
-  const source = input.explicitDatabase
-    ? 'DATABASE explícita'
-    : `destino ${input.dbTarget}`;
 
   const rows: Row[] = [
     ...(input.panelUrl ? [{ label: 'Panel', value: input.panelUrl }] : []),
     { label: 'API', value: `${api}/api/v1` },
     { label: 'Swagger', value: `${api}/api/docs` },
     { label: 'Health', value: `${api}/api/v1/health` },
-    ...(local && input.studioUrl
-      ? [{ label: 'Studio', value: input.studioUrl }]
-      : []),
     {
       label: 'Base',
       value: input.databaseUrl
-        ? `${redactDatabaseUrl(input.databaseUrl)} (${source})`
-        : `sin resolver (${source})`,
+        ? redactDatabaseUrl(input.databaseUrl)
+        : 'sin resolver',
     },
-    ...(input.authUrl ? [{ label: 'Auth', value: input.authUrl }] : []),
-    ...(local && input.devLogin
-      ? [
-          {
-            label: 'Login',
-            // After `db:sync:saba` the user is the prod one and the password is the real one.
-            value: `${input.devLogin.email} / ${input.devLogin.password} (o la real si sincronizaste prod)`,
-          },
-        ]
-      : []),
+    ...(input.sabaUrl ? [{ label: 'Saba', value: input.sabaUrl }] : []),
     ...(input.warnings ?? []).map((warning) => ({
       label: '⚠',
       value: warning,
@@ -93,8 +69,8 @@ export function startupBanner(input: StartupBannerInput): string {
   ];
 
   const title = local
-    ? '● LOCAL · Supabase CLI en esta máquina'
-    : '▲ SUPABASE REMOTO · datos reales, cuidado con lo que escribes';
+    ? '● LOCAL · Postgres de docker-compose'
+    : '▲ BASE REMOTA · datos reales, cuidado con lo que escribes';
   return drawBox(title, rows, local ? ANSI.green : ANSI.red, input.color);
 }
 

@@ -7,6 +7,7 @@ export const sessionUserFixture: TSessionUser = {
   email: 'angel.hernandez@sabatransporte.com',
   name: 'Angel Hernández',
   role: 'admin',
+  permissions: ['marketing:access'],
 };
 
 export const sessionHandlers = [

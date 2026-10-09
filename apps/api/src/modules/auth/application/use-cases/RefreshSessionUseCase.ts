@@ -3,7 +3,7 @@ import type { AuthSession } from '../../domain/AuthSession';
 import { InvalidSessionException } from '../../domain/exceptions/InvalidSessionException';
 import { AUTH_TOKENS } from '../../tokens';
 import type { RefreshSessionPort } from '../ports/in/RefreshSessionPort';
-import type { AuthProviderPort } from '../ports/out/AuthProviderPort';
+import type { SabaAuthGatewayPort } from '../ports/out/SabaAuthGatewayPort';
 
 /**
  * It does not check panel access: the guard does that on the next request with
@@ -12,12 +12,12 @@ import type { AuthProviderPort } from '../ports/out/AuthProviderPort';
 @Injectable()
 export class RefreshSessionUseCase implements RefreshSessionPort {
   constructor(
-    @Inject(AUTH_TOKENS.AuthProvider)
-    private readonly auth: AuthProviderPort
+    @Inject(AUTH_TOKENS.SabaAuthGateway)
+    private readonly saba: SabaAuthGatewayPort
   ) {}
 
   async execute(refreshToken: string): Promise<AuthSession> {
-    const session = await this.auth.refresh(refreshToken);
+    const session = await this.saba.refresh(refreshToken);
     if (!session) throw new InvalidSessionException();
     return session;
   }

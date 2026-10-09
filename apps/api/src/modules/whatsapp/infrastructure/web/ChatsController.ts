@@ -25,6 +25,7 @@ import {
   type TMessagesResponse,
 } from '@repo/schemas';
 import type { Request } from 'express';
+import { RequirePermissions } from '../../../../shared/decorators/RequirePermissions';
 import {
   ZodApiBody,
   ZodApiResponse,
@@ -50,9 +51,10 @@ import {
 
 class SendMessageDto extends createZodDto(sendMessageSchema) {}
 
-// For now having panel access is enough (AuthGuard); fine-grained permissions
+// For now `marketing:access` covers the whole inbox; fine-grained permissions
 // (`whatsapp_chats.*`) are pending in the plan.
 @ApiTags('whatsapp')
+@RequirePermissions({ permissions: ['marketing:access'] })
 @Controller('whatsapp/conversations')
 export class ChatsController {
   constructor(
@@ -140,7 +142,7 @@ export class ChatsController {
     summary:
       'Clientes de Saba con el teléfono del chat (identidad y solicitudes)',
     description:
-      'Se consulta al servidor de Saba con la sesión del agente; Saba valida el permiso `/admin/marketing/customers`.',
+      'Se consulta al servidor de Saba con la sesión del agente; Saba vuelve a validar su acceso a marketing.',
   })
   @ZodApiResponse(HttpStatus.OK, chatSabaCustomersResponseSchema)
   async sabaCustomer(

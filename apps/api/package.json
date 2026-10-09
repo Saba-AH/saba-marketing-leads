@@ -21,9 +21,7 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "dev:info": "tsx scripts/devInfo.ts",
     "db:rollback": "tsx scripts/rollback.ts",
-    "db:seed": "tsx scripts/seed.ts",
-    "db:sync:saba": "tsx scripts/syncSaba.ts",
-    "db:reset": "npm run db:rollback -- --all && npm run db:migrate && npm run db:seed"
+    "db:reset": "npm run db:rollback -- --all && npm run db:migrate"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.14",
@@ -36,7 +34,6 @@
     "dotenv": "^17.2.4",
     "drizzle-orm": "^0.45.1",
     "helmet": "^8.1.0",
-    "jose": "^6.2.12",
     "pg": "^8.18.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",

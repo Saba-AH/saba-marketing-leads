@@ -8,6 +8,15 @@ export const staffRoleSchema = z.enum(STAFF_ROLES);
 export type TStaffRole = z.infer<typeof staffRoleSchema>;
 
 /**
+ * Panel permissions, `<resource>:<action>`. Saba grants them (today
+ * `marketing:access` comes from `profiles.has_marketing_access`) and the API
+ * enforces them; the client only uses them to render.
+ */
+export const PERMISSIONS = ['marketing:access'] as const;
+export const permissionSchema = z.enum(PERMISSIONS);
+export type TPermission = z.infer<typeof permissionSchema>;
+
+/**
  * Login error codes the client tells apart: lockout and rate limit ones are
  * shown as a warning, not as an error.
  */
@@ -18,15 +27,17 @@ export const AUTH_ERROR_CODES = {
   accountLocked: 'AUTH_ACCOUNT_LOCKED',
   noAccess: 'AUTH_NO_ACCESS',
   invalidSession: 'AUTH_INVALID_SESSION',
+  permissionDenied: 'AUTH_PERMISSION_DENIED',
+  unavailable: 'AUTH_UNAVAILABLE',
 } as const;
 export type TAuthErrorCode =
   (typeof AUTH_ERROR_CODES)[keyof typeof AUTH_ERROR_CODES];
 
-/** Password cap: GoTrue does not accept more than 72 bytes (bcrypt). */
+/** Password cap: Supabase Auth (behind Saba) does not accept more than 72 bytes (bcrypt). */
 const PASSWORD_MAX = 72;
 /** Turnstile tokens are around 2 KB. */
 const CAPTCHA_TOKEN_MAX = 4096;
-/** GoTrue refresh tokens are short; the cap only stops abuse. */
+/** Supabase refresh tokens are short; the cap only stops abuse. */
 const REFRESH_TOKEN_MAX = 512;
 
 /** Body of `POST /auth/login`. */
@@ -69,6 +80,7 @@ export const sessionUserSchema = z.object({
   email: z.string(),
   name: z.string(),
   role: staffRoleSchema,
+  permissions: z.array(permissionSchema),
 });
 export type TSessionUser = z.infer<typeof sessionUserSchema>;
 

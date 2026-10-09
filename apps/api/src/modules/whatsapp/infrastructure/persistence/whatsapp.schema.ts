@@ -12,8 +12,8 @@ import {
 
 /**
  * `saba_profile_id`, `assigned_to` and `sent_by` point to Saba's
- * `profiles.id` without an FK: the table belongs to another system and in
- * Supabase Saba deletes or recreates it.
+ * `profiles.id` without an FK: the table lives in Saba's database, not in
+ * this one.
  */
 
 export const whatsappContacts = pgTable(

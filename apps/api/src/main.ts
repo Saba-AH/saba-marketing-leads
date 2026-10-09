@@ -12,13 +12,11 @@ import {
   startupBanner,
 } from './infrastructure/bootstrap/startupBanner';
 import {
-  dbTarget,
   redactDatabaseUrl,
   resolveDatabaseUrl,
 } from './infrastructure/database/databaseUrl';
 import { registerUncaughtErrorHandlers } from './infrastructure/logging/registerUncaughtErrorHandlers';
 import { StructuredLogger } from './infrastructure/logging/StructuredLogger';
-import { DEV_ADMIN } from './modules/auth/infrastructure/persistence/seedDevAdmin';
 import { ZodValidationPipe } from './shared/pipes/zodValidationPipe';
 
 // `nest start` runs from apps/api (cwd) or from dist/; we cover both.
@@ -85,21 +83,14 @@ async function bootstrap() {
     startupBanner({
       port,
       databaseUrl,
-      dbTarget: dbTarget(),
-      explicitDatabase: Boolean(process.env.DATABASE),
       panelUrl: allowedOrigins()[0],
-      studioUrl: process.env.SUPABASE_STUDIO_URL,
-      authUrl: process.env.SUPABASE_URL,
-      devLogin: { email: DEV_ADMIN.email, password: DEV_ADMIN.password },
+      sabaUrl: process.env.SABA_API_URL,
       color: shouldColor(),
     })
   );
 
   const logger = app.get(StructuredLogger);
   logger.log(`API escuchando en http://localhost:${port}`, 'Bootstrap');
-  logger.log(
-    `Base: ${process.env.DATABASE ? 'DATABASE explícita' : `DB_TARGET=${dbTarget()}`} → ${redactDatabaseUrl(databaseUrl)}`,
-    'Bootstrap'
-  );
+  logger.log(`Base: ${redactDatabaseUrl(databaseUrl)}`, 'Bootstrap');
 }
 bootstrap();

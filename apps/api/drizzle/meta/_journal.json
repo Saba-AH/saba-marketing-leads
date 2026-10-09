@@ -5,50 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1791301423126,
-      "tag": "0000_crear_leads",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1791303227773,
-      "tag": "0001_mobile_app_versions",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1791304782222,
-      "tag": "0002_esquema_saba",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1791313679099,
-      "tag": "0003_login_saba",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1791397286613,
-      "tag": "0004_whatsapp_chats",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1791403469622,
-      "tag": "0005_whatsapp_contacts_bsuid",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1791485196953,
-      "tag": "0006_english_column_names",
+      "when": 1791491686761,
+      "tag": "0000_initial_schema",
       "breakpoints": true
     }
   ]

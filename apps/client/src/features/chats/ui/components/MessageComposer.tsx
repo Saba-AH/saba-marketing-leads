@@ -32,8 +32,18 @@ export function MessageComposer({
     defaultValues: { body: '' },
   });
 
+  // A ref and not `isSubmitting`: that state lands a render late and Enter
+  // ignores the disabled button, so repeated Enters sent the message again.
+  const isSending = React.useRef(false);
+
   async function onSubmit(data: TSendMessage): Promise<void> {
-    if (await onSend(data)) form.reset();
+    if (isSending.current) return;
+    isSending.current = true;
+    try {
+      if (await onSend(data)) form.reset();
+    } finally {
+      isSending.current = false;
+    }
   }
 
   return (

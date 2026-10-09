@@ -1,6 +1,6 @@
-import type { TStaffRole } from '@repo/schemas';
+import type { TPermission, TStaffRole } from '@repo/schemas';
 
-/** Tokens Supabase Auth issues for a session. */
+/** Tokens of the agent's Saba session (Saba's Supabase Auth issues them). */
 export interface AuthSession {
   userId: string;
   accessToken: string;
@@ -9,10 +9,12 @@ export interface AuthSession {
   expiresAt: number;
 }
 
-/** What the guard leaves on the request once the session is validated. */
+/** What the guard leaves on the request once Saba validated the session. */
 export interface AuthenticatedUser {
   id: string;
   email: string;
   name: string;
   role: TStaffRole;
+  /** Granted by Saba; resolved again on every request (see `SessionCachePort`). */
+  permissions: TPermission[];
 }

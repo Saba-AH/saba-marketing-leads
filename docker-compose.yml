@@ -1,0 +1,85 @@
+name: saba-leads
+
+services:
+  # Postgres de marketing (WhatsApp, leads) para desarrollo y tests locales.
+  # En dev/prod es un Postgres en una EC2: solo cambia DATABASE (apps/api/.env).
+  # Los datos de Saba nunca viven acá: llegan por los endpoints de su servidor.
+  db:
+    image: postgres:17-alpine
+    container_name: saba-leads-db
+    restart: unless-stopped
+    # Valores del `.env` de la raíz (docker compose lo lee solo); sin él,
+    # estos defaults. Si se cambian, `DATABASE` de apps/api/.env tiene que
+    # coincidir.
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-app_dev}
+    ports:
+      # 5434 en el host a propósito: el 5432 suele tenerlo un Postgres instalado
+      # en la máquina (y en Windows se queda con `localhost:5432` aunque el
+      # contenedor se vea sano), y el 5433 lo usa anagram-apolo. Dentro de la
+      # red de Docker el puerto sigue siendo el 5432.
+      - '${POSTGRES_PORT:-5434}:5432'
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # --- Perfil `full`: las imágenes de producción contra el Postgres de arriba.
+  # `docker compose --profile full up --build`. Para probar los Dockerfile
+  # antes de desplegar; el día a día es `npm run dev` (hot reload).
+
+  migrate:
+    profiles: [full]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: migrator
+    env_file:
+      - path: apps/api/.env
+        required: false
+    environment:
+      DATABASE: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-app_dev}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    profiles: [full]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: runner
+    env_file:
+      - path: apps/api/.env
+        required: false
+    environment:
+      DATABASE: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-app_dev}
+      PORT: 8080
+    ports:
+      - '8080:8080'
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  client:
+    profiles: [full]
+    build:
+      context: .
+      dockerfile: apps/client/Dockerfile
+      args:
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
+    environment:
+      API_URL: http://api:8080
+    ports:
+      # El mismo puerto que `npm run dev`: es el que CORS_ALLOWED_ORIGINS permite.
+      - '3002:3000'
+    depends_on:
+      - api
+
+volumes:
+  db-data:

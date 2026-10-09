@@ -90,7 +90,7 @@ async function main(): Promise<void> {
       host === 'localhost' || host === '127.0.0.1' || host === '::1';
     if (!isLocal && process.env.CONFIRM_RESET !== '1') {
       console.error(
-        `✗ "--all" apunta a un host no local (${host}). Exportá CONFIRMAR_RESET=1 para confirmar.`
+        `✗ "--all" apunta a un host no local (${host}). Exporta CONFIRM_RESET=1 para confirmar.`
       );
       process.exit(1);
     }

@@ -52,6 +52,7 @@ describe('LoginPage', () => {
               email: 'angel.hernandez@sabatransporte.com',
               name: 'Angel Hernández',
               role: 'admin',
+              permissions: ['marketing:access'],
             },
           },
         });

@@ -49,6 +49,7 @@ const AGENT: AuthenticatedUser = {
   email: 'agente@sabatransporte.com',
   name: 'Agente',
   role: 'admin',
+  permissions: ['marketing:access'],
 };
 
 const sendText = vi.fn<(to: string, body: string) => Promise<string>>();

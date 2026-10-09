@@ -37,7 +37,7 @@ class RefreshSessionDto extends createZodDto(refreshSessionSchema) {}
 
 /**
  * Its own rate limit tier, shorter than the global one: stops per-IP hammering
- * before it reaches Supabase. The `login_attempts` failure count is the real
+ * before it reaches Saba. Saba's `login_attempts` failure count is the real
  * defense; this is the first filter.
  */
 const AUTH_THROTTLE = { global: { limit: 10, ttl: 60_000 } };
@@ -65,8 +65,10 @@ export class AuthController {
   ): Promise<TLoginResponse> {
     const result = await this.login.execute({
       ...body,
-      ip: request.ip ?? null,
-      userAgent: request.get('user-agent') ?? null,
+      client: {
+        ip: request.ip ?? null,
+        userAgent: request.get('user-agent') ?? null,
+      },
     });
     return toLoginResponse(result);
   }
@@ -89,7 +91,7 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Cierra la sesión del token en Supabase' })
+  @ApiOperation({ summary: 'Cierra la sesión del token en Saba' })
   async close(@Req() request: Request): Promise<void> {
     const token = extractBearerToken(request);
     if (!token) throw new InvalidSessionException();

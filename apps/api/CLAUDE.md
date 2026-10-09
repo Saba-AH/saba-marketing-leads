@@ -2,7 +2,7 @@
 
 NestJS + arquitectura hexagonal + DDD. Aplican las reglas de la raíz (`/CLAUDE.md`).
 
-Esta app es **el único camino a los datos**: Postgres (Supabase local en desarrollo, Supabase en la nube) se alcanza solo desde acá, vía Drizzle. El cliente (Next.js SSR) llama a esta API por HTTP.
+Esta app es **el único camino a los datos**: su Postgres (Compose en local, una EC2 en dev/prod) vía Drizzle, y Saba vía los endpoints `/api/marketing/*` de su servidor (`src/infrastructure/saba/sabaApi.ts`). Nunca se lee la base de Saba. El cliente (Next.js SSR) llama a esta API por HTTP.
 
 ## Comandos
 
@@ -10,7 +10,7 @@ Esta app es **el único camino a los datos**: Postgres (Supabase local en desarr
 npx turbo typecheck --filter @repo/api
 npx turbo lint --filter @repo/api        # arreglar: npm -C apps/api run lint:fix
 npm -C apps/api test                     # vitest
-npm run db:up                            # Supabase local (Postgres + Auth)
+npm run db:up                            # Postgres local (docker-compose)
 npm -C apps/api run db:generate          # migración nueva (+ escribir drizzle/down/<tag>.down.sql)
 npm -C apps/api run db:migrate           # aplica migraciones sobre DATABASE
 ```
@@ -31,7 +31,7 @@ Los estándares del backend viven por tema (se cargan por referencia):
 
 ## Estado actual
 
-- Módulos: `health` (sondas de dependencias), `leads` (referencia de CRUD con Drizzle, test unitario con repositorio fake y e2e contra Postgres real), `mobileAppVersions` y `auth` (login de staff contra Supabase Auth + `AuthGuard` global; ver `docs/api_modules.md`).
+- Módulos: `health` (sondas de dependencias), `leads` (referencia de CRUD con Drizzle, test unitario con repositorio fake y e2e contra Postgres real), `auth` (login y sesiones contra Saba, `AuthGuard` + `PermissionsGuard` globales), `whatsapp` y `sabaCustomers`; ver `docs/api_modules.md`.
 - Infra cableada: pool de Drizzle + agregador de esquema (`db-schema.ts`), migraciones con reversa obligatoria (`scripts/migrate.ts`, `scripts/rollback.ts`), throttling, filtros de errores de dominio/HTTP, logging estructurado con correlation id, Swagger desde Zod.
 - `Dockerfile` con targets `runner` y `migrator`.
 
@@ -39,5 +39,5 @@ Los estándares del backend viven por tema (se cargan por referencia):
 
 | Pieza | Estado |
 |-------|--------|
-| `PermissionsGuard`, `@RequirePermissions()` | pendiente |
+| `@CurrentPermissions()` | pendiente (hoy basta `@CurrentUser().permissions`) |
 | Interceptor global del sobre de respuesta | pendiente |

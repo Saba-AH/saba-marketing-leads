@@ -9,6 +9,7 @@ export const user: TSessionUser = {
   email: 'angel.hernandez@sabatransporte.com',
   name: 'Angel Hernández',
   role: 'admin',
+  permissions: ['marketing:access'],
 };
 
 export function tokens(suffix = '1'): TSessionTokens {

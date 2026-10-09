@@ -10,11 +10,13 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
+import { RequirePermissions } from '../../../../shared/decorators/RequirePermissions';
 import type { GetMediaPort } from '../../application/ports/in/GetMediaPort';
 import { isInlineDisplayable } from '../../domain/Chats';
 import { WHATSAPP_TOKENS } from '../../tokens';
 
 @ApiTags('whatsapp')
+@RequirePermissions({ permissions: ['marketing:access'] })
 @Controller('whatsapp/messages')
 export class MediaController {
   constructor(

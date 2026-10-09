@@ -1,3 +1,4 @@
+import type { ClientInfo } from '../../../../../infrastructure/saba/sabaApi';
 import type {
   AuthenticatedUser,
   AuthSession,
@@ -7,8 +8,7 @@ export interface LoginCommand {
   email: string;
   password: string;
   captchaToken: string;
-  ip: string | null;
-  userAgent: string | null;
+  client: ClientInfo;
 }
 
 export interface LoginResult {

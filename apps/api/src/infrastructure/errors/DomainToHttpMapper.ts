@@ -13,6 +13,10 @@ export const domainErrorHttpStatus: Record<DomainErrorCode, HttpStatus> = {
   AUTH_ACCOUNT_LOCKED: HttpStatus.LOCKED,
   AUTH_NO_ACCESS: HttpStatus.FORBIDDEN,
   AUTH_INVALID_SESSION: HttpStatus.UNAUTHORIZED,
+  AUTH_PERMISSION_DENIED: HttpStatus.FORBIDDEN,
+  // 424 and not 5xx (published as INTERNAL_ERROR) nor 401 (the BFF would log
+  // the agent out): the session may be fine, it is Saba that did not answer.
+  AUTH_UNAVAILABLE: HttpStatus.FAILED_DEPENDENCY,
   LEADS_DUPLICATE_EMAIL: HttpStatus.CONFLICT,
   // 424 and not 5xx: the panel has to be able to say the problem is Saba.
   SABA_CUSTOMERS_UNAVAILABLE: HttpStatus.FAILED_DEPENDENCY,

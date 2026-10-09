@@ -3,57 +3,33 @@
  * scripts and drizzle-kit: if each one decided on its own, a `db:migrate`
  * could go to one database and the API to another.
  *
- * Precedence:
- *   1. `DATABASE` — explicit, always wins (deploy, CI, tests).
- *   2. `DB_TARGET` — `local` (default) or `supabase`; set by the command
- *      (`npm run dev:local` / `dev:supabase`), not by `.env`. Chooses between
- *      `DATABASE_LOCAL` and `DATABASE_SUPABASE`.
+ * One variable, `DATABASE`, in every environment: local points to the
+ * docker-compose Postgres, dev/prod to their EC2. Changing environment is
+ * changing `.env`, never the command.
  *
  * It does not load `.env`: the caller does that, once.
  */
 
-/** Postgres of the local Supabase stack (`supabase/config.toml`, `[db] port`). */
+/** Postgres of `docker-compose.yml` (`POSTGRES_PORT`, 5434 by default). */
 export const DEFAULT_LOCAL_DATABASE_URL =
-  'postgresql://postgres:postgres@localhost:54332/postgres';
+  'postgresql://postgres:postgres@localhost:5434/app_dev';
 
-const DB_TARGETS = ['local', 'supabase'] as const;
-export type DbTarget = (typeof DB_TARGETS)[number];
-
-export function dbTarget(): DbTarget {
-  const value = (process.env.DB_TARGET ?? 'local').trim().toLowerCase();
-  if (!(DB_TARGETS as readonly string[]).includes(value)) {
-    throw new Error(
-      `DB_TARGET="${process.env.DB_TARGET}" no es válido. Usar: ${DB_TARGETS.join(' | ')}.`
-    );
+export function resolveDatabaseUrl(
+  env: NodeJS.ProcessEnv = process.env
+): string {
+  const explicit = env.DATABASE?.trim();
+  if (explicit) return explicit;
+  // No silent fallback in production: a deploy without DATABASE would keep
+  // retrying against a localhost that does not exist and only show it in /health.
+  if (env.NODE_ENV === 'production') {
+    throw new Error('DATABASE está vacía: en producción es obligatoria');
   }
-  return value as DbTarget;
-}
-
-export function localDatabaseUrl(): string {
-  return process.env.DATABASE_LOCAL || DEFAULT_LOCAL_DATABASE_URL;
-}
-
-export function resolveDatabaseUrl(): string {
-  if (process.env.DATABASE) {
-    return process.env.DATABASE;
-  }
-  if (dbTarget() === 'local') {
-    return localDatabaseUrl();
-  }
-  // No fallback to local on purpose: asking for Supabase and silently landing on
-  // the local stack would make people believe they are looking at production.
-  const supabase = process.env.DATABASE_SUPABASE;
-  if (!supabase) {
-    throw new Error(
-      'destino supabase (`npm run dev:supabase` / `db:migrate:supabase`) pero DATABASE_SUPABASE está vacía en apps/api/.env'
-    );
-  }
-  return supabase;
+  return DEFAULT_LOCAL_DATABASE_URL;
 }
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
 
-/** Whether the database is on this machine (the local stack), regardless of how it was chosen. */
+/** Whether the database is on this machine (the docker-compose one). */
 export function isLocalDatabaseUrl(url: string): boolean {
   return LOCAL_HOSTS.has(new URL(url).hostname);
 }

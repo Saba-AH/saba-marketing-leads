@@ -1,5 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { z } from 'zod';
+import {
+  INVALID_SERVICE_KEY_CODE,
+  SABA_TIMEOUT_MS,
+  type SabaApiConfig,
+  sabaErrorCode,
+  sabaHeaders,
+  sabaUrl,
+} from '../../../../infrastructure/saba/sabaApi';
 import type { SabaCustomersReaderPort } from '../../application/ports/SabaCustomersReaderPort';
 import {
   SabaForbiddenException,
@@ -8,9 +16,6 @@ import {
 } from '../../domain/exceptions/sabaCustomersExceptions';
 import type { SabaCustomer } from '../../domain/SabaCustomer';
 import { SABA_CUSTOMERS_TOKENS } from '../../tokens';
-import type { SabaConfig } from '../sabaConfig';
-
-const TIMEOUT_MS = 8_000;
 
 // Postgres `numeric` may arrive as text depending on Saba's client.
 const number = z.coerce.number().nullable().catch(null);
@@ -74,31 +79,30 @@ function toSabaCustomer(c: SabaApiCustomer): SabaCustomer {
 @Injectable()
 export class HttpSabaCustomersReader implements SabaCustomersReaderPort {
   constructor(
-    @Inject(SABA_CUSTOMERS_TOKENS.Config) private readonly config: SabaConfig
+    @Inject(SABA_CUSTOMERS_TOKENS.Config) private readonly config: SabaApiConfig
   ) {}
 
   async findByPhone(
     phone: string,
     credential: string
   ): Promise<SabaCustomer[]> {
-    if (!this.config.apiUrl)
-      throw new SabaUnavailableException('sin SABA_API_URL');
-    const url = new URL(
-      `${this.config.apiUrl}/api/admin/marketing/customers/by-phone`
-    );
+    const url = sabaUrl(this.config, '/customers/by-phone');
     url.searchParams.set('phone', phone);
 
     let response: Response;
     try {
       response = await fetch(url, {
-        headers: { Authorization: `Bearer ${credential}` },
-        signal: AbortSignal.timeout(TIMEOUT_MS),
+        headers: sabaHeaders(this.config, { accessToken: credential }),
+        signal: AbortSignal.timeout(SABA_TIMEOUT_MS),
       });
     } catch (error: unknown) {
       throw new SabaUnavailableException(error);
     }
 
     if (response.status === 401) {
+      if ((await sabaErrorCode(response)) === INVALID_SERVICE_KEY_CODE) {
+        throw new SabaUnavailableException('Saba rechazó la service key');
+      }
       throw new SabaSessionNotRecognizedException('HTTP 401');
     }
     if (response.status === 403) {

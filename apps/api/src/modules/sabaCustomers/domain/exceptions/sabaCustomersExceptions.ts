@@ -6,7 +6,7 @@ export class SabaUnavailableException extends DomainException {
   }
 }
 
-/** Saba answered 401: the agent's token is not from its Supabase or has expired. */
+/** Saba answered 401: the agent's token expired or was revoked between our check and Saba's. */
 export class SabaSessionNotRecognizedException extends DomainException {
   constructor(cause?: unknown) {
     super('SABA_CUSTOMERS_SESSION_NOT_RECOGNIZED', cause);

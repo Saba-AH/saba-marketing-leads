@@ -1,6 +1,6 @@
 # @repo/api — API
 
-NestJS. **Único camino a los datos**: Postgres (Supabase local en desarrollo, Supabase en la nube) se alcanza solo desde aquí.
+NestJS. **Único camino a los datos**: su Postgres (Compose en local, una EC2 en dev/prod) y el servidor de Saba (login, sesiones, clientes) se alcanzan solo desde aquí.
 
 ## Correr
 
@@ -13,12 +13,13 @@ npm run dev
 Solo la API:
 
 ```bash
-npm run db:up && npm run db:setup   # Supabase local, migraciones y seed
-# El wrapper exporta las SUPABASE_* y DATABASE_LOCAL de `supabase status`:
-node scripts/localSupabase.mjs exec npm run dev -w @repo/api
+npm run db:up && npm run db:migrate   # Postgres de docker-compose y migraciones
+npm run dev -w @repo/api
 ```
 
-Requiere `apps/api/.env` (copiar de `.env.example`).
+Requiere `apps/api/.env` (copiar de `.env.example`), con `SABA_API_URL` y
+`SABA_SERVICE_KEY` (el mismo valor que `MARKETING_SERVICE_KEY` de Saba): sin
+ellas la API no arranca.
 
 | Ruta | |
 |------|--|
@@ -53,8 +54,9 @@ Los esquemas del contrato viven en `packages/schemas`, compartidos con el client
 
 ## Despliegue
 
-`Dockerfile` en la raíz de esta app: target `runner` (sirve `dist/main.js`) y target `migrator` (`npm run db:migrate` como job previo al deploy, contra Supabase).
+`Dockerfile` en la raíz de esta app: target `runner` (sirve `dist/main.js`) y target `migrator` (`npm run db:migrate` como job previo al deploy, contra el `DATABASE` del entorno).
 
-## Pendiente en otros tickets
+## Auth
 
-Esquema y migraciones, roles y el `AuthGuard` global de autenticación quedan para tickets futuros. El pool de Drizzle y `drizzle.config.ts` ya están cableados: falta el esquema.
+Global: toda ruta exige una sesión de Saba salvo `@Public()`, y
+`@RequirePermissions()` exige permisos que resuelve Saba. Ver `docs/api_modules.md`.

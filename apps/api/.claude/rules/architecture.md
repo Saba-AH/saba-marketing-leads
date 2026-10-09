@@ -18,7 +18,7 @@ src/modules/<feature>/
 
 `src/modules/health/` es la referencia completa y mínima. **El dominio no importa Nest, ni HTTP, ni Drizzle**; el caso de uso solo conoce interfaces.
 
-Infraestructura compartida: `src/infrastructure/database/` (pool y agregador de esquema), `src/infrastructure/logging/` (`StructuredLogger`, id de correlación por `AsyncLocalStorage`, redacción de secretos), `src/infrastructure/errors/` (`DomainException`, `DomainToHttpMapper`, filtros globales), `src/infrastructure/i18n/domainMessages.ts` (catálogo agregado de mensajes de dominio), `src/shared/` (pipe de Zod, decoradores de Swagger, `@Public()`), `src/security.module.ts` (throttling), `src/bus.module.ts` (CQRS).
+Infraestructura compartida: `src/infrastructure/database/` (pool y agregador de esquema), `src/infrastructure/logging/` (`StructuredLogger`, id de correlación por `AsyncLocalStorage`, redacción de secretos), `src/infrastructure/errors/` (`DomainException`, `DomainToHttpMapper`, filtros globales), `src/infrastructure/i18n/domainMessages.ts` (catálogo agregado de mensajes de dominio), `src/infrastructure/saba/sabaApi.ts` (config, URLs y headers del servidor de Saba: service key, token del agente, IP y user agent reenviados), `src/shared/` (pipe de Zod, decoradores de Swagger, `@Public()`, `@RequirePermissions()`), `src/security.module.ts` (throttling), `src/bus.module.ts` (CQRS).
 
 ## Fronteras entre módulos
 

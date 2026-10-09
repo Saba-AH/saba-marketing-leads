@@ -6,6 +6,14 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    // Modules that talk to Saba fail at startup without their config; the tests
+    // double the adapters, so these values never reach a real server.
+    env: {
+      SABA_API_URL: 'http://saba.test',
+      SABA_SERVICE_KEY: 'test-service-key',
+      // Cloudflare's test secret that always validates.
+      TURNSTILE_SECRET_KEY: '1x0000000000000000000000000000000AA',
+    },
     include: ['src/test/**/*.test.ts'],
     // Creates and migrates the test database once per run.
     globalSetup: ['src/test/support/globalSetup.ts'],

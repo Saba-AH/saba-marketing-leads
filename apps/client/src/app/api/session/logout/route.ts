@@ -12,7 +12,7 @@ import {
 } from '@/lib/session/upstream';
 
 /**
- * Ends the session in Supabase too, not only in the browser: deleting the
+ * Ends the session in Saba too (through the API), not only in the browser: deleting the
  * cookies without revoking would leave the refresh token alive until it
  * expires.
  */

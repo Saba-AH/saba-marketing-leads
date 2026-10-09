@@ -470,6 +470,34 @@ describe('ChatsPage', () => {
     });
   });
 
+  it('sends only once when Enter is pressed repeatedly while sending', async () => {
+    let calls = 0;
+    let release: () => void = () => {};
+    const pending = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.post(`${base}/:id/messages`, async () => {
+        calls++;
+        await pending;
+        return HttpResponse.json(
+          { success: false, error: 'x' },
+          { status: 500 }
+        );
+      })
+    );
+    const user = userEvent.setup();
+    render(<ChatsPage />);
+    await user.click(await screen.findByRole('button', { name: /Ana Pérez/ }));
+
+    const box = await screen.findByLabelText('Mensaje');
+    await user.type(box, 'Hola{Enter}{Enter}{Enter}');
+    await user.keyboard('{Enter}');
+    release();
+
+    await waitFor(() => expect(calls).toBe(1));
+  });
+
   it('does not send an empty message', async () => {
     let calls = 0;
     server.use(

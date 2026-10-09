@@ -2,15 +2,11 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
-import {
-  dbTarget,
-  redactDatabaseUrl,
-} from '../src/infrastructure/database/databaseUrl';
+import { redactDatabaseUrl } from '../src/infrastructure/database/databaseUrl';
 import {
   createPool,
   DOWN_FOLDER,
   databaseUrl,
-  ensureExtensions,
   MIGRATIONS_FOLDER,
 } from '../src/infrastructure/database/migrator';
 
@@ -56,8 +52,6 @@ async function main(): Promise<void> {
   const pool = createPool(url);
 
   try {
-    await ensureExtensions(pool);
-
     // `migrate()` takes no lock on its own: two instances migrating at once —a
     // deploy with several replicas— would step on each other. The lock has to be
     // on the SAME client that runs the migration; a loose `pool.query` could take
@@ -71,9 +65,7 @@ async function main(): Promise<void> {
       client.release();
     }
 
-    console.log(
-      `✓ migraciones aplicadas sobre ${redactDatabaseUrl(url)} (DB_TARGET=${process.env.DATABASE ? 'DATABASE explícita' : dbTarget()})`
-    );
+    console.log(`✓ migraciones aplicadas sobre ${redactDatabaseUrl(url)}`);
   } finally {
     await pool.end();
   }
