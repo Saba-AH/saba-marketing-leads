@@ -25,6 +25,18 @@ describe('startupBanner', () => {
     expect(banner).not.toContain('postgres:postgres');
   });
 
+  it('shows the WhatsApp webhook when the dev tunnel is open', () => {
+    const banner = startupBanner({
+      ...BASE,
+      databaseUrl: LOCAL_DB,
+      webhookUrl: 'https://a-b.trycloudflare.com/api/v1/whatsapp/webhook',
+    });
+
+    expect(banner).toMatch(
+      /│ Webhook\s+https:\/\/a-b\.trycloudflare\.com\/api\/v1\/whatsapp\/webhook\s+│/
+    );
+  });
+
   it('against a remote database warns it is real data and hides the password', () => {
     const banner = startupBanner({ ...BASE, databaseUrl: REMOTE_DB });
 

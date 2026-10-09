@@ -8,6 +8,8 @@ export interface StartupBannerInput {
   panelUrl?: string;
   /** Saba's server: login, sessions and customers (`SABA_API_URL`). */
   sabaUrl?: string;
+  /** WhatsApp webhook behind the dev tunnel, to paste in Meta. */
+  webhookUrl?: string;
   /** What is missing or wrong in the configuration. */
   warnings?: string[];
   color: boolean;
@@ -61,6 +63,9 @@ export function startupBanner(input: StartupBannerInput): string {
         : 'sin resolver',
     },
     ...(input.sabaUrl ? [{ label: 'Saba', value: input.sabaUrl }] : []),
+    ...(input.webhookUrl
+      ? [{ label: 'Webhook', value: input.webhookUrl }]
+      : []),
     ...(input.warnings ?? []).map((warning) => ({
       label: '⚠',
       value: warning,

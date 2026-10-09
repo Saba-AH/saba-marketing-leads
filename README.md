@@ -35,6 +35,45 @@ El mismo valor va en `MARKETING_SERVICE_KEY` (`.env` de Saba) y en
 cliente. Si falta en Saba, todo `/api/marketing/*` responde 401; si falta acá, la
 API no arranca.
 
+### WhatsApp en local: el webhook de Meta
+
+Meta tiene que poder llegar a tu API para entregarle los mensajes de WhatsApp, y
+`localhost` no le sirve. Por eso, con `NODE_ENV=development` en `apps/api/.env`,
+`npm run dev` abre un túnel de Cloudflare hacia la API y la tarea `@repo/api#dev:info`
+muestra la URL pública en la fila **Webhook**.
+
+Antes de empezar:
+
+- `cloudflared` instalado (`brew install cloudflared`). Si falta, `dev:info` lo avisa y
+  no hay túnel.
+- `WHATSAPP_*` completas en `apps/api/.env` (ver `.env.example`). `WHATSAPP_VERIFY_TOKEN`
+  lo inventas tú (`openssl rand -hex 32`) y es el mismo que vas a escribir en Meta.
+- **El servidor Node de Saba corriendo** (`saba/`, el de `SABA_API_URL`, puerto 3001
+  por defecto). Los mensajes entran igual sin él, pero no vas a poder verlos: el login
+  del panel y los datos de cliente de cada chat salen de ese servidor.
+
+Con `npm run dev` corriendo, configura el webhook en Meta:
+
+1. Entra a [developers.facebook.com](https://developers.facebook.com) y haz clic en
+   **Mis apps** (arriba).
+2. Selecciona la app **Saba-Chat**.
+3. En el menú lateral izquierdo, haz clic en **Casos de uso** (el ícono del lápiz).
+4. En el caso de uso **Conectar en WhatsApp**, haz clic en **Personalizar**.
+5. En el panel izquierdo, dentro de **Configuración básica**, elige
+   **Paso 2: Configuración de producción**.
+6. Abre la sección **Configurar webhooks** y completa:
+   - **URL de devolución de llamada**: la fila **Webhook** de `dev:info`, por ejemplo
+     `https://xxxx.trycloudflare.com/api/v1/whatsapp/webhook`.
+   - **Token de verificación**: copia aquí el valor de la variable
+     **`WHATSAPP_VERIFY_TOKEN`** de `apps/api/.env`, idéntico. Si no coincide, Meta
+     rechaza la verificación (la API responde 403).
+7. Haz clic en **Verificar y guardar**. Meta llama a la API en ese momento, así que la
+   API y el túnel tienen que estar encendidos.
+
+> La URL del túnel cambia **cada vez** que arranca `npm run dev`. Al reiniciarlo, repite
+> los pasos 6 y 7 con la URL nueva. Si no, Meta sigue mandando los mensajes a un túnel
+> que ya no existe.
+
 ## Comandos
 
 | Comando | Qué hace |

@@ -21,10 +21,13 @@
       "persistent": true
     },
     // Resumen de contra qué corre la API y qué abrir (`apps/api/scripts/devInfo.ts`):
-    // aparece en el sidebar de la TUI junto a las tareas `dev`.
+    // aparece en el sidebar de la TUI junto a las tareas `dev`. Con
+    // NODE_ENV=development además mantiene abierto el túnel de Cloudflare del
+    // webhook de WhatsApp, por eso es persistente.
     "dev:info": {
       "passThroughEnv": ["DATABASE"],
-      "cache": false
+      "cache": false,
+      "persistent": true
     },
     "lint": {
       "dependsOn": []
