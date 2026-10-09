@@ -1,14 +1,15 @@
 /**
- * jsdom no trae las APIs web que MSW y el cliente HTTP necesitan. Las tomamos
- * de Node y de undici.
+ * jsdom does not ship the web APIs MSW and the HTTP client need. We take them
+ * from Node and from undici.
  *
- * Tres detalles que rompen si se ignoran:
- *   - El orden: undici toca `MessagePort` al cargarse, así que los globales de
- *     Node van **antes** del `require('undici')`.
- *   - `configurable: true`: MSW redefine `Request`/`Response` al interceptar. Si
- *     los dejamos no configurables, `server.listen()` falla.
- *   - Nada de handles de Node que mantengan vivo el event loop: dejarían a Jest
- *     colgado al terminar la suite (ver `MessageChannel` y `BroadcastChannel`).
+ * Three details that break if ignored:
+ *   - Order: undici touches `MessagePort` when loading, so Node's globals go
+ *     **before** `require('undici')`.
+ *   - `configurable: true`: MSW redefines `Request`/`Response` when
+ *     intercepting. If we leave them non-configurable, `server.listen()` fails.
+ *   - No Node handles that keep the event loop alive: they would leave Jest
+ *     hanging at the end of the suite (see `MessageChannel` and
+ *     `BroadcastChannel`).
  */
 
 // @ts-ignore
@@ -22,15 +23,15 @@ const {
 } = require('node:stream/web');
 const { PerformanceObserver, performance } = require('node:perf_hooks');
 const { Blob, File } = require('node:buffer');
-// Solo `MessagePort`, que es lo que undici toca al cargarse. Exponer también
-// `MessageChannel` haría que el scheduler de React lo prefiera sobre
-// setTimeout, y su handle de Node deja a Jest colgado.
+// Only `MessagePort`, which is what undici touches when loading. Also exposing
+// `MessageChannel` would make React's scheduler prefer it over setTimeout, and
+// its Node handle leaves Jest hanging.
 const { MessagePort } = require('node:worker_threads');
 
 /**
- * MSW exige que el global exista para su soporte de WebSockets, que aquí no se
- * usa. El `BroadcastChannel` real de Node se instancia al importar ese módulo y
- * mantiene vivo el event loop, así que va un stub inerte.
+ * MSW requires the global to exist for its WebSocket support, which is not
+ * used here. Node's real `BroadcastChannel` is instantiated when that module is
+ * imported and keeps the event loop alive, so an inert stub goes in.
  */
 class InertBroadcastChannel {
   onmessage: ((event: unknown) => void) | null = null;
@@ -39,16 +40,16 @@ class InertBroadcastChannel {
   constructor(public readonly name: string) {}
 
   postMessage(): void {
-    /* inerte a propósito */
+    /* inert on purpose */
   }
   close(): void {
-    /* inerte a propósito */
+    /* inert on purpose */
   }
   addEventListener(): void {
-    /* inerte a propósito */
+    /* inert on purpose */
   }
   removeEventListener(): void {
-    /* inerte a propósito */
+    /* inert on purpose */
   }
   dispatchEvent(): boolean {
     return true;

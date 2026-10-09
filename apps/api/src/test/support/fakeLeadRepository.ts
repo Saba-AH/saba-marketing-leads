@@ -1,7 +1,7 @@
 import type { LeadRepositoryPort } from '../../modules/leads/application/ports/out/LeadRepositoryPort';
-import type { DatosLead, Lead } from '../../modules/leads/domain/Lead';
+import type { Lead, LeadData } from '../../modules/leads/domain/Lead';
 
-/** Doble en memoria para probar casos de uso sin base. */
+/** In-memory double to test use cases without a database. */
 export class FakeLeadRepository implements LeadRepositoryPort {
   readonly leads: Lead[] = [];
 
@@ -9,16 +9,16 @@ export class FakeLeadRepository implements LeadRepositoryPort {
     return [...this.leads];
   }
 
-  async findByCorreo(correo: string): Promise<Lead | null> {
-    return this.leads.find((lead) => lead.correo === correo) ?? null;
+  async findByEmail(email: string): Promise<Lead | null> {
+    return this.leads.find((lead) => lead.email === email) ?? null;
   }
 
-  async crear(datos: DatosLead): Promise<Lead> {
+  async create(data: LeadData): Promise<Lead> {
     const lead: Lead = {
       id: `lead-${this.leads.length + 1}`,
-      nombre: datos.nombre,
-      correo: datos.correo,
-      origen: datos.origen ?? null,
+      name: data.name,
+      email: data.email,
+      source: data.source ?? null,
       createdAt: new Date(),
     };
     this.leads.push(lead);

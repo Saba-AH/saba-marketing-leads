@@ -10,17 +10,17 @@ una subcarpeta tiene su propio `CLAUDE.md`, manda **el más específico**.
 
 **`apps/client` es SSR** (`output: 'standalone'`): un servidor Node de Next, empaquetado en su propio contenedor (`apps/client/Dockerfile`).
 
-La restricción que **sí** se mantiene es la **frontera de datos**: el cliente **nunca** toca Postgres/Supabase directamente (ni con `@supabase/supabase-js`). Todo dato de dominio pasa por la API de NestJS (`apps/api`). Si necesitas lógica de negocio o acceso a datos, va en `apps/api` — no en un route handler del cliente.
+La restricción que **sí** se mantiene es la **frontera de datos**: el cliente **nunca** toca Postgres ni Saba directamente (ni con `@supabase/supabase-js`). Todo dato de dominio pasa por la API de NestJS (`apps/api`). Si necesitas lógica de negocio o acceso a datos, va en `apps/api` — no en un route handler del cliente.
 
 Dentro de esa frontera, en `apps/client` ya están permitidos Server Components con fetch en servidor, route handlers y middleware. El servidor de Next puede leer variables de entorno en runtime (no todo tiene que hornearse en build).
 
 ---
 
-## Base de datos: Postgres (Supabase)
+## Base de datos y Saba
 
-- **Local y tests:** stack local de Supabase CLI (`supabase/config.toml`: Postgres en **54332**, Auth en 54331, Studio en 54333). Las migraciones son las de Drizzle (el CLI tiene las suyas apagadas); `db:seed` crea un admin de desarrollo y se niega a correr contra una base remota. `npm run dev` toma la conexión del stack de `supabase status` (`scripts/localSupabase.mjs`), no del `.env`. Los tests de la API corren contra una base aparte (`app_dev_test`) que el `globalSetup` de Vitest crea y migra.
-- **Staging/producción:** **Supabase** (que es Postgres). Solo cambia `DATABASE` en `apps/api/.env` / en el entorno del despliegue. Las migraciones de Drizzle se aplican igual (`npm -C apps/api run db:migrate`).
-- El ORM es **Drizzle** (`drizzle-orm/node-postgres`). Las PK usan `gen_random_uuid()` (nativo de Postgres, funciona igual en Docker y Supabase).
+- **Postgres propio** (WhatsApp, leads): en local y tests, el de `docker-compose.yml` (puerto **5434**); en dev/prod, un Postgres en una EC2. Una sola variable, `DATABASE` en `apps/api/.env`; vacía en local usa el de Compose. Los tests de la API corren contra una base aparte (`app_dev_test`) que el `globalSetup` de Vitest crea y migra, y se niegan a correr contra una base que no sea local.
+- El ORM es **Drizzle** (`drizzle-orm/node-postgres`). Las PK usan `gen_random_uuid()`.
+- **Saba** (login, sesiones, permisos, datos de clientes) **no** se lee de su base: la API lo pide a los endpoints `/api/marketing/*` del servidor de Saba (`SABA_API_URL`), siempre con la service key (`SABA_SERVICE_KEY` = `MARKETING_SERVICE_KEY` de Saba). Ver `docs/api_modules.md`.
 
 ---
 
@@ -29,7 +29,7 @@ Dentro de esa frontera, en `apps/client` ya están permitidos Server Components 
 ```
 .
 ├── apps/
-│   ├── api/            # NestJS — único camino a datos (Postgres/Supabase)
+│   ├── api/            # NestJS — único camino a datos (Postgres propio y Saba)
 │   └── client/         # Next.js SSR (standalone) — panel interno
 ├── packages/
 │   ├── schemas/        # Zod + tipos del contrato de API (lo comparten ambas apps)
@@ -37,7 +37,6 @@ Dentro de esa frontera, en `apps/client` ya están permitidos Server Components 
 │   ├── ui/             # shadcn/ui + tokens de Tailwind
 │   ├── utils/          # Helpers sin acoplamiento a framework
 │   └── typescript-config/
-├── supabase/           # Stack local de Supabase (db + auth + studio) para dev y tests
 ├── ralph/              # Loop autónomo de agentes (AFK)
 └── .scratch/           # Issues y PRDs por épica
 ```
@@ -46,7 +45,7 @@ Dentro de esa frontera, en `apps/client` ya están permitidos Server Components 
 
 **El contrato de la API vive en `packages/schemas`.** Un endpoint nuevo define su esquema Zod ahí, la API lo usa para validar y documentar, y el cliente lo usa para parsear. Si el contrato cambia sin que ambos lados se enteren, los tests fallan.
 
-**Arquitectura del sistema:** Frontend → API → Datos. El cliente **nunca** toca Postgres/Supabase directamente.
+**Arquitectura del sistema:** Frontend → API → Datos (Postgres propio / servidor de Saba). El cliente **nunca** toca Postgres ni Saba directamente.
 
 **Variables `NEXT_PUBLIC_*`:** Next las inlinea en el bundle en build time, así que viajan como `--build-arg` del `Dockerfile` del cliente, no como env vars de runtime.
 
@@ -58,17 +57,16 @@ Desde la raíz:
 
 | Comando | Qué hace |
 |---------|----------|
-| `npm run dev` / `dev:local` | Levanta Supabase local, migra, siembra y arranca API y cliente |
-| `npm run dev:supabase` | API y cliente contra el Supabase real (sin migrar). El destino lo elige el comando, no el `.env` |
-| `npm run db:up` / `db:down` / `db:status` | Stack local de Supabase |
-| `npm run db:setup` / `db:reset` | Migra y siembra / recrea el stack desde cero |
-| `npm run db:sync:saba` | Copia de prod (solo lectura) los usuarios de `apps/api/scripts/sync/sabaSyncUsers.ts` con sus solicitudes al Supabase local |
+| `npm run dev` | Levanta el Postgres de Compose, migra y arranca API y cliente |
+| `npm run db:up` / `db:down` | Postgres local de `docker-compose.yml` |
+| `npm run db:migrate` | Aplica migraciones sobre `DATABASE` |
+| `npm run db:reset` | Borra el volumen local, levanta y migra desde cero |
 | `npm -C apps/api run db:generate` | Genera una migración de Drizzle desde los `*.schema.ts` |
-| `npm -C apps/api run db:migrate` | Aplica migraciones sobre `DATABASE` (local o Supabase) |
+| `npm -C apps/api run db:rollback` | Revierte la última migración (`-- --all`: todas) |
 | `npm run build` | Compila todo; el cliente emite su servidor SSR en `apps/client/.next/` |
 | `npm run typecheck` | `tsc --noEmit` en cada workspace |
 | `npm run lint` | Biome, sin escribir |
-| `npm test` | Vitest (API, contra el Postgres del Supabase local) + Jest (cliente, con MSW) |
+| `npm test` | Vitest (API, contra el Postgres local) + Jest (cliente, con MSW) |
 | `npm run format-and-lint` | `biome check .` — lo mismo que corre el CI |
 
 Nunca arranques un servidor de desarrollo ni hagas `curl` a endpoints locales por tu cuenta.

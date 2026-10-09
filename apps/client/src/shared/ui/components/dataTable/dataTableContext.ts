@@ -3,12 +3,12 @@
 import React from 'react';
 
 /**
- * Cuántas columnas tiene la tabla. Lo declara `DataTable` una vez y lo consume
- * `DataTableMessage`, que necesita el `colSpan` para que un estado vacío o de
- * error ocupe el ancho completo en vez de la primera celda.
+ * How many columns the table has. `DataTable` declares it once and
+ * `DataTableMessage` consumes it, since it needs the `colSpan` so an empty or
+ * error state takes the full width instead of the first cell.
  */
 export const DataTableContext = React.createContext<number>(1);
 
-export function useCantidadColumnas(): number {
+export function useColumnCount(): number {
   return React.useContext(DataTableContext);
 }

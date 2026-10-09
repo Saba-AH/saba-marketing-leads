@@ -8,11 +8,11 @@ import { HttpExceptionFilter } from '../../infrastructure/errors/HttpExceptionFi
 import { fakeHost, fakeLogger } from '../support/fakeHttpContext';
 
 describe('HttpExceptionFilter', () => {
-  // Con el catálogo de dominio vacío (el template arranca así), un mensaje que
-  // no está registrado pasa tal cual, conservando el estado del HttpException.
-  // Cuando un módulo registre su código en `domainMessages`, este mismo camino
-  // lo traduce al mensaje humano sin tocar el filtro.
-  it('pasa un código no registrado tal cual, conservando el estado del HttpException', () => {
+  // With the domain catalog empty (the template starts that way), a message that
+  // is not registered goes through as-is, keeping the HttpException's status.
+  // Once a module registers its code in `domainMessages`, this same path
+  // translates it into the human message without touching the filter.
+  it('passes an unregistered code as-is, keeping the HttpException status', () => {
     const filter = new HttpExceptionFilter(fakeLogger());
     const { host, json, status } = fakeHost();
 
@@ -27,7 +27,7 @@ describe('HttpExceptionFilter', () => {
     );
   });
 
-  it('deja pasar un mensaje que no es un código de dominio conocido', () => {
+  it('lets through a message that is not a known domain code', () => {
     const filter = new HttpExceptionFilter(fakeLogger());
     const { host, json } = fakeHost();
 
@@ -38,7 +38,7 @@ describe('HttpExceptionFilter', () => {
     );
   });
 
-  it('colapsa un 5xx a INTERNAL_ERROR y no filtra el detalle crudo', () => {
+  it('collapses a 5xx to INTERNAL_ERROR and does not leak the raw detail', () => {
     const logger = fakeLogger();
     const filter = new HttpExceptionFilter(logger);
     const { host, json, status } = fakeHost();
@@ -58,7 +58,7 @@ describe('HttpExceptionFilter', () => {
     expect(logger.error).toHaveBeenCalled();
   });
 
-  it('trata cualquier valor lanzado que no sea HttpException como 500', () => {
+  it('treats any thrown value that is not an HttpException as 500', () => {
     const filter = new HttpExceptionFilter(fakeLogger());
     const { host, json, status } = fakeHost();
 

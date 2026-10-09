@@ -12,8 +12,9 @@ import {
 } from '@/lib/session/upstream';
 
 /**
- * Cierra la sesión también en Supabase, no solo en el navegador: borrar las
- * cookies sin revocar dejaría el refresh token vivo hasta que venza.
+ * Ends the session in Saba too (through the API), not only in the browser: deleting the
+ * cookies without revoking would leave the refresh token alive until it
+ * expires.
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   if (!isSameOrigin(request)) return forbiddenOriginResponse();
@@ -25,8 +26,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     (refresh ? (await refreshSession(request, refresh))?.accessToken : null);
 
   if (token) {
-    // Si la API no responde, igual se cierra la sesión local: el usuario
-    // pidió salir, y el token vence solo.
+    // If the API does not respond, the local session is closed anyway: the user
+    // asked to leave, and the token expires on its own.
     await fetch(upstreamUrl('/v1/auth/logout'), {
       method: 'POST',
       headers: forwardedHeaders(request, token),

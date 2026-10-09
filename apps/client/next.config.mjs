@@ -4,24 +4,24 @@ import { fileURLToPath } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 /**
- * El cliente corre con **SSR**: un servidor Node de Next empaquetado
- * como salida `standalone` y desplegado en **Cloud Run**, en su propio servicio.
+ * The client runs with **SSR**: a Next Node server packaged as `standalone`
+ * output and deployed on **Cloud Run**, in its own service.
  *
- * `output: 'standalone'` emite un servidor mínimo autocontenido en
- * `.next/standalone` que el Dockerfile arranca con `node server.js`, sin
- * arrastrar todo `node_modules`.
+ * `output: 'standalone'` emits a minimal self-contained server in
+ * `.next/standalone` that the Dockerfile starts with `node server.js`, without
+ * dragging the whole `node_modules` along.
  *
  * @type {import('next').NextConfig}
  */
 const nextConfig = {
   output: 'standalone',
 
-  // Monorepo: que el trace de `standalone` parta de la raíz del repo y no de lo
-  // que Next infiera de algún lockfile suelto.
+  // Monorepo: make the `standalone` trace start from the repo root and not from
+  // whatever Next infers from some stray lockfile.
   outputFileTracingRoot: join(HERE, '..', '..'),
 
-  // Optimización de imágenes desactivada por ahora. Cuando haga falta se pone un
-  // loader propio contra Cloud Storage; no el optimizador incorporado de Next.
+  // Image optimization disabled for now. When needed, a custom loader against
+  // Cloud Storage goes in; not Next's built-in optimizer.
   images: {
     unoptimized: true,
   },

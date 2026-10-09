@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 const SCRIPT_SRC =
   'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
-/** Llave de prueba de Cloudflare que siempre valida (la de producción rechaza localhost). */
+/** Cloudflare test key that always validates (the production one rejects localhost). */
 const TEST_SITE_KEY = '1x00000000000000000000AA';
 const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || TEST_SITE_KEY;
 
@@ -36,8 +36,8 @@ function loadScript(): Promise<void> {
 }
 
 /**
- * Widget de Cloudflare Turnstile. El token es de un solo uso: después de un
- * intento fallido hay que llamar a `reset` para pedir otro.
+ * Cloudflare Turnstile widget. The token is single-use: after a failed attempt
+ * `reset` has to be called to get another one.
  */
 export function useTurnstile(): {
   containerRef: React.RefObject<HTMLDivElement | null>;
@@ -49,20 +49,20 @@ export function useTurnstile(): {
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelado = false;
+    let cancelled = false;
     void loadScript().then(() => {
       const api = turnstileApi();
-      if (cancelado || !api || !containerRef.current) return;
+      if (cancelled || !api || !containerRef.current) return;
       widgetId.current = api.render(containerRef.current, {
         sitekey: SITE_KEY,
-        callback: (nuevo: string) => setToken(nuevo),
+        callback: (next: string) => setToken(next),
         'expired-callback': () => setToken(null),
         'error-callback': () => setToken(null),
         language: 'es',
       });
     });
     return () => {
-      cancelado = true;
+      cancelled = true;
       if (widgetId.current) turnstileApi()?.remove(widgetId.current);
       widgetId.current = null;
     };

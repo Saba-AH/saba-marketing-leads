@@ -1,7 +1,7 @@
 import type { THealth } from '@repo/schemas';
 import type { Safe } from '@repo/utils';
 
-/** Puerto: lo único que esta feature necesita de la API. */
+/** Port: the only thing this feature needs from the API. */
 export interface HealthApi {
   check(): Promise<Safe<THealth>>;
 }

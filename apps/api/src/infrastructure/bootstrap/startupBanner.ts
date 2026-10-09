@@ -1,29 +1,19 @@
-import {
-  type DbTarget,
-  isLocalDatabaseUrl,
-  redactDatabaseUrl,
-} from '../database/databaseUrl';
+import { isLocalDatabaseUrl, redactDatabaseUrl } from '../database/databaseUrl';
 
 export interface StartupBannerInput {
   port: number;
-  /** `null` si no se pudo resolver (p. ej. DATABASE_SUPABASE vacía). */
+  /** `null` if it could not be resolved (e.g. empty DATABASE in production). */
   databaseUrl: string | null;
-  dbTarget: DbTarget;
-  explicitDatabase: boolean;
-  /** Origen del panel (el primero de CORS_ALLOWED_ORIGINS). */
+  /** Panel origin (the first one in CORS_ALLOWED_ORIGINS). */
   panelUrl?: string;
-  /** Studio del stack local; lo exporta `scripts/localSupabase.mjs`. */
-  studioUrl?: string;
-  /** Supabase Auth contra el que se validan las sesiones (`SUPABASE_URL`). */
-  authUrl?: string;
-  /** Credenciales del admin del seed: solo se muestran si la base es local. */
-  devLogin?: { correo: string; contrasena: string };
-  /** Lo que falta o está mal en la configuración. */
+  /** Saba's server: login, sessions and customers (`SABA_API_URL`). */
+  sabaUrl?: string;
+  /** What is missing or wrong in the configuration. */
   warnings?: string[];
   color: boolean;
 }
 
-/** Códigos ANSI, para que el recuadro se distinga entre los logs JSON. */
+/** ANSI codes, so the box stands out among the JSON logs. */
 const ANSI = {
   reset: '\u001b[0m',
   bold: '\u001b[1m',
@@ -41,50 +31,36 @@ interface Row {
   warning?: boolean;
 }
 
-/** Colores solo en desarrollo: en Cloud Run ensuciarían los logs. */
+/** Colors only in development: on Cloud Run they would pollute the logs. */
 export function shouldColor(env: NodeJS.ProcessEnv = process.env): boolean {
   return !env.NO_COLOR && env.NODE_ENV !== 'production';
 }
 
 /**
- * Lo que se imprime al arrancar, para humanos: contra qué base corre y qué
- * se puede abrir. Confundir el stack local con Supabase es el error caro, así
- * que va en el título, en mayúsculas y en color (verde local, rojo remoto).
- * Lo usan la API al arrancar y la tarea `dev:info` del sidebar de turbo.
+ * What gets printed at startup, for humans: which database it runs against and
+ * what can be opened. Mixing up the local database with a remote one is the expensive
+ * mistake, so it goes in the title, in uppercase and in color (green local,
+ * red remote). Used by the API at startup and by turbo's `dev:info` task.
  */
 export function startupBanner(input: StartupBannerInput): string {
+  // Unresolved only happens in production, where DATABASE is mandatory.
   const local = input.databaseUrl
     ? isLocalDatabaseUrl(input.databaseUrl)
-    : input.dbTarget === 'local';
+    : false;
   const api = `http://localhost:${input.port}`;
-  const origen = input.explicitDatabase
-    ? 'DATABASE explícita'
-    : `destino ${input.dbTarget}`;
 
   const rows: Row[] = [
     ...(input.panelUrl ? [{ label: 'Panel', value: input.panelUrl }] : []),
     { label: 'API', value: `${api}/api/v1` },
     { label: 'Swagger', value: `${api}/api/docs` },
     { label: 'Health', value: `${api}/api/v1/health` },
-    ...(local && input.studioUrl
-      ? [{ label: 'Studio', value: input.studioUrl }]
-      : []),
     {
       label: 'Base',
       value: input.databaseUrl
-        ? `${redactDatabaseUrl(input.databaseUrl)} (${origen})`
-        : `sin resolver (${origen})`,
+        ? redactDatabaseUrl(input.databaseUrl)
+        : 'sin resolver',
     },
-    ...(input.authUrl ? [{ label: 'Auth', value: input.authUrl }] : []),
-    ...(local && input.devLogin
-      ? [
-          {
-            label: 'Login',
-            // Tras `db:sync:saba` el usuario es el de prod y la contraseña la real.
-            value: `${input.devLogin.correo} / ${input.devLogin.contrasena} (o la real si sincronizaste prod)`,
-          },
-        ]
-      : []),
+    ...(input.sabaUrl ? [{ label: 'Saba', value: input.sabaUrl }] : []),
     ...(input.warnings ?? []).map((warning) => ({
       label: '⚠',
       value: warning,
@@ -93,8 +69,8 @@ export function startupBanner(input: StartupBannerInput): string {
   ];
 
   const title = local
-    ? '● LOCAL · Supabase CLI en esta máquina'
-    : '▲ SUPABASE REMOTO · datos reales, cuidado con lo que escribes';
+    ? '● LOCAL · Postgres de docker-compose'
+    : '▲ BASE REMOTA · datos reales, cuidado con lo que escribes';
   return drawBox(title, rows, local ? ANSI.green : ANSI.red, input.color);
 }
 
@@ -112,7 +88,7 @@ function drawBox(
     row.warning
       ? `${row.label} ${row.value}`
       : `${row.label.padEnd(LABEL_WIDTH)}${row.value}`;
-  // Se mide el texto sin colores: los códigos ANSI no ocupan columnas.
+  // Text is measured without colors: ANSI codes take no columns.
   const width = Math.max(
     title.length + 1,
     ...rows.map((row) => text(row).length)

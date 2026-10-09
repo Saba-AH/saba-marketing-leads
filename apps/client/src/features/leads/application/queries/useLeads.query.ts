@@ -8,7 +8,7 @@ export const leadsQueryKeys = {
 export function leadsQueryOptions() {
   return queryOptions({
     queryKey: leadsQueryKeys.all(),
-    queryFn: () => LeadsService.listar(),
+    queryFn: () => LeadsService.list(),
   });
 }
 

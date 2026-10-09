@@ -2,13 +2,13 @@ import { AUTH_ERROR_CODES } from '@repo/schemas';
 import { NextResponse } from 'next/server';
 import { clearSessionCookies } from './sessionCookies';
 
-/** Misma forma que los errores de la API, para que el cliente los trate igual. */
+/** Same shape as the API's errors, so the client handles them the same way. */
 export function sessionExpiredResponse(): NextResponse {
   const response = NextResponse.json(
     {
       success: false,
       error: 'Tu sesión expiró. Inicia sesión de nuevo.',
-      code: AUTH_ERROR_CODES.sesionInvalida,
+      code: AUTH_ERROR_CODES.invalidSession,
     },
     { status: 401 }
   );

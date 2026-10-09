@@ -3,26 +3,26 @@ const REDACTED = '[REDACTED]';
 const SENSITIVE_KEY_PATTERN =
   /(password|contrase|secret|token|authorization|api[-_]?key|signature|credential)/i;
 
-// Bearer JWT u opaco, con o sin nombre de cabecera antes ("Authorization: Bearer x", "header: Bearer x").
+// Bearer JWT or opaque token, with or without a header name before it ("Authorization: Bearer x", "header: Bearer x").
 const BEARER_TOKEN_PATTERN = /Bearer\s+[^\s"',;]+/gi;
 
-// Otros esquemas de credenciales por cabecera que no usan "Bearer" (Basic,
-// Token, Digest, X-API-Key...). El `(?:[A-Za-z]+\s+)?` come el esquema —sea cual
-// sea— antes del secreto, así que se tapa el valor completo y no solo la palabra
-// del esquema. El bearer ya lo tapa BEARER_TOKEN_PATTERN; se excluye acá para no
-// partir su reemplazo en dos.
+// Other header credential schemes that do not use "Bearer" (Basic, Token,
+// Digest, X-API-Key...). The `(?:[A-Za-z]+\s+)?` eats the scheme —whatever it
+// is— before the secret, so the whole value is masked and not just the scheme
+// word. BEARER_TOKEN_PATTERN already masks bearer; it is excluded here so its
+// replacement is not split in two.
 const CREDENTIAL_HEADER_PATTERN =
   /(authorization|x-api-key|api[-_]?key|x-auth-token)(\s*[:=]\s*)(?!bearer\b)(?:[A-Za-z]+\s+)?[^\s"',;]+/gi;
 
-// Coincide con URLs firmadas de Cloud Storage/S3: preserva origen y ruta,
-// tapa la query donde va la firma (X-Goog-Signature, Signature, Expires...).
+// Matches Cloud Storage/S3 signed URLs: keeps origin and path, masks the query
+// where the signature goes (X-Goog-Signature, Signature, Expires...).
 const SIGNED_URL_QUERY_PATTERN =
   /(https?:\/\/[^\s"'?]+)\?[^\s"']*(?:signature|expires|token)[^\s"']*/gi;
 
 /**
- * Ningún log ni mensaje de error debe imprimir tokens, contraseñas ni URLs
- * firmadas completas (`.claude/rules/errors.md`). Recorre el valor: tapa
- * valores de claves sensibles y sanitiza patrones conocidos dentro de strings.
+ * No log or error message may print tokens, passwords or full signed URLs
+ * (`.claude/rules/errors.md`). Walks the value: masks the values of sensitive
+ * keys and sanitizes known patterns inside strings.
  */
 export function redact(value: unknown, seen = new WeakSet<object>()): unknown {
   if (typeof value === 'string') {

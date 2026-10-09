@@ -4,15 +4,15 @@ import userEvent from '@testing-library/user-event';
 import React from 'react';
 
 // -----------------------------------------------------------------------------
-// Re-exporta React Testing Library y sobreescribe `render` para envolver el
-// árbol en los providers globales. Importar este archivo en vez de RTL.
+// Re-exports React Testing Library and overrides `render` to wrap the tree in
+// the global providers. Import this file instead of RTL.
 //
 // https://testing-library.com/docs/react-testing-library/setup/#custom-render
 // -----------------------------------------------------------------------------
 
 /**
- * Un QueryClient nuevo por render: sin reintentos y sin caché compartida entre
- * tests, para que un test no vea lo que dejó el anterior.
+ * A new QueryClient per render: no retries and no cache shared between tests,
+ * so a test does not see what the previous one left behind.
  */
 function makeTestQueryClient(): QueryClient {
   return new QueryClient({

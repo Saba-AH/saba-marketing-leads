@@ -12,7 +12,7 @@ Lo que **no** puede faltar es el snapshot. `drizzle-kit` guarda en `drizzle/meta
 
 El síntoma llega tarde y disfrazado: la próxima vez que alguien corra `db:generate`, la herramienta ve diferencias que no existen y propone recrear índices que ya están, o borrar y recrear una columna con datos adentro. Pasó entre la `0005` y la `0007` (#151) y nadie lo notó durante semanas, porque **aplicar** migraciones usa `meta/_journal.json` —que estaba sano— y solo **generar** usa los snapshots.
 
-Después de escribir una migración a mano, correr `npm -C apps/api run db:generate` (necesita una terminal interactiva), vaciar el `.sql` que proponga —lo que describe ya está aplicado— y quedarse con el snapshot. Es el mismo patrón de la `0008`.
+Después de escribir una migración a mano, correr `npm -C apps/api run db:generate` (necesita una terminal interactiva), vaciar el `.sql` que proponga —lo que describe ya está aplicado— y quedarse con el snapshot.
 
 **No se toca el `when` de una entrada del journal que ya se aplicó en algún lado.** El migrador decide qué correr comparando ese timestamp con el de la última migración registrada en la base: cambiarlo hace que una migración ya aplicada vuelva a ejecutarse, y un `CREATE INDEX` repetido falla con `42P07`. Si pasa en la base de tests, se suelta (`DROP DATABASE app_dev_test`) y la suite la rehace sola.
 

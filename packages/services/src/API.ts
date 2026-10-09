@@ -1,6 +1,7 @@
 import { AuthService } from './components/auth';
 import { HealthService } from './components/health';
 import { LeadsService } from './components/leads';
+import { WhatsAppService } from './components/whatsapp';
 import type { HttpClient, TokenProvider } from './http';
 import { SafeFetchClient } from './http';
 
@@ -10,7 +11,7 @@ import { SafeFetchClient } from './http';
 export interface APIConfig {
   baseURL: string;
   token?: TokenProvider;
-  /** Se llama cuando la API responde 401 (sesión vencida o revocada). */
+  /** Called when the API answers 401 (expired or revoked session). */
   onUnauthorized?: () => void;
   /** Optional: provide a custom HttpClient implementation (for testing or alternative transports) */
   httpClient?: HttpClient;
@@ -23,6 +24,7 @@ export interface APIService {
   auth: AuthService;
   health: HealthService;
   leads: LeadsService;
+  whatsapp: WhatsAppService;
 }
 
 export class API {
@@ -46,6 +48,7 @@ export class API {
       auth: new AuthService(this.httpClient),
       health: new HealthService(this.httpClient),
       leads: new LeadsService(this.httpClient),
+      whatsapp: new WhatsAppService(this.httpClient),
     });
   }
 }

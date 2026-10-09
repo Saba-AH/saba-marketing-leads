@@ -10,7 +10,7 @@ import { CurrentUser } from './CurrentUser';
 @ApiBearerAuth()
 @Controller('me')
 export class MeController {
-  /** Sin consulta extra: el guard ya cargó el perfil al validar la sesión. */
+  /** No extra call to Saba: the guard already loaded the user when validating the session. */
   @Get()
   @ApiOperation({ summary: 'Usuario de la sesión actual' })
   @ZodApiResponse(HttpStatus.OK, meResponseSchema)

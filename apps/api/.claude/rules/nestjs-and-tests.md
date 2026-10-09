@@ -13,4 +13,4 @@
 
 Los casos de uso se instancian directo, sin TestBed. Los puertos se doblan con objetos planos o `vi.fn()`. Se afirma sobre el valor devuelto o la excepción lanzada. Ver `src/test/health/health.test.ts`.
 
-Lo que sí necesita base de datos —SQL cruda, migraciones, transacciones— se prueba contra el **Postgres local** del stack de Supabase (`npm run db:up`), no contra un doble.
+Lo que sí necesita base de datos —SQL cruda, migraciones, transacciones— se prueba contra el **Postgres local** de `docker-compose.yml` (`npm run db:up`), no contra un doble. Saba nunca se llama de verdad en los tests: se doblan sus adaptadores (`HttpSabaAuthGateway`, `HttpSabaCustomersReader`) o se stubbea `fetch`.

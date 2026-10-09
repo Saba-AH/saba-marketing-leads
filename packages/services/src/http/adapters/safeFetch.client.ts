@@ -245,8 +245,8 @@ export class SafeFetchClient implements HttpClient {
    */
   private buildUrl(path: string, params?: QueryParams): URL {
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-    // Una base relativa (`/api/backend`) se resuelve contra la página actual:
-    // es como el panel habla con su propio BFF desde el navegador.
+    // A relative base (`/api/backend`) resolves against the current page: that is
+    // how the panel talks to its own BFF from the browser.
     const url = new URL(`${this.baseUrl}${normalizedPath}`, currentPageUrl());
 
     if (params) {

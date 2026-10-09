@@ -7,11 +7,11 @@ export interface SwaggerCredentials {
 }
 
 /**
- * Qué hacer con Swagger según el entorno:
- * - `protected`: hay credenciales → Basic Auth.
- * - `open`: sin credenciales fuera de producción → abierto (desarrollo local).
- * - `disabled`: sin credenciales en producción → no se monta. Fail-closed: un
- *   olvido de configuración no deja la documentación de la API expuesta.
+ * What to do with Swagger depending on the environment:
+ * - `protected`: there are credentials → Basic Auth.
+ * - `open`: no credentials outside production → open (local development).
+ * - `disabled`: no credentials in production → not mounted. Fail-closed: a
+ *   forgotten setting does not leave the API docs exposed.
  */
 export type SwaggerAccess =
   | { mode: 'protected'; credentials: SwaggerCredentials }
@@ -31,7 +31,7 @@ export function resolveSwaggerAccess(
     : { mode: 'open' };
 }
 
-/** Comparación en tiempo constante: no filtra por timing cuánto acertó. */
+/** Constant-time comparison: timing does not leak how much matched. */
 function safeEqual(a: string, b: string): boolean {
   const bufA = Buffer.from(a);
   const bufB = Buffer.from(b);
@@ -48,7 +48,7 @@ export function isAuthorized(
   if (separator === -1) return false;
   const user = decoded.slice(0, separator);
   const password = decoded.slice(separator + 1);
-  // Ambas siempre: cortar en el usuario revelaría que el usuario era válido.
+  // Always both: stopping at the user would reveal the user was valid.
   const userOk = safeEqual(user, credentials.user);
   const passwordOk = safeEqual(password, credentials.password);
   return userOk && passwordOk;

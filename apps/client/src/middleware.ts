@@ -9,7 +9,7 @@ import { sessionExpiredResponse } from '@/lib/session/sessionErrors';
 import { refreshSession } from '@/lib/session/upstream';
 
 const LOGIN_PATH = '/login';
-/** Accesibles sin sesión. El logout también: tiene que poder limpiar cookies huérfanas. */
+/** Reachable without a session. Logout too: it has to be able to clear orphaned cookies. */
 const PUBLIC_PATHS = new Set([
   LOGIN_PATH,
   '/api/session/login',
@@ -17,8 +17,9 @@ const PUBLIC_PATHS = new Set([
 ]);
 
 /**
- * Puerta del panel. Decide solo "hay sesión o no" (y la renueva si el access
- * token venció); qué puede hacer cada quien lo decide la API en cada petición.
+ * The panel's gate. It only decides "is there a session or not" (and renews it
+ * if the access token expired); what each person can do is decided by the API
+ * on every request.
  */
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { pathname, search } = request.nextUrl;
@@ -34,8 +35,8 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
   const tokens = refresh ? await refreshSession(request, refresh) : null;
   if (tokens) {
-    // La petición en curso también tiene que llevar el token nuevo, no solo
-    // las siguientes: el route handler o la página lo leen de acá.
+    // The in-flight request also has to carry the new token, not just the next
+    // ones: the route handler or the page read it from here.
     request.cookies.set(SESSION_COOKIES.access, tokens.accessToken);
     request.cookies.set(SESSION_COOKIES.refresh, tokens.refreshToken);
     const response = NextResponse.next({ request });
@@ -53,7 +54,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 }
 
 export const config = {
-  // Todo menos los estáticos de Next y los archivos de `public/`.
+  // Everything except Next's static assets and the `public/` files.
   matcher: [
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|svg|jpg|jpeg|gif|webp|ico|woff2?)$).*)',
   ],

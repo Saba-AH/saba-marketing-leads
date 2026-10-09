@@ -1,10 +1,10 @@
 import { resolve } from 'node:path';
 import { config as loadEnv } from 'dotenv';
 import { Pool } from 'pg';
-import { localDatabaseUrl, resolveDatabaseUrl } from './databaseUrl';
+import { assertLocalDatabase, resolveDatabaseUrl } from './databaseUrl';
 
 /**
- * Infraestructura compartida por los comandos de migración.
+ * Infrastructure shared by the migration commands.
  */
 
 const API_ROOT = resolve(__dirname, '../../..');
@@ -16,36 +16,23 @@ function loadApiEnv(): void {
   loadEnv({ path: resolve(API_ROOT, '.env'), quiet: true });
 }
 
-/** La base que eligen `DATABASE` / `DB_TARGET` (ver `databaseUrl.ts`). */
+/** `DATABASE` from the environment or `apps/api/.env` (see `databaseUrl.ts`). */
 export function databaseUrl(): string {
   loadApiEnv();
   return resolveDatabaseUrl();
 }
 
 /**
- * La base para los tests: siempre la local (o la `DATABASE` explícita del
- * CI), **nunca** la que elige `DB_TARGET`. La suite crea una base aparte y
- * trunca tablas: con `DB_TARGET=supabase` en el `.env` no puede terminar
- * corriendo contra Supabase.
+ * The server the test database is created on: the same `DATABASE`, which
+ * must be local. The suite creates `app_dev_test` and truncates it; with
+ * `.env` pointing to an EC2 it would do that on a real server.
  */
 export function testBaseDatabaseUrl(): string {
-  loadApiEnv();
-  return process.env.DATABASE || localDatabaseUrl();
+  const url = databaseUrl();
+  assertLocalDatabase(url, 'la suite de tests');
+  return url;
 }
 
 export function createPool(url = databaseUrl()): Pool {
   return new Pool({ connectionString: url });
-}
-
-/**
- * Extensiones que el esquema necesita para siquiera crearse: sin `vector` la
- * columna `embedding` no existe como tipo.
- *
- * Una base nueva (la de tests, o Cloud SQL) no las trae. Es idempotente, así
- * que corre siempre antes de migrar.
- */
-export async function ensureExtensions(pool: Pool): Promise<void> {
-  await pool.query('CREATE EXTENSION IF NOT EXISTS vector');
-  await pool.query('CREATE EXTENSION IF NOT EXISTS pg_trgm');
-  await pool.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
 }

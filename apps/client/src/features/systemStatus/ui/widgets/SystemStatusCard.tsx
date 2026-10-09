@@ -11,7 +11,7 @@ import { useSystemStatus } from '../../application/queries/useSystemStatus.query
 import { DependencyRow } from '../components/DependencyRow';
 
 /**
- * Consulta la API desde el navegador con React Query.
+ * Queries the API from the browser with React Query.
  */
 export function SystemStatusCard() {
   const { data, isPending, error } = useSystemStatus();

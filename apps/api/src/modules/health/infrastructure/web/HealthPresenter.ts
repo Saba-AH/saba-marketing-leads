@@ -2,8 +2,8 @@ import type { THealthResponse, TLivenessResponse } from '@repo/schemas';
 import type { HealthReport } from '../../domain/HealthReport';
 
 /**
- * Traduce el reporte de dominio al contrato compartido con el cliente
- * (`@repo/schemas`). El dominio no conoce la forma del sobre HTTP.
+ * Translates the domain report into the contract shared with the client
+ * (`@repo/schemas`). The domain does not know the shape of the HTTP envelope.
  */
 export function toHealthResponse(report: HealthReport): THealthResponse {
   return {
@@ -26,7 +26,7 @@ export function toHealthResponse(report: HealthReport): THealthResponse {
   };
 }
 
-/** Liveness: el proceso responde, sin depender de ninguna comprobación. */
+/** Liveness: the process responds, without depending on any check. */
 export function toLivenessResponse(): TLivenessResponse {
   return { success: true, data: { status: 'ok' } };
 }

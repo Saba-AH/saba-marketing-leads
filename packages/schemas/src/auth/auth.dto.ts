@@ -1,44 +1,58 @@
 import { z } from 'zod';
-import { LIMITES, maximo } from '../limites';
+import { LENGTH_LIMITS, maxLengthMessage } from '../lengthLimits';
 import { buildSafeResponseSchema } from '../utils';
 
-/** Roles de staff de Saba (`profiles.role`) que pueden entrar al panel. */
+/** Saba staff roles (`profiles.role`) that can get into the panel. */
 export const STAFF_ROLES = ['admin', 'cajero', 'vendedor'] as const;
 export const staffRoleSchema = z.enum(STAFF_ROLES);
 export type TStaffRole = z.infer<typeof staffRoleSchema>;
 
 /**
- * Códigos de error del login que el cliente distingue: los de bloqueo y
- * rate limit se muestran como advertencia, no como error.
+ * Panel permissions, `<resource>:<action>`. Saba grants them (today
+ * `marketing:access` comes from `profiles.has_marketing_access`) and the API
+ * enforces them; the client only uses them to render.
+ */
+export const PERMISSIONS = ['marketing:access'] as const;
+export const permissionSchema = z.enum(PERMISSIONS);
+export type TPermission = z.infer<typeof permissionSchema>;
+
+/**
+ * Login error codes the client tells apart: lockout and rate limit ones are
+ * shown as a warning, not as an error.
  */
 export const AUTH_ERROR_CODES = {
-  credencialesInvalidas: 'AUTH_CREDENCIALES_INVALIDAS',
-  captchaInvalido: 'AUTH_CAPTCHA_INVALIDO',
-  demasiadosIntentos: 'AUTH_DEMASIADOS_INTENTOS',
-  cuentaBloqueada: 'AUTH_CUENTA_BLOQUEADA',
-  sinAcceso: 'AUTH_SIN_ACCESO',
-  sesionInvalida: 'AUTH_SESION_INVALIDA',
+  invalidCredentials: 'AUTH_INVALID_CREDENTIALS',
+  invalidCaptcha: 'AUTH_INVALID_CAPTCHA',
+  tooManyAttempts: 'AUTH_TOO_MANY_ATTEMPTS',
+  accountLocked: 'AUTH_ACCOUNT_LOCKED',
+  noAccess: 'AUTH_NO_ACCESS',
+  invalidSession: 'AUTH_INVALID_SESSION',
+  permissionDenied: 'AUTH_PERMISSION_DENIED',
+  unavailable: 'AUTH_UNAVAILABLE',
 } as const;
 export type TAuthErrorCode =
   (typeof AUTH_ERROR_CODES)[keyof typeof AUTH_ERROR_CODES];
 
-/** Tope de la contraseña: GoTrue no acepta más de 72 bytes (bcrypt). */
-const CONTRASENA_MAX = 72;
-/** Los tokens de Turnstile rondan los 2 KB. */
+/** Password cap: Supabase Auth (behind Saba) does not accept more than 72 bytes (bcrypt). */
+const PASSWORD_MAX = 72;
+/** Turnstile tokens are around 2 KB. */
 const CAPTCHA_TOKEN_MAX = 4096;
-/** Los refresh tokens de GoTrue son cortos; el tope solo corta abusos. */
+/** Supabase refresh tokens are short; the cap only stops abuse. */
 const REFRESH_TOKEN_MAX = 512;
 
-/** Body de `POST /auth/login`. */
+/** Body of `POST /auth/login`. */
 export const loginSchema = z.object({
-  correo: z
+  email: z
     .email('El correo no es válido.')
-    .max(LIMITES.correo, maximo('El correo', LIMITES.correo))
-    .transform((correo) => correo.trim().toLowerCase()),
-  contrasena: z
+    .max(
+      LENGTH_LIMITS.email,
+      maxLengthMessage('El correo', LENGTH_LIMITS.email)
+    )
+    .transform((email) => email.trim().toLowerCase()),
+  password: z
     .string()
     .min(1, 'La contraseña es obligatoria.')
-    .max(CONTRASENA_MAX, maximo('La contraseña', CONTRASENA_MAX)),
+    .max(PASSWORD_MAX, maxLengthMessage('La contraseña', PASSWORD_MAX)),
   captchaToken: z
     .string()
     .min(1, 'Completa el CAPTCHA.')
@@ -46,39 +60,40 @@ export const loginSchema = z.object({
 });
 export type TLogin = z.infer<typeof loginSchema>;
 
-/** Body de `POST /auth/refresh`. */
-export const refreshSesionSchema = z.object({
+/** Body of `POST /auth/refresh`. */
+export const refreshSessionSchema = z.object({
   refreshToken: z.string().min(1).max(REFRESH_TOKEN_MAX),
 });
-export type TRefreshSesion = z.infer<typeof refreshSesionSchema>;
+export type TRefreshSession = z.infer<typeof refreshSessionSchema>;
 
-export const sesionTokensSchema = z.object({
+export const sessionTokensSchema = z.object({
   accessToken: z.string(),
   refreshToken: z.string(),
-  /** Vencimiento del access token, en segundos desde epoch (como `exp`). */
+  /** Access token expiry, in seconds since epoch (like `exp`). */
   expiresAt: z.number().int(),
 });
-export type TSesionTokens = z.infer<typeof sesionTokensSchema>;
+export type TSessionTokens = z.infer<typeof sessionTokensSchema>;
 
-/** Quién tiene la sesión: lo que pinta el menú de usuario. */
-export const usuarioSesionSchema = z.object({
+/** Who holds the session: what the user menu renders. */
+export const sessionUserSchema = z.object({
   id: z.string(),
-  correo: z.string(),
-  nombre: z.string(),
-  rol: staffRoleSchema,
+  email: z.string(),
+  name: z.string(),
+  role: staffRoleSchema,
+  permissions: z.array(permissionSchema),
 });
-export type TUsuarioSesion = z.infer<typeof usuarioSesionSchema>;
+export type TSessionUser = z.infer<typeof sessionUserSchema>;
 
 export const loginResponseSchema = buildSafeResponseSchema(
-  z.object({ sesion: sesionTokensSchema, usuario: usuarioSesionSchema })
+  z.object({ session: sessionTokensSchema, user: sessionUserSchema })
 );
 export type TLoginResponse = z.infer<typeof loginResponseSchema>;
 
-export const refreshSesionResponseSchema =
-  buildSafeResponseSchema(sesionTokensSchema);
-export type TRefreshSesionResponse = z.infer<
-  typeof refreshSesionResponseSchema
+export const refreshSessionResponseSchema =
+  buildSafeResponseSchema(sessionTokensSchema);
+export type TRefreshSessionResponse = z.infer<
+  typeof refreshSessionResponseSchema
 >;
 
-export const meResponseSchema = buildSafeResponseSchema(usuarioSesionSchema);
+export const meResponseSchema = buildSafeResponseSchema(sessionUserSchema);
 export type TMeResponse = z.infer<typeof meResponseSchema>;

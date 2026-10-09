@@ -14,9 +14,9 @@ import { StructuredLogger } from './StructuredLogger';
 })
 export class LoggingModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    // `{*path}`: comodín de todas las rutas en la sintaxis de path-to-regexp
-    // que usa Nest 11. El viejo `'*'` funciona pero Nest lo auto-convierte y
-    // avisa con un WARNING en cada arranque.
+    // `{*path}`: wildcard for every route in the path-to-regexp syntax Nest 11
+    // uses. The old `'*'` works but Nest auto-converts it and logs a WARNING on
+    // every startup.
     consumer.apply(CorrelationIdMiddleware).forRoutes('{*path}');
   }
 }

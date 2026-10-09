@@ -1,17 +1,17 @@
 import { z } from 'zod';
-import { LIMITES, maximo } from '../limites';
+import { LENGTH_LIMITS, maxLengthMessage } from '../lengthLimits';
 import { buildSafeResponseSchema } from '../utils';
 
 /**
- * Lead de marketing: un contacto interesado que llega por algún canal.
- * Módulo de referencia del template — recorre schema → API → BD → cliente.
+ * Marketing lead: an interested contact arriving through some channel.
+ * The template's reference module — walks schema → API → DB → client.
  */
 export const leadSchema = z.object({
   id: z.string(),
-  nombre: z.string(),
-  correo: z.string(),
-  /** Canal por el que llegó (formulario web, referido, evento…). */
-  origen: z.string().nullable(),
+  name: z.string(),
+  email: z.string(),
+  /** Channel it arrived through (web form, referral, event…). */
+  source: z.string().nullable(),
   createdAt: z.string(),
 });
 export type TLead = z.infer<typeof leadSchema>;
@@ -22,23 +22,29 @@ export type TLeadResponse = z.infer<typeof leadResponseSchema>;
 export const leadsResponseSchema = buildSafeResponseSchema(z.array(leadSchema));
 export type TLeadsResponse = z.infer<typeof leadsResponseSchema>;
 
-/** Body de `POST /leads`. */
-export const crearLeadSchema = z.object({
-  nombre: z
+/** Body of `POST /leads`. */
+export const createLeadSchema = z.object({
+  name: z
     .string()
     .trim()
     .min(1, 'El nombre es obligatorio.')
-    .max(LIMITES.nombre, maximo('El nombre', LIMITES.nombre)),
-  correo: z
+    .max(LENGTH_LIMITS.name, maxLengthMessage('El nombre', LENGTH_LIMITS.name)),
+  email: z
     .email('El correo no es válido.')
-    .max(LIMITES.correo, maximo('El correo', LIMITES.correo))
-    // El índice único compara texto exacto: normalizar acá evita que
-    // `Ana@x.com` y `ana@x.com` cuenten como dos leads distintos.
-    .transform((correo) => correo.toLowerCase()),
-  origen: z
+    .max(
+      LENGTH_LIMITS.email,
+      maxLengthMessage('El correo', LENGTH_LIMITS.email)
+    )
+    // The unique index compares exact text: normalizing here keeps `Ana@x.com` and
+    // `ana@x.com` from counting as two different leads.
+    .transform((email) => email.toLowerCase()),
+  source: z
     .string()
     .trim()
-    .max(LIMITES.etiqueta, maximo('El origen', LIMITES.etiqueta))
+    .max(
+      LENGTH_LIMITS.label,
+      maxLengthMessage('El origen', LENGTH_LIMITS.label)
+    )
     .optional(),
 });
-export type TCrearLead = z.infer<typeof crearLeadSchema>;
+export type TCreateLead = z.infer<typeof createLeadSchema>;

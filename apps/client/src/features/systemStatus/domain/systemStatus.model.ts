@@ -8,10 +8,11 @@ export interface Dependency {
 }
 
 /**
- * Estado del backend visto desde el panel.
+ * Backend status as seen from the panel.
  *
- * Se diferencia del DTO en dos cosas: el instante es un `Date` y no un string,
- * y `isOperational` es una regla del dominio, no un campo que venga en la red.
+ * It differs from the DTO in two ways: the instant is a `Date` and not a
+ * string, and `isOperational` is a domain rule, not a field coming over the
+ * wire.
  */
 export interface SystemStatus {
   isOperational: boolean;

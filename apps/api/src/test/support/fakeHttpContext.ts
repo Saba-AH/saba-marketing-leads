@@ -2,7 +2,7 @@ import type { ArgumentsHost } from '@nestjs/common';
 import { vi } from 'vitest';
 import type { StructuredLogger } from '../../infrastructure/logging/StructuredLogger';
 
-/** Doble de `StructuredLogger` para probar filtros globales sin escribir a stdout/stderr. */
+/** `StructuredLogger` double to test global filters without writing to stdout/stderr. */
 export function fakeLogger(): StructuredLogger {
   return {
     log: vi.fn(),
@@ -14,7 +14,7 @@ export function fakeLogger(): StructuredLogger {
   } as unknown as StructuredLogger;
 }
 
-/** Doble mínimo de `ArgumentsHost` para probar filtros globales sin levantar Nest. */
+/** Minimal `ArgumentsHost` double to test global filters without booting Nest. */
 export function fakeHost(): {
   host: ArgumentsHost;
   json: ReturnType<typeof vi.fn>;

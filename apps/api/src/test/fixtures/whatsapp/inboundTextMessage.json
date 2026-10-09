@@ -1,0 +1,41 @@
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "1293126782760816",
+      "changes": [
+        {
+          "field": "messages",
+          "value": {
+            "contacts": [
+              {
+                "wa_id": "584140000001",
+                "profile": {
+                  "name": "Cliente Prueba"
+                },
+                "user_id": "VE.0000000000000001"
+              }
+            ],
+            "messages": [
+              {
+                "id": "wamid.FIXTURE_INBOUND_TEXT",
+                "from": "584140000001",
+                "text": {
+                  "body": "hola prueba"
+                },
+                "type": "text",
+                "timestamp": "1791403246",
+                "from_user_id": "VE.0000000000000001"
+              }
+            ],
+            "metadata": {
+              "phone_number_id": "1014761568397246",
+              "display_phone_number": "15556346598"
+            },
+            "messaging_product": "whatsapp"
+          }
+        }
+      ]
+    }
+  ]
+}

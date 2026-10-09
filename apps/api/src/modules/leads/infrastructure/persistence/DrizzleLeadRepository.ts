@@ -4,10 +4,10 @@ import {
   type ApiDb,
   DRIZZLE_CLIENT,
 } from '../../../../infrastructure/database/drizzle.module';
-import { esViolacionDeUnicidad } from '../../../../infrastructure/database/postgresErrors';
+import { isUniqueViolation } from '../../../../infrastructure/database/postgresErrors';
 import type { LeadRepositoryPort } from '../../application/ports/out/LeadRepositoryPort';
-import { LeadCorreoDuplicadoException } from '../../domain/exceptions/LeadCorreoDuplicadoException';
-import type { DatosLead, Lead } from '../../domain/Lead';
+import { LeadDuplicateEmailException } from '../../domain/exceptions/LeadDuplicateEmailException';
+import type { Lead, LeadData } from '../../domain/Lead';
 import { toLeadDomain } from './LeadMapper';
 import { leads } from './leads.schema';
 
@@ -15,35 +15,35 @@ import { leads } from './leads.schema';
 export class DrizzleLeadRepository implements LeadRepositoryPort {
   constructor(@Inject(DRIZZLE_CLIENT) private readonly db: ApiDb) {}
 
-  /** Los más recientes primero: es lo que se revisa al abrir el listado. */
+  /** Most recent first: that is what people check when opening the list. */
   async findAll(): Promise<Lead[]> {
-    const filas = await this.db.query.leads.findMany({
+    const rows = await this.db.query.leads.findMany({
       orderBy: desc(leads.createdAt),
     });
-    return filas.map(toLeadDomain);
+    return rows.map(toLeadDomain);
   }
 
-  async findByCorreo(correo: string): Promise<Lead | null> {
-    const fila = await this.db.query.leads.findFirst({
-      where: eq(leads.correo, correo),
+  async findByEmail(email: string): Promise<Lead | null> {
+    const row = await this.db.query.leads.findFirst({
+      where: eq(leads.email, email),
     });
-    return fila ? toLeadDomain(fila) : null;
+    return row ? toLeadDomain(row) : null;
   }
 
-  async crear(datos: DatosLead): Promise<Lead> {
+  async create(data: LeadData): Promise<Lead> {
     try {
-      const [fila] = await this.db
+      const [row] = await this.db
         .insert(leads)
         .values({
-          nombre: datos.nombre,
-          correo: datos.correo,
-          origen: datos.origen ?? null,
+          name: data.name,
+          email: data.email,
+          source: data.source ?? null,
         })
         .returning();
-      return toLeadDomain(fila);
+      return toLeadDomain(row);
     } catch (error) {
-      if (esViolacionDeUnicidad(error)) {
-        throw new LeadCorreoDuplicadoException(error);
+      if (isUniqueViolation(error)) {
+        throw new LeadDuplicateEmailException(error);
       }
       throw error;
     }

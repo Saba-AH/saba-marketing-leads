@@ -6,10 +6,10 @@ import { CorrelationContext } from './CorrelationContext';
 export const CORRELATION_ID_HEADER = 'x-correlation-id';
 
 /**
- * Todo request entra con un id de correlación: el que traiga el caller en
- * `x-correlation-id` (encadena con un servicio previo, p. ej. el cliente SSR)
- * o uno nuevo si no llega ninguno. Se devuelve en la respuesta y se guarda en
- * `AsyncLocalStorage` para el resto del request.
+ * Every request comes in with a correlation id: the one the caller sends in
+ * `x-correlation-id` (chaining with an upstream service, e.g. the SSR client)
+ * or a new one if none arrives. It is returned in the response and stored in
+ * `AsyncLocalStorage` for the rest of the request.
  */
 @Injectable()
 export class CorrelationIdMiddleware implements NestMiddleware {

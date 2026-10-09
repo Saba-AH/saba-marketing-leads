@@ -1,13 +1,13 @@
 import type {
   TLoginResponse,
   TMeResponse,
-  TRefreshSesionResponse,
-  TSesionTokens,
+  TRefreshSessionResponse,
+  TSessionTokens,
 } from '@repo/schemas';
 import type { LoginResult } from '../../application/ports/in/LoginPort';
 import type { AuthenticatedUser, AuthSession } from '../../domain/AuthSession';
 
-function toSesionTokens(session: AuthSession): TSesionTokens {
+function toSessionTokens(session: AuthSession): TSessionTokens {
   return {
     accessToken: session.accessToken,
     refreshToken: session.refreshToken,
@@ -18,14 +18,14 @@ function toSesionTokens(session: AuthSession): TSesionTokens {
 export function toLoginResponse(result: LoginResult): TLoginResponse {
   return {
     success: true,
-    data: { sesion: toSesionTokens(result.sesion), usuario: result.usuario },
+    data: { session: toSessionTokens(result.session), user: result.user },
   };
 }
 
-export function toRefreshSesionResponse(
+export function toRefreshSessionResponse(
   session: AuthSession
-): TRefreshSesionResponse {
-  return { success: true, data: toSesionTokens(session) };
+): TRefreshSessionResponse {
+  return { success: true, data: toSessionTokens(session) };
 }
 
 export function toMeResponse(user: AuthenticatedUser): TMeResponse {

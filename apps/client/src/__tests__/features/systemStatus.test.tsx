@@ -5,14 +5,14 @@ import { server } from '../mocks/server';
 import { render, screen } from '../test-utils/test-utils';
 
 /**
- * Recorre el camino completo del panel: HTTP interceptado por MSW → parseo con
- * el esquema compartido de @repo/schemas → modelo de dominio → pantalla.
+ * Walks the panel's full path: HTTP intercepted by MSW → parsing with the
+ * shared @repo/schemas schema → domain model → screen.
  *
- * Las consultas distinguen mayúscula: `operativa` es la línea de resumen y
- * `Operativa` la etiqueta de la dependencia.
+ * Queries are case-sensitive: `operativa` is the summary line and `Operativa`
+ * the dependency label.
  */
 describe('HomePage', () => {
-  it('muestra la API operativa y sus dependencias', async () => {
+  it('shows the API as operational and its dependencies', async () => {
     render(<HomePage />);
 
     expect(await screen.findByText('operativa')).toBeInTheDocument();
@@ -21,7 +21,7 @@ describe('HomePage', () => {
     expect(await screen.findByText('2 ms')).toBeInTheDocument();
   });
 
-  it('distingue una dependencia caída de una API inalcanzable', async () => {
+  it('tells apart a dependency that is down from an unreachable API', async () => {
     server.use(databaseDownHandler);
 
     render(<HomePage />);

@@ -1,11 +1,11 @@
 import { customType } from 'drizzle-orm/pg-core';
 
 /**
- * `tsvector` no tiene tipo nativo en Drizzle.
+ * `tsvector` has no native type in Drizzle.
  *
- * La columna la mantiene la aplicación, no una GENERATED: el texto buscable
- * incluye nombres de marca y de persona que viven en otras tablas (E01·04), y
- * una columna generada solo puede depender de su propia fila.
+ * The application maintains the column, not a GENERATED one: the searchable
+ * text includes brand and person names that live in other tables (E01·04), and
+ * a generated column can only depend on its own row.
  */
 export const tsvector = customType<{ data: string; driverData: string }>({
   dataType() {
@@ -14,13 +14,13 @@ export const tsvector = customType<{ data: string; driverData: string }>({
 });
 
 /**
- * Configuración de búsqueda de texto. Ajústala al idioma del contenido: la
- * configuración decide el stemming y las stop words.
+ * Text search configuration. Adjust it to the content's language: the
+ * configuration drives stemming and stop words.
  */
 export const TEXT_SEARCH_CONFIG = 'spanish';
 
 /**
- * Dimensión del embedding de `multimodalembedding@001` de Vertex AI.
- * Cambiar de modelo obliga a recalcular todos los embeddings almacenados.
+ * Embedding dimension of Vertex AI's `multimodalembedding@001`.
+ * Changing models forces recomputing every stored embedding.
  */
 export const EMBEDDING_DIMENSIONS = 1408;

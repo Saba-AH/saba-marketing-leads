@@ -8,47 +8,47 @@ import {
 } from '@repo/ui/components/sidebar';
 import { LogOut } from 'lucide-react';
 import React from 'react';
-import { recargarEn } from '@/lib/session/recargarEn';
-import { useCerrarSesion } from '../../application/mutations/useCerrarSesion.mutation';
-import { useUsuarioSesion } from '../../application/queries/useUsuarioSesion.query';
-import { etiquetaRol, iniciales } from '../../domain/usuarioSesion.model';
+import { reloadIn } from '@/lib/session/reloadIn';
+import { useLogout } from '../../application/mutations/useLogout.mutation';
+import { useSessionUser } from '../../application/queries/useSessionUser.query';
+import { initials, roleLabel } from '../../domain/sessionUser.model';
 
-/** Pie del sidebar: quién tiene la sesión y el botón para cerrarla. */
+/** Sidebar footer: who holds the session and the button to end it. */
 export function UserMenu(): React.JSX.Element {
-  const usuario = useUsuarioSesion();
-  const cerrarSesion = useCerrarSesion();
+  const user = useSessionUser();
+  const logout = useLogout();
 
-  function salir(): void {
-    cerrarSesion.mutate(undefined, {
-      onSettled: () => recargarEn('/login'),
+  function exit(): void {
+    logout.mutate(undefined, {
+      onSettled: () => reloadIn('/login'),
     });
   }
 
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        {usuario.data ? (
-          // `asChild` + `div`: muestra quién es, no es una acción.
+        {user.data ? (
+          // `asChild` + `div`: it shows who you are, it is not an action.
           <SidebarMenuButton
             asChild
             className="cursor-default hover:bg-transparent active:bg-transparent"
             size="lg"
-            tooltip={`${usuario.data.nombre} · ${etiquetaRol(usuario.data.rol)}`}
+            tooltip={`${user.data.name} · ${roleLabel(user.data.role)}`}
           >
             <div>
               <span
                 aria-hidden="true"
                 className="flex size-8 shrink-0 items-center justify-center rounded-full bg-sidebar-primary font-bold text-sidebar-primary-foreground text-xs"
               >
-                {iniciales(usuario.data.nombre)}
+                {initials(user.data.name)}
               </span>
               <span className="grid min-w-0 flex-1 text-left leading-tight">
                 <span className="truncate font-semibold text-sidebar-accent-foreground">
-                  {usuario.data.nombre}
+                  {user.data.name}
                 </span>
-                <span className="truncate text-xs">{usuario.data.correo}</span>
+                <span className="truncate text-xs">{user.data.email}</span>
                 <span className="truncate text-[11px]">
-                  {etiquetaRol(usuario.data.rol)}
+                  {roleLabel(user.data.role)}
                 </span>
               </span>
             </div>
@@ -59,8 +59,8 @@ export function UserMenu(): React.JSX.Element {
       </SidebarMenuItem>
       <SidebarMenuItem>
         <SidebarMenuButton
-          disabled={cerrarSesion.isPending}
-          onClick={salir}
+          disabled={logout.isPending}
+          onClick={exit}
           tooltip="Cerrar sesión"
         >
           <LogOut />

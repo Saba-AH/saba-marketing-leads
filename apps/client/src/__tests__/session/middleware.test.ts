@@ -12,7 +12,7 @@ function refreshResponds(ok: boolean): void {
       ok
         ? HttpResponse.json({ success: true, data: tokens('2') })
         : HttpResponse.json(
-            { success: false, error: 'x', code: 'AUTH_SESION_INVALIDA' },
+            { success: false, error: 'x', code: 'AUTH_INVALID_SESSION' },
             { status: 401 }
           )
     )
@@ -20,7 +20,7 @@ function refreshResponds(ok: boolean): void {
 }
 
 describe('middleware', () => {
-  it('manda al login sin sesión, recordando a dónde iba', async () => {
+  it('sends to the login without a session, remembering where it was going', async () => {
     const response = await middleware(panelRequest('/chats?id=1'));
 
     expect(response.status).toBe(307);
@@ -29,7 +29,7 @@ describe('middleware', () => {
     );
   });
 
-  it('deja pasar con un access token vigente', async () => {
+  it('lets through with a valid access token', async () => {
     const response = await middleware(
       panelRequest('/', { cookies: { saba_session: 'access-1' } })
     );
@@ -37,7 +37,7 @@ describe('middleware', () => {
     expect(response.headers.get('x-middleware-next')).toBe('1');
   });
 
-  it('renueva la sesión si solo queda el refresh token', async () => {
+  it('renews the session if only the refresh token is left', async () => {
     refreshResponds(true);
 
     const response = await middleware(
@@ -48,13 +48,13 @@ describe('middleware', () => {
     const cookies = setCookies(response);
     expect(cookies.get('saba_session')).toMatch(/access-2.*HttpOnly/i);
     expect(cookies.get('saba_refresh')).toMatch(/refresh-2.*SameSite=strict/i);
-    // La petición en curso también lleva el token nuevo.
+    // The in-flight request also carries the new token.
     expect(response.headers.get('x-middleware-request-cookie')).toContain(
       'saba_session=access-2'
     );
   });
 
-  it('cierra la sesión si el refresh token ya no sirve', async () => {
+  it('ends the session if the refresh token is no longer valid', async () => {
     refreshResponds(false);
 
     const response = await middleware(
@@ -67,16 +67,16 @@ describe('middleware', () => {
     );
   });
 
-  it('responde 401 en vez de redirigir a las llamadas de la API', async () => {
+  it('answers 401 instead of redirecting API calls', async () => {
     const response = await middleware(panelRequest('/api/backend/v1/me'));
 
     expect(response.status).toBe(401);
     expect(await response.json()).toMatchObject({
-      code: 'AUTH_SESION_INVALIDA',
+      code: 'AUTH_INVALID_SESSION',
     });
   });
 
-  it('saca del login a quien ya tiene sesión', async () => {
+  it('takes whoever already has a session out of the login', async () => {
     const response = await middleware(
       panelRequest('/login', { cookies: { saba_session: 'access-1' } })
     );

@@ -11,12 +11,12 @@ jest.mock('next/navigation', () => ({
 }));
 
 const assign = jest.fn();
-jest.mock('@/lib/session/recargarEn', () => ({
-  recargarEn: (path: string) => assign(path),
+jest.mock('@/lib/session/reloadIn', () => ({
+  reloadIn: (path: string) => assign(path),
 }));
 
 beforeAll(() => {
-  // jsdom no trae matchMedia (lo usa el sidebar para detectar móvil).
+  // jsdom has no matchMedia (the sidebar uses it to detect mobile).
   Object.defineProperty(window, 'matchMedia', {
     configurable: true,
     value: (query: string) => ({
@@ -30,7 +30,7 @@ beforeAll(() => {
 
 function renderShell(): void {
   render(
-    <AppShell defaultOpen pieSidebar={<UserMenu />}>
+    <AppShell defaultOpen sidebarFooter={<UserMenu />}>
       <p>contenido</p>
     </AppShell>
   );
@@ -42,7 +42,7 @@ describe('AppShell', () => {
     assign.mockClear();
   });
 
-  it('muestra la navegación general y marca la ruta actual', () => {
+  it('shows the general navigation and highlights the current route', () => {
     pathname = '/chats';
     renderShell();
 
@@ -57,7 +57,7 @@ describe('AppShell', () => {
     expect(screen.getByText('contenido')).toBeInTheDocument();
   });
 
-  it('muestra quién tiene la sesión', async () => {
+  it('shows who holds the session', async () => {
     renderShell();
 
     expect(await screen.findByText('Angel Hernández')).toBeInTheDocument();
@@ -67,11 +67,11 @@ describe('AppShell', () => {
     expect(screen.getByText('Administrador')).toBeInTheDocument();
   });
 
-  it('cierra la sesión y vuelve al login', async () => {
-    let cerro = false;
+  it('ends the session and goes back to the login', async () => {
+    let closed = false;
     server.use(
       http.post('http://localhost/api/session/logout', () => {
-        cerro = true;
+        closed = true;
         return new HttpResponse(null, { status: 204 });
       })
     );
@@ -81,6 +81,6 @@ describe('AppShell', () => {
     await user.click(screen.getByRole('button', { name: 'Cerrar sesión' }));
 
     await waitFor(() => expect(assign).toHaveBeenCalledWith('/login'));
-    expect(cerro).toBe(true);
+    expect(closed).toBe(true);
   });
 });

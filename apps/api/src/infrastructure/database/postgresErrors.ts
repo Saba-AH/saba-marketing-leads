@@ -1,13 +1,13 @@
-/** `unique_violation` (Postgres, tabla de códigos de error de la clase 23). */
+/** `unique_violation` (Postgres, error code table for class 23). */
 const UNIQUE_VIOLATION = '23505';
 
 /**
- * Un índice único es quien decide de verdad: cualquier chequeo previo en el
- * caso de uso deja pasar la carrera entre dos peticiones simultáneas.
- * Detectarlo acá permite traducirlo a la excepción de dominio que
- * corresponda, y que el usuario lea un 409 explicable en vez de un 500.
+ * A unique index is what really decides: any prior check in the use case lets
+ * the race between two simultaneous requests through. Detecting it here lets
+ * us translate it into the matching domain exception, so the user reads an
+ * explainable 409 instead of a 500.
  */
-export function esViolacionDeUnicidad(error: unknown): boolean {
+export function isUniqueViolation(error: unknown): boolean {
   return (
     typeof error === 'object' &&
     error !== null &&
@@ -16,16 +16,16 @@ export function esViolacionDeUnicidad(error: unknown): boolean {
 }
 
 /**
- * Qué índice se violó, según el campo `constraint` que Postgres adjunta al
- * error.
+ * Which index was violated, according to the `constraint` field Postgres
+ * attaches to the error.
  *
- * Sin esto, una operación que puede tocar varios índices —crear una unidad
- * toca el de su nombre, el de sus posiciones y el de sus aliases— solo puede
- * traducir todas las violaciones al mismo error, y dos de cada tres mensajes
- * apuntan al campo equivocado (#136).
+ * Without this, an operation that can touch several indexes —creating a unit
+ * touches the one on its name, its positions and its aliases— can only map
+ * every violation to the same error, and two out of three messages point at
+ * the wrong field (#136).
  */
-export function constraintViolado(error: unknown): string | undefined {
-  if (!esViolacionDeUnicidad(error)) {
+export function violatedConstraint(error: unknown): string | undefined {
+  if (!isUniqueViolation(error)) {
     return undefined;
   }
   const constraint = (error as { constraint?: unknown }).constraint;

@@ -22,14 +22,14 @@ export type TButtonSizeEnum = (typeof buttonSize)[number];
 export const buttonSizeEnumObject = getEnumObjectFromArray(buttonSize);
 
 const buttonVariants = cva(
-  // Forma del `.btn` del prototipo: rectángulo de 6px, 13px/600 y gap de 6px
-  // — no la píldora de 14px/500 que traía el template.
+  // Shape of the prototype's `.btn`: a 6px rectangle, 13px/600 and a 6px gap
+  // — not the 14px/500 pill the template had.
   "rounded-md inline-flex items-center justify-center gap-1.5 whitespace-nowrap text-[13px] font-semibold transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive hover:cursor-pointer",
   {
     variants: {
       variant: {
-        // Un botón sin variante es la acción principal de su pantalla: casi
-        // negro, como en Saba web (`--primary`). El verde de marca es `cta`.
+        // A button without a variant is its screen's main action: almost black, like
+        // in Saba web (`--primary`). The brand green is `cta`.
         [buttonVariantEnumObject.default]:
           'bg-primary text-primary-foreground shadow-xs hover:bg-primary/90',
         [buttonVariantEnumObject.destructive]:

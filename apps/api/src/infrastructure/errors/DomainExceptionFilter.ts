@@ -17,9 +17,9 @@ import { stackWithCauses } from './stackWithCauses';
 const INTERNAL_ERROR_MESSAGE = 'Ocurrió un error interno.';
 
 /**
- * Traduce toda `DomainException` a la respuesta HTTP del contrato: el código
- * de dominio nunca sale tal cual salvo que ya sea el mensaje pensado para
- * mostrarse — la traducción humana vive en `domainMessages`
+ * Translates every `DomainException` into the contract's HTTP response: the
+ * domain code never goes out as-is unless it already is the message meant to
+ * be shown — the human translation lives in `domainMessages`
  * (`.claude/rules/errors.md`).
  */
 @Injectable()

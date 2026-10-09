@@ -9,22 +9,22 @@ import React from 'react';
 import { AppSidebar } from './AppSidebar';
 
 /**
- * Marco de las pantallas con sesión. `defaultOpen` sale de la cookie
- * `sidebar_state` que lee el layout en el servidor: así el HTML llega con el
- * sidebar en el estado correcto y no salta al hidratar.
+ * Frame of the screens with a session. `defaultOpen` comes from the
+ * `sidebar_state` cookie the layout reads on the server: that way the HTML
+ * arrives with the sidebar in the right state and does not jump on hydration.
  */
 export function AppShell({
   defaultOpen,
-  pieSidebar,
+  sidebarFooter,
   children,
 }: {
   defaultOpen: boolean;
-  pieSidebar?: React.ReactNode;
+  sidebarFooter?: React.ReactNode;
   children: React.ReactNode;
 }): React.JSX.Element {
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
-      <AppSidebar pie={pieSidebar} />
+      <AppSidebar footer={sidebarFooter} />
       <SidebarInset>
         <header className="flex h-12 shrink-0 items-center border-b px-3">
           <SidebarTrigger aria-label="Mostrar u ocultar el menú" />

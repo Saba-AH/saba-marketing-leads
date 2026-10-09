@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1791301423126,
-      "tag": "0000_crear_leads",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1791303227773,
-      "tag": "0001_mobile_app_versions",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1791304782222,
-      "tag": "0002_esquema_saba",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1791313679099,
-      "tag": "0003_login_saba",
+      "when": 1791491686761,
+      "tag": "0000_initial_schema",
       "breakpoints": true
     }
   ]

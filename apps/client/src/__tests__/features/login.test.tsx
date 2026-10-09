@@ -11,7 +11,7 @@ jest.mock('next/navigation', () => ({
   useRouter: () => ({ replace }),
 }));
 
-// Cloudflare no carga en jsdom: el widget entrega un token directo.
+// Cloudflare does not load in jsdom: the widget hands over a token directly.
 jest.mock('@/features/auth/ui/hooks/useTurnstile', () => ({
   useTurnstile: () => ({
     containerRef: { current: null },
@@ -22,14 +22,14 @@ jest.mock('@/features/auth/ui/hooks/useTurnstile', () => ({
 
 const LOGIN_URL = 'http://localhost/api/session/login';
 
-async function ingresar(correo: string, contrasena: string): Promise<void> {
+async function enter(email: string, password: string): Promise<void> {
   const user = userEvent.setup();
-  await user.type(screen.getByLabelText('Correo electrónico'), correo);
-  await user.type(screen.getByLabelText('Contraseña'), contrasena);
+  await user.type(screen.getByLabelText('Correo electrónico'), email);
+  await user.type(screen.getByLabelText('Contraseña'), password);
   await user.click(screen.getByRole('button', { name: 'Ingresar al panel' }));
 }
 
-function loginResponde(status: number, body: Record<string, unknown>): void {
+function loginResponds(status: number, body: Record<string, unknown>): void {
   server.use(http.post(LOGIN_URL, () => HttpResponse.json(body, { status })));
 }
 
@@ -39,19 +39,20 @@ describe('LoginPage', () => {
     resetCaptcha.mockClear();
   });
 
-  it('inicia sesión y vuelve a la ruta pedida', async () => {
-    let enviado: unknown;
+  it('logs in and goes back to the requested route', async () => {
+    let sent: unknown;
     server.use(
       http.post(LOGIN_URL, async ({ request }) => {
-        enviado = await request.json();
+        sent = await request.json();
         return HttpResponse.json({
           success: true,
           data: {
-            usuario: {
+            user: {
               id: 'u-1',
-              correo: 'angel.hernandez@sabatransporte.com',
-              nombre: 'Angel Hernández',
-              rol: 'admin',
+              email: 'angel.hernandez@sabatransporte.com',
+              name: 'Angel Hernández',
+              role: 'admin',
+              permissions: ['marketing:access'],
             },
           },
         });
@@ -59,54 +60,54 @@ describe('LoginPage', () => {
     );
     render(<LoginPage next="/chats" />);
 
-    await ingresar('Angel.Hernandez@sabatransporte.com', '12345678');
+    await enter('Angel.Hernandez@sabatransporte.com', '12345678');
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/chats'));
-    expect(enviado).toEqual({
-      correo: 'angel.hernandez@sabatransporte.com',
-      contrasena: '12345678',
+    expect(sent).toEqual({
+      email: 'angel.hernandez@sabatransporte.com',
+      password: '12345678',
       captchaToken: 'captcha-ok',
     });
   });
 
-  it('muestra el error, limpia la contraseña y pide otro CAPTCHA', async () => {
-    loginResponde(401, {
+  it('shows the error, clears the password and asks for another CAPTCHA', async () => {
+    loginResponds(401, {
       success: false,
       error: 'Credenciales inválidas. Verifica tu correo y contraseña.',
-      code: 'AUTH_CREDENCIALES_INVALIDAS',
+      code: 'AUTH_INVALID_CREDENTIALS',
     });
     render(<LoginPage next="/" />);
 
-    await ingresar('angel.hernandez@sabatransporte.com', 'mala');
+    await enter('angel.hernandez@sabatransporte.com', 'mala');
 
-    const aviso = await screen.findByRole('alert');
-    expect(aviso).toHaveTextContent('Credenciales inválidas');
-    expect(aviso.className).toContain('bg-error-100');
+    const notice = await screen.findByRole('alert');
+    expect(notice).toHaveTextContent('Credenciales inválidas');
+    expect(notice.className).toContain('bg-error-100');
     expect(screen.getByLabelText('Contraseña')).toHaveValue('');
     expect(resetCaptcha).toHaveBeenCalled();
     expect(replace).not.toHaveBeenCalled();
   });
 
-  it('muestra el bloqueo de cuenta como advertencia', async () => {
-    loginResponde(423, {
+  it('shows the account lockout as a warning', async () => {
+    loginResponds(423, {
       success: false,
       error: 'Tu cuenta fue bloqueada por intentos fallidos.',
-      code: 'AUTH_CUENTA_BLOQUEADA',
+      code: 'AUTH_ACCOUNT_LOCKED',
     });
     render(<LoginPage next="/" />);
 
-    await ingresar('angel.hernandez@sabatransporte.com', '12345678');
+    await enter('angel.hernandez@sabatransporte.com', '12345678');
 
-    const aviso = await screen.findByRole('alert');
-    expect(aviso).toHaveTextContent('bloqueada');
-    expect(aviso.className).toContain('bg-warning-50');
+    const notice = await screen.findByRole('alert');
+    expect(notice).toHaveTextContent('bloqueada');
+    expect(notice.className).toContain('bg-warning-50');
   });
 
-  it('valida antes de llamar al servidor', async () => {
-    const llamado = jest.fn();
+  it('validates before calling the server', async () => {
+    const called = jest.fn();
     server.use(
       http.post(LOGIN_URL, () => {
-        llamado();
+        called();
         return HttpResponse.json({});
       })
     );
@@ -121,6 +122,6 @@ describe('LoginPage', () => {
     expect(
       screen.getByText('La contraseña es obligatoria.')
     ).toBeInTheDocument();
-    expect(llamado).not.toHaveBeenCalled();
+    expect(called).not.toHaveBeenCalled();
   });
 });

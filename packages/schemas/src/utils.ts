@@ -6,8 +6,8 @@ export function buildSafeResponseSchema<T extends SomeType>(schema: T) {
     z.object({
       success: z.literal(false),
       error: z.string(),
-      // Opcionales: los agrega `HttpExceptionFilter`/`DomainExceptionFilter`
-      // (E00·10). Optional para no romper fixtures previos al filtro global.
+      // Optional: added by `HttpExceptionFilter`/`DomainExceptionFilter` (E00·10).
+      // Optional so fixtures from before the global filter do not break.
       code: z.string().optional(),
       correlationId: z.string().optional(),
       timestamp: z.string().optional(),

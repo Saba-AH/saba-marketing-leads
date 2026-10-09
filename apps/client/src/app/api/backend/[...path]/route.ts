@@ -19,11 +19,20 @@ interface RouteContext {
 
 const BODYLESS_METHODS = new Set(['GET', 'HEAD']);
 
+/** Besides the type, what a file (WhatsApp attachments) needs to be served well and safely. */
+const RESPONSE_HEADERS = [
+  'content-disposition',
+  'content-length',
+  'cache-control',
+  'content-security-policy',
+  'x-content-type-options',
+] as const;
+
 /**
- * `/api/backend/v1/...` → API con el token de la cookie. Sin lógica de
- * negocio: solo pone el `Authorization` que el navegador no puede ver.
- * `v1/auth/*` no pasa: login y refresh devuelven tokens, y esos solo los
- * maneja el BFF.
+ * `/api/backend/v1/...` → API with the token from the cookie. No business
+ * logic: it only adds the `Authorization` the browser cannot see. `v1/auth/*`
+ * does not go through: login and refresh return tokens, and only the BFF
+ * handles those.
  */
 function isProxiable(path: string[]): boolean {
   if (path[0] !== 'v1' || path[1] === 'auth') return false;
@@ -45,7 +54,7 @@ async function proxy(
     return forbiddenOriginResponse();
   }
 
-  // El middleware ya renovó el access token si hacía falta.
+  // The middleware already renewed the access token if needed.
   const token = request.cookies.get(SESSION_COOKIES.access)?.value;
   if (!token) return sessionExpiredResponse();
 
@@ -60,15 +69,16 @@ async function proxy(
     redirect: 'manual',
   });
 
+  const headers = new Headers({
+    'content-type': upstream.headers.get('content-type') ?? 'application/json',
+  });
+  for (const name of RESPONSE_HEADERS) {
+    const value = upstream.headers.get(name);
+    if (value) headers.set(name, value);
+  }
   const response = new NextResponse(
     upstream.status === 204 ? null : upstream.body,
-    {
-      status: upstream.status,
-      headers: {
-        'content-type':
-          upstream.headers.get('content-type') ?? 'application/json',
-      },
-    }
+    { status: upstream.status, headers }
   );
   if (upstream.status === 401) clearSessionCookies(response.cookies);
   return response;

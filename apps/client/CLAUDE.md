@@ -27,7 +27,7 @@ La frontera que **no** se cruza: el cliente **nunca** toca Postgres/Supabase dir
 - **Tailwind CSS 4** + **shadcn/ui** vía `@repo/ui`
 - **@tanstack/react-query** — es la única capa de estado de servidor
 - **react-hook-form + zod**
-- **Auth:** Supabase Auth detrás de un BFF en Next. El navegador no ve tokens: viven en cookies `httpOnly` (`src/lib/session/`). `src/middleware.ts` exige sesión (y la renueva) en todo menos `/login`; `/api/session/{login,logout}` crean y cierran la sesión; `/api/backend/*` reenvía a `apps/api` con el `Authorization`. Ver `features/auth/`.
+- **Auth:** la sesión de staff de Saba (la API la pide a Saba) detrás de un BFF en Next. El navegador no ve tokens: viven en cookies `httpOnly` (`src/lib/session/`). `src/middleware.ts` exige sesión (y la renueva) en todo menos `/login`; `/api/session/{login,logout}` crean y cierran la sesión; `/api/backend/*` reenvía a `apps/api` con el `Authorization`. Ver `features/auth/`.
 - Tests: **Jest** + Testing Library + **MSW**
 
 Tooling del repo: Turborepo, npm workspaces, Biome.
@@ -104,6 +104,7 @@ Estándares específicos del cliente (se cargan por referencia):
 @.claude/rules/react-query.md
 @.claude/rules/shadcn-tokens.md
 @.claude/rules/components.md
+@.claude/rules/english-naming.md
 
 
 ---

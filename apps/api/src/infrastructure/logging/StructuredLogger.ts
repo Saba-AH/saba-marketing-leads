@@ -2,7 +2,7 @@ import { Injectable, type LoggerService } from '@nestjs/common';
 import { CorrelationContext } from './CorrelationContext';
 import { redact } from './logRedaction';
 
-/** `JSON.stringify` lanza con `bigint`; se serializa como texto para no tumbar el log. */
+/** `JSON.stringify` throws on `bigint`; it is serialized as text so the log does not crash. */
 function jsonReplacer(_key: string, value: unknown): unknown {
   return typeof value === 'bigint' ? value.toString() : value;
 }
@@ -22,15 +22,15 @@ interface LogEntry {
 }
 
 /**
- * Logger JSON a stdout/stderr: Cloud Logging en Cloud Run parsea cada línea
- * como entrada estructurada cuando trae `severity` y `message`, sin agente ni
- * SDK aparte. Un `stack_trace` con severidad `ERROR` es también lo único que
- * Cloud Error Reporting necesita para detectar el error automáticamente.
+ * JSON logger to stdout/stderr: Cloud Logging on Cloud Run parses each line as
+ * a structured entry when it has `severity` and `message`, with no extra agent
+ * or SDK. A `stack_trace` with `ERROR` severity is also all Cloud Error
+ * Reporting needs to detect the error automatically.
  *
- * Implementa `LoggerService` para que Nest la use como logger global
- * (`app.useLogger`) y además queda inyectable para que el código de
- * aplicación registre eventos propios con campos estructurados (`event`),
- * p. ej. `assetId` para reconstruir la trayectoria de un activo.
+ * It implements `LoggerService` so Nest uses it as the global logger
+ * (`app.useLogger`), and it is also injectable so application code can record
+ * its own events with structured fields (`event`), e.g. `assetId` to rebuild
+ * an asset's trail.
  */
 @Injectable()
 export class StructuredLogger implements LoggerService {
@@ -51,16 +51,15 @@ export class StructuredLogger implements LoggerService {
   }
 
   /**
-   * Devuelve una promesa que resuelve cuando la escritura en `stderr`
-   * termina, para que quien reporta un error fatal (p. ej.
-   * `registerUncaughtErrorHandlers`) pueda esperarla antes de matar el
-   * proceso sin truncar el log.
+   * Returns a promise that resolves when the write to `stderr` finishes, so
+   * whoever reports a fatal error (e.g. `registerUncaughtErrorHandlers`) can
+   * wait for it before killing the process without truncating the log.
    */
   error(message: unknown, trace?: string, context?: string): Promise<void> {
     return this.write('ERROR', message, context, trace);
   }
 
-  /** Log estructurado de aplicación, con campos propios (p. ej. `assetId`, `batchId`). */
+  /** Structured application log, with its own fields (e.g. `assetId`, `batchId`). */
   event(message: string, fields: LogFields = {}): Promise<void> {
     return this.emit({
       ...fields,
@@ -92,10 +91,9 @@ export class StructuredLogger implements LoggerService {
   }
 
   /**
-   * Único punto de salida: `redact()` corre acá, no en cada método público,
-   * para que ningún camino (`log`/`warn`/`error`/`event`) pueda saltárselo —
-   * un `message` o `stack_trace` con un token también se tapa, no solo los
-   * campos de `event()`.
+   * Single exit point: `redact()` runs here, not in each public method, so no
+   * path (`log`/`warn`/`error`/`event`) can skip it — a `message` or
+   * `stack_trace` carrying a token is masked too, not only the `event()` fields.
    */
   private emit(entry: LogEntry): Promise<void> {
     const redacted = redact(entry) as LogEntry;

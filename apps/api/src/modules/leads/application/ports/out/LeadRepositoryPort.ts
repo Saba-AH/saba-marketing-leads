@@ -1,8 +1,8 @@
-import type { DatosLead, Lead } from '../../../domain/Lead';
+import type { Lead, LeadData } from '../../../domain/Lead';
 
 export interface LeadRepositoryPort {
   findAll(): Promise<Lead[]>;
-  findByCorreo(correo: string): Promise<Lead | null>;
-  /** Lanza `LeadCorreoDuplicadoException` si el índice único lo rechaza. */
-  crear(datos: DatosLead): Promise<Lead>;
+  findByEmail(email: string): Promise<Lead | null>;
+  /** Throws `LeadDuplicateEmailException` if the unique index rejects it. */
+  create(data: LeadData): Promise<Lead>;
 }

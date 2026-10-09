@@ -17,7 +17,7 @@ export const healthHandlers = [
   ),
 ];
 
-/** Sobrescribe el handler por defecto: la base de datos caída. */
+/** Overrides the default handler: the database is down. */
 export const databaseDownHandler = http.get(`${BACKEND_URL}/v1/health`, () =>
   HttpResponse.json(
     {

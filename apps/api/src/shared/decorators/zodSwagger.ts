@@ -6,8 +6,8 @@ import {
 import { z } from 'zod';
 
 /**
- * `SchemaObject` no se puede importar directo: el `exports` de @nestjs/swagger
- * no expone `dist/interfaces/*`. Se deriva del tipo público del decorador.
+ * `SchemaObject` cannot be imported directly: @nestjs/swagger's `exports` does
+ * not expose `dist/interfaces/*`. It is derived from the decorator's public type.
  */
 type SwaggerSchema = ApiResponseSchemaHost['schema'];
 

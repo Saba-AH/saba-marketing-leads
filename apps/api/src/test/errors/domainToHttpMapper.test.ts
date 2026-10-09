@@ -6,13 +6,13 @@ import {
 import { domainMessages } from '../../infrastructure/i18n/domainMessages';
 
 describe('domainErrorHttpStatus', () => {
-  it('cubre todo código traducido en domainMessages', () => {
+  it('covers every code translated in domainMessages', () => {
     for (const code of Object.keys(domainMessages)) {
       expect(domainErrorHttpStatus).toHaveProperty(code);
     }
   });
 
-  it('colapsa un código desconocido a 500 en vez de reventar', () => {
-    expect(mapDomainErrorToHttpStatus('CODIGO_QUE_NO_EXISTE')).toBe(500);
+  it('collapses an unknown code to 500 instead of blowing up', () => {
+    expect(mapDomainErrorToHttpStatus('CODE_THAT_DOES_NOT_EXIST')).toBe(500);
   });
 });

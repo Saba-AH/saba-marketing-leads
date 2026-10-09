@@ -22,11 +22,11 @@ interface Resolved {
 }
 
 /**
- * Última línea de defensa: cualquier excepción que no sea una
- * `DomainException` pasa por acá (`@Catch()` sin tipo) — `HttpException` de
- * Nest (guards, `ThrottlerGuard`, `ZodValidationPipe`) y también lo que nadie
- * esperaba. Un ≥500 nunca filtra su detalle crudo — se colapsa a
- * `INTERNAL_ERROR` (`.claude/rules/errors.md`).
+ * Last line of defense: any exception that is not a `DomainException` ends up
+ * here (untyped `@Catch()`) — Nest's `HttpException` (guards,
+ * `ThrottlerGuard`, `ZodValidationPipe`) and also whatever nobody expected. A
+ * ≥500 never leaks its raw detail — it collapses to `INTERNAL_ERROR`
+ * (`.claude/rules/errors.md`).
  */
 @Injectable()
 @Catch()

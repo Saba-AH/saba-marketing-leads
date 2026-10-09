@@ -6,7 +6,7 @@ import { LoggingModule } from './infrastructure/logging/LoggingModule';
 import { AuthModule } from './modules/auth/module';
 import { HealthModule } from './modules/health/module';
 import { LeadsModule } from './modules/leads/module';
-import { MobileAppVersionsModule } from './modules/mobileAppVersions/module';
+import { WhatsAppModule } from './modules/whatsapp/module';
 import { SecurityModule } from './security.module';
 
 @Module({
@@ -18,7 +18,7 @@ import { SecurityModule } from './security.module';
     SecurityModule,
     AuthModule,
     LeadsModule,
-    MobileAppVersionsModule,
+    WhatsAppModule,
     HealthModule,
   ],
   controllers: [],

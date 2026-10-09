@@ -10,5 +10,5 @@ export const DEPENDENCY_NAME_LABELS: Record<string, string> = {
   postgres: 'Base de datos',
 };
 
-/** Cada cuánto el panel revisa el estado, en milisegundos. */
+/** How often the panel checks the status, in milliseconds. */
 export const SYSTEM_STATUS_REFETCH_INTERVAL_MS = 30_000;

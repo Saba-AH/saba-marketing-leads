@@ -1,18 +1,21 @@
 /**
- * Agregador de handlers de MSW.
+ * MSW handler aggregator.
  *
- * Todo el consumo de datos del panel ocurre en el navegador contra la API de
- * NestJS, así que interceptar HTTP con MSW es la forma natural de probarlo: los
- * tests ejercen el mismo camino que producción, sin doblar el cliente HTTP.
+ * All of the panel's data consumption happens in the browser against the
+ * NestJS API, so intercepting HTTP with MSW is the natural way to test it: the
+ * tests exercise the same path as production, without doubling the HTTP
+ * client.
  *
- * Un handler puntual se sobreescribe en el test con `server.use(...)`.
+ * A specific handler is overridden in the test with `server.use(...)`.
  */
 
+import { chatsHandlers } from './handlers/chats.mock';
 import { healthHandlers } from './handlers/health.mock';
 import { leadsHandlers } from './handlers/leads.mock';
 import { sessionHandlers } from './handlers/session.mock';
 
 export const handlers = [
+  ...chatsHandlers,
   ...healthHandlers,
   ...leadsHandlers,
   ...sessionHandlers,

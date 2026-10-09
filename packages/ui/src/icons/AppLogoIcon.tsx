@@ -1,10 +1,9 @@
 import type React from 'react';
 
 /**
- * Isotipo de la app (placeholder: reemplazar por el logo real)
- * del prototipo. Hereda el color con
- * `currentColor` para servir igual en el sidebar (morado de marca) que sobre
- * el panel oscuro del login (blanco).
+ * The app's logomark (placeholder: replace with the real logo) from the
+ * prototype. It inherits the color through `currentColor` so it works the same
+ * in the sidebar (brand purple) as over the login's dark panel (white).
  */
 function AppLogoIcon({ className, ...props }: React.SVGProps<SVGSVGElement>) {
   return (

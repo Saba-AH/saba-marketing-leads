@@ -1,19 +1,19 @@
+import type { ClientInfo } from '../../../../../infrastructure/saba/sabaApi';
 import type {
   AuthenticatedUser,
   AuthSession,
 } from '../../../domain/AuthSession';
 
 export interface LoginCommand {
-  correo: string;
-  contrasena: string;
+  email: string;
+  password: string;
   captchaToken: string;
-  ip: string | null;
-  userAgent: string | null;
+  client: ClientInfo;
 }
 
 export interface LoginResult {
-  sesion: AuthSession;
-  usuario: AuthenticatedUser;
+  session: AuthSession;
+  user: AuthenticatedUser;
 }
 
 export interface LoginPort {

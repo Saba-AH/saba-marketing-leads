@@ -1,7 +1,7 @@
-import type { TUsuarioSesion } from '@repo/schemas';
+import type { TSessionUser } from '@repo/schemas';
 import type { Safe } from '@repo/utils';
 
-/** Puerto: lo que esta feature necesita de la API (vía el proxy del BFF). */
+/** Port: what this feature needs from the API (through the BFF proxy). */
 export interface AuthApi {
-  me(): Promise<Safe<TUsuarioSesion>>;
+  me(): Promise<Safe<TSessionUser>>;
 }

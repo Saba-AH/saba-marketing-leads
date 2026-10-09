@@ -4,22 +4,22 @@ import { DomainExceptionFilter } from '../../infrastructure/errors/DomainExcepti
 import { CorrelationContext } from '../../infrastructure/logging/CorrelationContext';
 import { fakeHost, fakeLogger } from '../support/fakeHttpContext';
 
-// El template arranca con el catálogo de mensajes de dominio vacío. Hasta que un
-// módulo registre su código en `domainMessages` + `DomainToHttpMapper`, toda
-// `DomainException` cae al camino de código no registrado.
-class CodigoSinRegistrarError extends DomainException {
+// The template starts with an empty domain message catalog. Until a module
+// registers its code in `domainMessages` + `DomainToHttpMapper`, every
+// `DomainException` falls into the unregistered-code path.
+class UnregisteredCodeError extends DomainException {
   constructor() {
-    super('MODULO_CODIGO_INEXISTENTE');
+    super('MODULE_UNKNOWN_CODE');
   }
 }
 
 describe('DomainExceptionFilter', () => {
-  it('arma el sobre de error del contrato (success:false, path)', () => {
+  it('builds the contract error envelope (success:false, path)', () => {
     const logger = fakeLogger();
     const filter = new DomainExceptionFilter(logger);
     const { host, json } = fakeHost();
 
-    filter.catch(new CodigoSinRegistrarError(), host);
+    filter.catch(new UnregisteredCodeError(), host);
 
     expect(json).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -29,13 +29,13 @@ describe('DomainExceptionFilter', () => {
     );
   });
 
-  it('adjunta el correlationId activo en AsyncLocalStorage', () => {
+  it('attaches the active correlationId from AsyncLocalStorage', () => {
     const logger = fakeLogger();
     const filter = new DomainExceptionFilter(logger);
     const { host, json } = fakeHost();
 
     CorrelationContext.run('corr-abc', () => {
-      filter.catch(new CodigoSinRegistrarError(), host);
+      filter.catch(new UnregisteredCodeError(), host);
     });
 
     expect(json).toHaveBeenCalledWith(
@@ -43,12 +43,12 @@ describe('DomainExceptionFilter', () => {
     );
   });
 
-  it('colapsa un código sin registrar a INTERNAL_ERROR y nunca filtra el detalle', () => {
+  it('collapses an unregistered code to INTERNAL_ERROR and never leaks the detail', () => {
     const logger = fakeLogger();
     const filter = new DomainExceptionFilter(logger);
     const { host, json, status } = fakeHost();
 
-    filter.catch(new CodigoSinRegistrarError(), host);
+    filter.catch(new UnregisteredCodeError(), host);
 
     expect(status).toHaveBeenCalledWith(500);
     expect(json).toHaveBeenCalledWith(

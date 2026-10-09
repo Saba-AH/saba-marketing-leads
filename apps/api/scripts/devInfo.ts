@@ -5,49 +5,41 @@ import {
   shouldColor,
   startupBanner,
 } from '../src/infrastructure/bootstrap/startupBanner';
-import {
-  dbTarget,
-  resolveDatabaseUrl,
-} from '../src/infrastructure/database/databaseUrl';
+import { resolveDatabaseUrl } from '../src/infrastructure/database/databaseUrl';
+import { loadSabaApiConfig } from '../src/infrastructure/saba/sabaApi';
 import { loadAuthConfig } from '../src/modules/auth/infrastructure/authConfig';
-import { DEV_ADMIN } from '../src/modules/auth/infrastructure/persistence/seedDevAdmin';
 
 /**
- * Tarea `@repo/api#dev:info` del sidebar de turbo: el mismo resumen que
- * imprime la API al arrancar, solo y sin logs encima. Lee lo mismo que la API
- * (`.env` + lo que inyecta `scripts/localSupabase.mjs`), así que muestra
- * contra qué va a correr, y avisa lo que falta antes de que la API se caiga.
+ * Turbo sidebar task `@repo/api#dev:info`: the same summary the API prints at
+ * startup, on its own and without logs on top. It reads the same `.env` as the
+ * API, so it shows what it will run against, and warns about what is missing
+ * before the API crashes.
  */
 loadEnv({ path: resolve(__dirname, '../.env'), quiet: true });
 
 const warnings: string[] = [];
-let databaseUrl: string | null = null;
-try {
-  databaseUrl = resolveDatabaseUrl();
-} catch (error: unknown) {
-  warnings.push(error instanceof Error ? error.message : String(error));
+function attempt<T>(read: () => T): T | undefined {
+  try {
+    return read();
+  } catch (error: unknown) {
+    warnings.push(error instanceof Error ? error.message : String(error));
+    return undefined;
+  }
 }
 
-// La API no arranca sin la config de auth: mejor verlo acá con el motivo.
-let authUrl: string | undefined;
-try {
-  authUrl = loadAuthConfig().supabaseUrl;
-} catch (error: unknown) {
-  warnings.push(error instanceof Error ? error.message : String(error));
-}
+const databaseUrl = attempt(() => resolveDatabaseUrl()) ?? null;
+// The API does not start without these: better to see it here with the reason.
+const saba = attempt(() => loadSabaApiConfig());
+attempt(() => loadAuthConfig());
 
 console.log(
   startupBanner({
     port: Number(process.env.PORT) || 8080,
     databaseUrl,
-    dbTarget: dbTarget(),
-    explicitDatabase: Boolean(process.env.DATABASE),
     panelUrl: allowedOrigins()[0],
-    studioUrl: process.env.SUPABASE_STUDIO_URL,
-    authUrl,
-    devLogin: { correo: DEV_ADMIN.email, contrasena: DEV_ADMIN.password },
+    sabaUrl: saba?.apiUrl,
     warnings,
-    // Turbo no le da una TTY a la tarea, pero su TUI muestra los colores.
+    // Turbo does not give the task a TTY, but its TUI shows colors.
     color: shouldColor(),
   })
 );

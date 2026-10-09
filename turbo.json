@@ -13,34 +13,17 @@
     },
     "dev": {
       "dependsOn": ["^build"],
-      // `npm run dev:supabase` setea DB_TARGET en el shell, y
-      // `scripts/localSupabase.mjs` exporta lo que lee de `supabase status`;
-      // en `envMode: strict`, sin esto no llegarían a la API. API_URL es la
-      // de NestJS para el BFF del cliente.
-      "passThroughEnv": [
-        "DB_TARGET",
-        "DATABASE_LOCAL",
-        "SUPABASE_STUDIO_URL",
-        "SUPABASE_URL",
-        "SUPABASE_PUBLISHABLE_KEY",
-        "SUPABASE_JWT_SECRET",
-        "API_URL"
-      ],
+      // En `envMode: strict` lo que no está acá no llega a la tarea. API_URL es
+      // la de NestJS para el BFF del cliente; DATABASE, por si se exporta en el
+      // shell en vez de ponerla en apps/api/.env.
+      "passThroughEnv": ["API_URL", "DATABASE"],
       "cache": false,
       "persistent": true
     },
     // Resumen de contra qué corre la API y qué abrir (`apps/api/scripts/devInfo.ts`):
-    // aparece en el sidebar de la TUI junto a las tareas `dev`. Lee el mismo
-    // entorno que la API, así que pasa las mismas variables.
+    // aparece en el sidebar de la TUI junto a las tareas `dev`.
     "dev:info": {
-      "passThroughEnv": [
-        "DB_TARGET",
-        "DATABASE_LOCAL",
-        "SUPABASE_STUDIO_URL",
-        "SUPABASE_URL",
-        "SUPABASE_PUBLISHABLE_KEY",
-        "SUPABASE_JWT_SECRET"
-      ],
+      "passThroughEnv": ["DATABASE"],
       "cache": false
     },
     "lint": {
@@ -54,9 +37,9 @@
       "dependsOn": ["^build"],
       // Turbo corre en `envMode: strict`: lo que no está acá no llega a la
       // tarea. Los tests de la API se conectan a Postgres de verdad, así que
-      // sin esto vitest cae a su default (`localhost:54332`) — que acierta en
-      // el runner de GitHub y falla dentro del contenedor de Cloud Build,
-      // donde la base es un sidecar en otro host.
+      // sin esto vitest cae a su default (`localhost:5434`) — que acierta en
+      // el runner de GitHub y falla dentro de un contenedor de build, donde la
+      // base es un sidecar en otro host.
       "env": ["DATABASE"],
       "outputs": []
     },

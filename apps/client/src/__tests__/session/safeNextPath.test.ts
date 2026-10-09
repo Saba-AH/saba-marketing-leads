@@ -11,17 +11,17 @@ describe('safeNextPath', () => {
     ['/\\evil.com', '/'],
     ['/login', '/'],
     ['/login?next=/x', '/'],
-  ])('%s → %s', (entrada, esperado) => {
-    expect(safeNextPath(entrada)).toBe(esperado);
+  ])('%s → %s', (input, expected) => {
+    expect(safeNextPath(input)).toBe(expected);
   });
 });
 
 describe('loginPathFor', () => {
-  it('no agrega next para el inicio', () => {
+  it('does not add next for the home page', () => {
     expect(loginPathFor('/')).toBe('/login');
   });
 
-  it('codifica la ruta a la que volver', () => {
+  it('encodes the route to go back to', () => {
     expect(loginPathFor('/chats?id=1')).toBe('/login?next=%2Fchats%3Fid%3D1');
   });
 });

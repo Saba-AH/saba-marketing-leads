@@ -4,23 +4,23 @@ import { X } from 'lucide-react';
 import React from 'react';
 
 /**
- * Chip de un valor agregado a una lista (`.brand-chip` del prototipo): morado
- * claro, con su ✕ para quitarlo. Lo usan Posiciones, Alias de Entra y Marcas.
+ * Chip for a value added to a list (the prototype's `.brand-chip`): light
+ * purple, with its ✕ to remove it. Used by Positions, Entra Aliases and Brands.
  */
 export function BrandChip({
   label,
-  onQuitar,
-  quitando,
+  onRemove,
+  removing,
   children,
 }: {
   label: string;
-  onQuitar: () => void;
+  onRemove: () => void;
   /**
-   * Quitar este chip está saliendo a la API (Marcas, #95). Los chips que solo
-   * mueven estado local —Posiciones, Alias de Entra— lo omiten.
+   * Removing this chip is going out to the API (Brands, #95). Chips that only
+   * move local state —Positions, Entra Aliases— omit it.
    */
-  quitando?: boolean;
-  /** Contenido extra antes del texto, p. ej. el logo de una Marca. */
+  removing?: boolean;
+  /** Extra content before the text, e.g. a Brand's logo. */
   children?: React.ReactNode;
 }): React.JSX.Element {
   return (
@@ -30,8 +30,8 @@ export function BrandChip({
       <button
         aria-label={`Quitar ${label}`}
         className="cursor-pointer font-extrabold text-brand-600 disabled:cursor-wait disabled:opacity-50"
-        disabled={quitando}
-        onClick={onQuitar}
+        disabled={removing}
+        onClick={onRemove}
         type="button"
       >
         <X className="size-3" />

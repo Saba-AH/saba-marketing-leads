@@ -1,6 +1,6 @@
 import type { HealthReport } from '../../../domain/HealthReport';
 
-/** Puerto de entrada: comprobar la salud de la API y sus dependencias. */
+/** Inbound port: check the health of the API and its dependencies. */
 export interface CheckHealthPort {
   execute(): Promise<HealthReport>;
 }

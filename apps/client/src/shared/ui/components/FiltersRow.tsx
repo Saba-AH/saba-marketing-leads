@@ -1,8 +1,8 @@
 import React from 'react';
 
 /**
- * Fila de filtros (`.filters-row`). Es quien empuja el buscador al extremo
- * derecho, para que `SearchBox` no cargue con su propia posición.
+ * Filters row (`.filters-row`). It is what pushes the search box to the far
+ * right, so `SearchBox` does not have to carry its own position.
  */
 export function FiltersRow({
   children,

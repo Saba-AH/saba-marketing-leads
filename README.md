@@ -1,42 +1,54 @@
 # Saba Marketing Leads
 
-Monorepo **fullstack**: `apps/api` (NestJS + Drizzle sobre Postgres/Supabase) +
+Monorepo **fullstack**: `apps/api` (NestJS + Drizzle sobre Postgres) +
 `apps/client` (Next.js 15 SSR) sobre **Turborepo** y npm workspaces, con
 packages compartidos, reglas y skills de agentes (Matt Pocock) y Ralph.
 
 ## Requisitos
 
 - Node **>= 20** (CI usa 22) y npm 11
-- **Docker** (lo usa el stack local de Supabase: Postgres + Auth, para desarrollo y tests)
+- **Docker** (el Postgres local de `docker-compose.yml`, para desarrollo y tests)
+- El **servidor de Saba** corriendo (`saba/`, puerto 3001 por defecto): el login y los datos de clientes salen de él
 
 ## Arranque
 
 ```bash
 npm install
-cp apps/api/.env.example apps/api/.env       # valores por defecto sirven en local
-npm run dev                                  # Supabase local + migraciones + seed + API (8080) + cliente (3002)
+cp apps/api/.env.example apps/api/.env       # completar SABA_SERVICE_KEY (ver abajo)
+npm run dev                                  # Postgres local + migraciones + API (8080) + cliente (3002)
 ```
 
 - Cliente: http://localhost:3002 (estado del sistema) y http://localhost:3002/leads
 - API: http://localhost:8080/api/v1/health · Swagger: http://localhost:8080/api/docs
-- Supabase Studio local: http://localhost:54333
-- Admin de desarrollo (lo crea `db:seed`, solo en local): `angel.hernandez@sabatransporte.com` / `12345678`
+- Se entra con un usuario **staff de Saba** que tenga `profiles.has_marketing_access = true`.
+
+### Conexión con Saba: la service key
+
+La API de marketing se identifica ante Saba con un secreto compartido:
+
+```bash
+openssl rand -hex 32
+```
+
+El mismo valor va en `MARKETING_SERVICE_KEY` (`.env` de Saba) y en
+`SABA_SERVICE_KEY` (`apps/api/.env`). Uno distinto por entorno; nunca en el
+cliente. Si falta en Saba, todo `/api/marketing/*` responde 401; si falta acá, la
+API no arranca.
 
 ## Comandos
 
 | Comando | Qué hace |
 |---------|----------|
-| `npm run dev` / `dev:local` | Levanta Supabase local, migra, siembra y arranca API y cliente. En el sidebar de turbo, `@repo/api#dev:info` resume contra qué base corre y qué abrir |
-| `npm run dev:supabase` | Arranca API y cliente contra el Supabase real (sin levantar el stack ni migrar) |
+| `npm run dev` | Levanta el Postgres de Compose, migra y arranca API y cliente. En el sidebar de turbo, `@repo/api#dev:info` resume contra qué base y qué Saba corre |
 | `npm run build` | Compila packages, API y cliente |
 | `npm run typecheck` | `tsc --noEmit` en cada workspace |
-| `npm test` | Vitest (API, contra el Postgres del Supabase local) + Jest (cliente, MSW) |
+| `npm test` | Vitest (API, contra el Postgres local) + Jest (cliente, MSW) |
 | `npm run format-and-lint` | `biome check .` — lo mismo que corre el CI |
-| `npm run db:up` / `db:down` / `db:status` | Stack local de Supabase (`supabase start` / `stop` / `status`) |
-| `npm run db:setup` / `db:reset` | Migra y siembra / recrea el stack desde cero (borra los datos locales) |
-| `npm run db:sync:saba` | Copia de prod al Supabase local los usuarios de `apps/api/scripts/sync/sabaSyncUsers.ts` con sus solicitudes (ver abajo) |
+| `npm run db:up` / `db:down` | Postgres local de `docker-compose.yml` |
+| `npm run db:migrate` | Migraciones sobre `DATABASE` |
+| `npm run db:reset` | Borra el volumen local, levanta y migra desde cero (borra los datos locales) |
 | `npm -C apps/api run db:generate` | Nueva migración desde los `*.schema.ts` (escribir su `drizzle/down/<tag>.down.sql`) |
-| `npm -C apps/api run db:migrate` / `db:rollback` / `db:seed` | Migraciones sobre `DATABASE` |
+| `npm -C apps/api run db:rollback` | Revierte la última migración (`-- --all`: todas) |
 
 ## Estructura
 
@@ -51,49 +63,26 @@ npm run dev                                  # Supabase local + migraciones + se
 │   ├── ui/             # shadcn/ui + tokens de Tailwind
 │   ├── utils/          # Helpers sin framework
 │   └── typescript-config/
-├── supabase/           # config del stack local de Supabase (db + auth + studio)
+├── docker-compose.yml  # Postgres local; perfil `full` con las imágenes de producción
 ├── .claude/ · .agents/ # reglas y skills de agentes (mattpocock/skills, ver skills-lock.json)
 ├── docs/agents/        # cómo consumen las skills el tracker, labels y docs de dominio
 ├── ralph/              # loop autónomo de agentes (AFK)
 └── .scratch/           # PRDs/specs por épica
 ```
 
-## Base de datos: Supabase local en desarrollo, Supabase en la nube
+## Base de datos y Saba
 
-Drizzle habla Postgres, y Supabase **es** Postgres: no hay que cambiar código.
-
-- **Local/tests:** el stack de Supabase CLI (`supabase/config.toml`): Postgres en
-  `:54332`, Auth y Studio en `:54331`/`:54333` (puertos propios para convivir con
-  otro stack local). Las migraciones son **las de Drizzle**, no las del CLI. Los
-  tests de la API crean y migran una base aparte (`app_dev_test`) en el
-  `globalSetup` de Vitest y truncan entre tests.
-- **Variables del stack:** `npm run dev` corre las tareas con
-  `scripts/localSupabase.mjs`, que lee `supabase status` y exporta la conexión
-  (y, con auth, las llaves) al entorno. No se copian al `.env`.
-- **Destino por comando:** `npm run dev:local` (o `npm run dev`) usa el stack
-  local; `npm run dev:supabase` usa el proyecto real: no levanta el stack, **no
-  migra** (eso es `npm run db:migrate:supabase`, a propósito) y toma la
-  conexión del `.env`.
-- **Supabase:** poner en `DATABASE` la connection string del proyecto
-  (Dashboard → Connect; para migrar usar la de puerto 5432) y correr
-  `npm -C apps/api run db:migrate`.
-
-## Datos de Saba en local: `npm run db:sync:saba`
-
-Trae de prod (`DATABASE_SUPABASE`, en una transacción de **solo lectura**) los
-usuarios listados en `apps/api/scripts/sync/sabaSyncUsers.ts` —su cuenta con la
-contraseña real, su perfil, sus solicitudes y todo lo que cuelga de ellas— más
-los catálogos que esas solicitudes referencian. Qué tablas entran está en
-`scripts/sync/syncPlan.ts`.
-
-- Escribe **solo** en el Supabase local, y migra antes.
-- Prod manda: correrlo de nuevo reemplaza ese alcance (lo que hayas cambiado ahí
-  en local se pierde); lo demás no se toca. Es una transacción: si falla, queda
-  la copia anterior.
-- La copia vive en el volumen de Docker: sobrevive a `supabase stop`; se pierde
-  con `npm run db:reset`.
-- El seed no pisa a un usuario sincronizado: si el correo del admin de desarrollo
-  ya es de prod, se entra con la contraseña real.
+- **Postgres propio** (WhatsApp, leads): en local, el de `docker-compose.yml` en
+  el puerto **5434** (5432 y 5433 suelen estar ocupados). En dev/prod, un
+  Postgres en una EC2. Cambiar de entorno es cambiar `DATABASE` en
+  `apps/api/.env`, nunca el comando. Las migraciones son las de Drizzle
+  (`npm run db:migrate`).
+- **Tests:** la API crea y migra una base aparte (`app_dev_test`) en el mismo
+  servidor y trunca entre tests. Se niega a correr si `DATABASE` no es local.
+- **Saba:** login, sesiones, permisos y clientes salen de los endpoints
+  `/api/marketing/*` de su servidor (`SABA_API_URL`), nunca de su base. Ver
+  `docs/api_modules.md`.
+- **Imágenes de producción en local:** `docker compose --profile full up --build`.
 
 ## Módulo de referencia: `leads`
 

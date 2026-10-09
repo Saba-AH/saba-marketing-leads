@@ -7,12 +7,12 @@ interface CorrelationStore {
 const storage = new AsyncLocalStorage<CorrelationStore>();
 
 /**
- * Id de correlación por request, propagado con `AsyncLocalStorage`: cualquier
- * código en la cadena (caso de uso, adaptador, futura llamada a Vertex) lo lee
- * con `CorrelationContext.get()` sin que se lo pasen por parámetro. Lo arma
- * `CorrelationIdMiddleware`; un futuro consumidor de Eventarc/Pub/Sub debe
- * envolver su handler con `run()` usando el id que venga en el mensaje para
- * que la trayectoria del activo se pueda reconstruir extremo a extremo.
+ * Per-request correlation id, propagated with `AsyncLocalStorage`: any code
+ * down the chain (use case, adapter, a future Vertex call) reads it with
+ * `CorrelationContext.get()` without it being passed as a parameter.
+ * `CorrelationIdMiddleware` sets it up; a future Eventarc/Pub/Sub consumer must
+ * wrap its handler with `run()` using the id that comes in the message so the
+ * asset's trail can be rebuilt end to end.
  */
 export const CorrelationContext = {
   run<T>(correlationId: string, callback: () => T): T {

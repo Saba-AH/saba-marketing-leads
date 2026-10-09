@@ -1,7 +1,7 @@
 export interface Lead {
   id: string;
-  nombre: string;
-  correo: string;
-  origen: string | null;
+  name: string;
+  email: string;
+  source: string | null;
   createdAt: Date;
 }

@@ -3,28 +3,28 @@
 import React from 'react';
 
 /**
- * Opción de una `RadioRow` (`.radio-opt` del prototipo): una caja que ocupa su
- * mitad de la fila y se pinta de morado al elegirla. No es un `input[type=radio]`
- * nativo — el prototipo no usa el control del navegador.
+ * Option of a `RadioRow` (the prototype's `.radio-opt`): a box that takes its
+ * half of the row and turns purple when chosen. It is not a native
+ * `input[type=radio]` — the prototype does not use the browser control.
  *
- * Es un `button` con `role="radio"` para que siga siendo un grupo de radios
- * para quien navegue con teclado o lector de pantalla, que es lo único que el
- * prototipo, al ser `div`s con `onclick`, no resolvía.
+ * It is a `button` with `role="radio"` so it is still a radio group for
+ * keyboard or screen reader users, which is the one thing the prototype, being
+ * `div`s with `onclick`, did not solve.
  */
 export function RadioOpt({
   label,
-  seleccionado,
+  selected,
   onSelect,
 }: {
   label: string;
-  seleccionado: boolean;
+  selected: boolean;
   onSelect: () => void;
 }): React.JSX.Element {
   return (
     <button
-      aria-checked={seleccionado}
+      aria-checked={selected}
       className={`flex-1 cursor-pointer rounded-md border-[1.5px] px-3 py-2.5 text-center font-semibold text-[12.5px] transition-colors ${
-        seleccionado
+        selected
           ? 'border-brand-600 bg-brand-50 text-brand-700'
           : 'border-gray-200 text-gray-600 hover:border-gray-300'
       }`}

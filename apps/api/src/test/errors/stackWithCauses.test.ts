@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { stackWithCauses } from '../../infrastructure/errors/stackWithCauses';
 
 describe('stackWithCauses', () => {
-  it('incluye la causa encadenada con su código (p. ej. el error de pg bajo Drizzle)', () => {
+  it('includes the chained cause with its code (e.g. the pg error under Drizzle)', () => {
     const pgError = Object.assign(new Error('getaddrinfo ENOTFOUND db.x'), {
       code: 'ENOTFOUND',
     });
@@ -18,7 +18,7 @@ describe('stackWithCauses', () => {
     );
   });
 
-  it('devuelve undefined si no es un Error', () => {
-    expect(stackWithCauses('texto')).toBeUndefined();
+  it('returns undefined if it is not an Error', () => {
+    expect(stackWithCauses('text')).toBeUndefined();
   });
 });

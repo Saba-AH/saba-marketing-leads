@@ -19,7 +19,7 @@ describe('registerUncaughtErrorHandlers', () => {
     }
   });
 
-  it('espera a que termine de escribirse el log antes de terminar el proceso', async () => {
+  it('waits for the log to finish writing before ending the process', async () => {
     let resolveWrite: () => void = () => undefined;
     const error = vi.fn(
       () =>

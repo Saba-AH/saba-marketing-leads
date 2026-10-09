@@ -1,43 +1,30 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '../../domain/AuthSession';
-import { SesionInvalidaException } from '../../domain/exceptions/SesionInvalidaException';
-import { SinAccesoException } from '../../domain/exceptions/SinAccesoException';
-import { canEnterPanel } from '../../domain/panelAccess';
-import { toAuthenticatedUser } from '../../domain/toAuthenticatedUser';
 import { AUTH_TOKENS } from '../../tokens';
 import type { AuthenticateRequestPort } from '../ports/in/AuthenticateRequestPort';
-import type { AccessTokenVerifierPort } from '../ports/out/AccessTokenVerifierPort';
-import type { ActiveSessionReaderPort } from '../ports/out/ActiveSessionReaderPort';
+import type { SabaAuthGatewayPort } from '../ports/out/SabaAuthGatewayPort';
+import type { SessionCachePort } from '../ports/out/SessionCachePort';
 
 /**
- * Corre en cada petición. La firma del JWT no alcanza: un logout, una sesión
- * revocada o un rol quitado en Saba tienen que aplicar en la petición
- * siguiente, no cuando venza el token.
+ * Runs on every request. Saba decides whether the session is alive and what
+ * it may do; only successful answers are cached, so a rejection is never
+ * remembered and a fixed account gets in on its next try.
  */
 @Injectable()
 export class AuthenticateRequestUseCase implements AuthenticateRequestPort {
   constructor(
-    @Inject(AUTH_TOKENS.AccessTokenVerifier)
-    private readonly tokens: AccessTokenVerifierPort,
-    @Inject(AUTH_TOKENS.ActiveSessionReader)
-    private readonly sessions: ActiveSessionReaderPort,
-    @Inject(AUTH_TOKENS.PanelAllowedEmails)
-    private readonly allowedEmails: readonly string[]
+    @Inject(AUTH_TOKENS.SabaAuthGateway)
+    private readonly saba: SabaAuthGatewayPort,
+    @Inject(AUTH_TOKENS.SessionCache)
+    private readonly cache: SessionCachePort
   ) {}
 
   async execute(accessToken: string): Promise<AuthenticatedUser> {
-    const claims = await this.tokens.verify(accessToken);
-    if (!claims) throw new SesionInvalidaException();
+    const cached = this.cache.get(accessToken);
+    if (cached) return cached;
 
-    const profile = await this.sessions.findProfileBySession(
-      claims.userId,
-      claims.sessionId
-    );
-    if (!profile) throw new SesionInvalidaException();
-    if (!canEnterPanel(profile, this.allowedEmails)) {
-      throw new SinAccesoException();
-    }
-
-    return toAuthenticatedUser(profile);
+    const user = await this.saba.findSessionUser(accessToken);
+    this.cache.set(accessToken, user);
+    return user;
   }
 }

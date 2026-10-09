@@ -42,9 +42,9 @@ export function LeadsTable() {
       <TableBody>
         {leads.map((lead) => (
           <TableRow key={lead.id}>
-            <TableCell>{lead.nombre}</TableCell>
-            <TableCell>{lead.correo}</TableCell>
-            <TableCell>{lead.origen ?? '—'}</TableCell>
+            <TableCell>{lead.name}</TableCell>
+            <TableCell>{lead.email}</TableCell>
+            <TableCell>{lead.source ?? '—'}</TableCell>
             <TableCell>{lead.createdAt.toLocaleDateString('es')}</TableCell>
           </TableRow>
         ))}

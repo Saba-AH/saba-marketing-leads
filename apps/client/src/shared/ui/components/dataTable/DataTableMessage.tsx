@@ -3,12 +3,12 @@
 import { TableCell, TableRow } from '@repo/ui/components/table';
 import { cn } from '@repo/ui/lib/utils';
 import React from 'react';
-import { useCantidadColumnas } from './dataTableContext';
+import { useColumnCount } from './dataTableContext';
 
 /**
- * Aviso que ocupa el ancho completo de la tabla: cargando, error o listado
- * vacío. Dentro de un `<tbody>` no puede ir cualquier cosa, así que el mensaje
- * viaja en una fila con `colSpan` en vez de suelto en la tarjeta.
+ * Notice spanning the table's full width: loading, error or empty list. Not
+ * just anything can go inside a `<tbody>`, so the message travels in a row with
+ * `colSpan` instead of loose in the card.
  */
 export function DataTableMessage({
   children,
@@ -17,13 +17,13 @@ export function DataTableMessage({
   children: React.ReactNode;
   className?: string;
 }): React.JSX.Element {
-  const cantidadColumnas = useCantidadColumnas();
+  const columnCount = useColumnCount();
 
   return (
     <TableRow className="hover:bg-transparent">
       <TableCell
         className={cn('whitespace-normal', className)}
-        colSpan={cantidadColumnas}
+        colSpan={columnCount}
       >
         {children}
       </TableCell>

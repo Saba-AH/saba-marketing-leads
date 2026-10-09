@@ -1,38 +1,43 @@
 # Plan de implementación — Chats de WhatsApp (Cloud API)
 
 Épica: responder mensajes de WhatsApp de Saba desde `saba-marketing-leads`, sección **Chats**.
-Decisiones cerradas en sesión de grilling (2026-10-06). Este documento es el plan; no hay código aún.
+Decisiones cerradas en sesiones de grilling (2026-10-06 y 2026-10-07). Este documento es el plan; no hay código aún.
+
+Reemplaza a `whatsapp-meta-v1.md` (envío suelto desde Configuración, escrito para el repo `saba`). De ese documento se rescatan el normalizador de teléfono, el filtro de plantillas, la extracción de variables y la tabla de errores en español.
 
 ## Alcance
 
-**Fase 1 (este plan):** recibir y responder **texto** dentro de la ventana de 24 h, hilo por contacto, tomar/reasignar, vínculo con `profiles` de Saba, mensajes enviados desde el celular reflejados (coexistencia), historial de 180 días.
+**Fase 1 (este plan):** recibir y responder **texto** dentro de la ventana de 24 h, hilo por contacto, tomar/reasignar, vínculo con `profiles` de Saba, mensajes enviados desde el celular reflejados (coexistencia), historial de 180 días. **Iniciar y reabrir conversaciones con plantillas de solo texto** (`APPROVED`, variables solo en el cuerpo, pedidas en vivo a Meta).
 
-**Fuera de alcance:** plantillas e iniciar conversaciones (fase 2), archivos/imágenes (solo aviso), Messenger/Instagram, tiempo real por push (se usa polling), hosting de producción (pendiente).
+**Fuera de alcance:** plantillas con medios en el encabezado o con botones con variables, envío masivo, archivos/imágenes (solo aviso), Messenger/Instagram, tiempo real por push (se usa polling), hosting de producción (pendiente).
 
 ## Decisiones que guían el diseño
 
 | Tema | Decisión |
 |---|---|
-| Integración | WhatsApp Cloud API directa (Graph API v26.0), sin BSP |
+| Integración | WhatsApp Cloud API directa (Graph API, versión en `WHATSAPP_GRAPH_VERSION`), sin BSP |
 | Número | Desarrollo con número de prueba de Meta; luego coexistencia vía Embedded Signup (probar en modo dev; si falla → Tech Provider tras verificación) |
 | Ubicación | API en `apps/api` (NestJS, módulo hexagonal), UI en `apps/client` (`/chats`). `saba` no se toca |
 | Base | Misma Postgres de Supabase; tablas nuevas `whatsapp_*` vía migraciones Drizzle de este repo |
 | Hilo | 1 conversación por contacto; `resuelta` → `abierta` al llegar mensaje nuevo |
 | Asignación | "Tomar" chat (`tomada_por`); otros pueden intervenir; reasignar con permiso |
 | Ventana 24 h | Solo la abren mensajes **entrantes en vivo** del cliente (no historial, no ecos del celular). Cerrada → compositor bloqueado + contador |
-| No-texto | Burbuja de aviso ("📷 Imagen recibida — ver en el celular") con caption; se guarda `tipo` y `media_id` |
+| No-texto | Archivos **bajo demanda, sin copia propia** (decidido 2026-10-07): `GET /whatsapp/mensajes/:id/media` pide el archivo a Meta con el token y lo pasa en stream. Imágenes y stickers se ven en la burbuja, audio y video con reproductor, documentos como descarga. Meta los guarda ~30 días; después vuelve el aviso "ver en el celular". Solo tipos seguros van `inline`; el resto `attachment` + `CSP: sandbox`. Guardar copia en Storage queda como opción si hace falta conservarlos |
 | Vínculo Saba | `regexp_replace(profiles.telefono,'\D','','g') = wa_id`; varios → sugerir el de solicitud activa más reciente, el agente puede corregir (`vinculo_origen='manual'`) |
 | Login | **Hecho** (rama `feat/auth-admin`): port del login de staff de Saba a `modules/auth`, BFF en Next con cookies `httpOnly`, `/login`. Ver `docs/api_modules.md` |
-| Permisos | Claves de permisos v2: `whatsapp_chats.view`, `.reply`, `.take`, `.reassign`, `whatsapp.configure`. `PermissionsGuard` + `@RequirePermissions`. Fase 1: resolver por constante (`angel.hernandez@sabatransporte.com` → todos); después adaptador `has_permission_v2` |
+| Permisos | Claves de permisos v2: `whatsapp_chats.view`, `.reply`, `.start`, `.take`, `.reassign`, `whatsapp.configure`. `.start` = nuevo chat y reabrir con plantilla (cuesta dinero y afecta la calidad del número), separado de `.reply`. `PermissionsGuard` + `@RequirePermissions`. Fase 1: resolver por constante (`angel.hernandez@sabatransporte.com` → todos); después adaptador `has_permission_v2` |
 | Refresco UI | Polling React Query: hilo abierto 3 s, lista 10–15 s |
 | Secretos | `.env`; `whatsapp_accounts` solo guarda estado de conexión |
+| Plantillas | Fase 1: solo texto, variables solo en el cuerpo; lista en vivo de Meta (`APPROVED`) con caché de 60 s invalidada por `message_template_status_update`. Se crean en WhatsApp Manager, no en Saba |
+| Configuración | Pantalla de solo lectura `/chats/configuracion` (`whatsapp.configure`): conectado / no configurado, número, token válido, último webhook recibido, botón "Enviar mensaje de prueba". La misma pantalla recibe el Embedded Signup en la Fase 9 |
+| Túnel dev | `cloudflared` con nombre en `wa-dev.sabatransporte.com` (DNS de Saba en Cloudflare) |
 | Meta apps | Una sola app; callback override por WABA (prueba → túnel, real → prod) |
 
 ## Variables de entorno nuevas (`apps/api/.env.example`)
 
 ```
 # SUPABASE_* y TURNSTILE_SECRET_KEY ya existen (auth, ver apps/api/.env.example)
-WHATSAPP_GRAPH_VERSION=v26.0
+WHATSAPP_GRAPH_VERSION=v26.0      # la de los campos del webhook en Meta (2026-10-07)
 WHATSAPP_ACCESS_TOKEN=            # token de usuario del sistema (sin vencimiento)
 WHATSAPP_APP_SECRET=              # firma X-Hub-Signature-256
 WHATSAPP_VERIFY_TOKEN=            # handshake GET del webhook
@@ -58,11 +63,20 @@ Cliente: `NEXT_PUBLIC_META_APP_ID`, `NEXT_PUBLIC_WHATSAPP_ES_CONFIG_ID` (fase co
 
 ## Fase 0 — Preparación en Meta (la hace el usuario, en paralelo)
 
-1. developers.facebook.com → Crear app → caso de uso "Conectar con clientes a través de WhatsApp", vinculada al portfolio de Saba.
-2. WhatsApp → Configuración de la API: número de prueba; agregar celular propio como destinatario.
-3. Business Settings → Usuarios del sistema → Admin; asignar app + WABA de prueba; token sin vencimiento (`whatsapp_business_messaging`, `whatsapp_business_management`, `business_management`).
-4. App Settings → Basic → clave secreta.
-5. Seguimiento de la verificación del negocio. Tarjeta en Billing Hub antes de prod.
+**Hecho (2026-10-07):**
+- App **Saba-Chat** (ID `2332812997518690`), modo desarrollo, en el portafolio **Saba Global Services LLC** (no en "Prueba", que tiene las apps viejas).
+- Número de prueba `+1 555 634 6598` · `WHATSAPP_PHONE_NUMBER_ID=1014761568397246` · `WHATSAPP_WABA_ID=1293126782760816`.
+- `hello_world` entregado a un celular agregado como destinatario.
+- Webhook verificado por túnel rápido (`trycloudflare.com`, mientras no haya acceso a la cuenta de Cloudflare de `sabatransporte.com`). Campos suscritos: `messages`, `message_template_status_update`, `template_category_update`, `account_update`, `phone_number_quality_update`.
+- Saba-Chat suscrita a la WABA (`POST /{WABA_ID}/subscribed_apps`): sin eso llegan las pruebas del panel pero no los mensajes reales. Mensajes reales recibidos y guardados; ejemplo anonimizado en `apps/api/src/test/fixtures/whatsapp/mensajeTextoEntrante.json`.
+- Verificación del negocio iniciada (con documentos de la LLC).
+
+**Pendiente:**
+1. business.facebook.com → Usuarios del sistema → `saba-chat-api` (Admin); asignar Saba-Chat + WABA de prueba con control total; token sin vencimiento con `whatsapp_business_messaging` y `whatsapp_business_management` (`business_management` recién en la Fase 9).
+2. Saba-Chat → Configuración de la app → Básica → clave secreta → `WHATSAPP_APP_SECRET`. Generar `WHATSAPP_VERIFY_TOKEN` (`openssl rand -hex 32`).
+3. `.env` con los nombres de esta sección (`WHATSAPP_PHONE_NUMBER_ID`, no `PHONE_NUMBER_ID`). Aclarar qué era `WHATSAPP_IDENTITY_PROVIDER_ID`.
+4. WhatsApp Manager, en la WABA de prueba: plantillas `seguimiento_solicitud` (UTILITY) y `contacto_lead` (MARKETING), idioma `es`, solo texto, `{{1}}` = nombre, con ejemplo de variable.
+5. Túnel con nombre `wa-dev.sabatransporte.com` → API local.
 
 ## Fase 1 — Auth y permisos (API + cliente)
 
@@ -73,7 +87,7 @@ Cliente: `NEXT_PUBLIC_META_APP_ID`, `NEXT_PUBLIC_WHATSAPP_ES_CONFIG_ID` (fase co
 - `AuthGuard` global (no `SupabaseJwtGuard`): JWT verificado local (JWKS o HS256 legado) + una consulta a `auth.sessions` y `profiles` por petición. Acceso al panel: rol staff **y** `PANEL_ALLOWED_EMAILS` (`modules/auth/domain/panelAccess.ts`), ya no `CHATS_ALLOWED_EMAILS`.
 - `GET /api/v1/me` devuelve `{ id, correo, nombre, rol }`, **sin permisos**.
 
-**Pendiente para Chats — permisos (antes 1.3):** catálogo cerrado (`whatsapp_chats.view|reply|take|reassign`, `whatsapp.configure`), `PermissionsResolverPort` (por constante primero, `has_permission_v2` después), `PermissionsGuard` + `@RequirePermissions`, `@CurrentPermissions()`, y sumar `permisos` a `/me`. En el cliente, `usePermisos()` sobre `/me` y pantalla "Sin acceso" ante 403.
+**Pendiente para Chats — permisos (antes 1.3):** catálogo cerrado (`whatsapp_chats.view|reply|start|take|reassign`, `whatsapp.configure`), `PermissionsResolverPort` (por constante primero, `has_permission_v2` después), `PermissionsGuard` + `@RequirePermissions`, `@CurrentPermissions()`, y sumar `permisos` a `/me`. En el cliente, `usePermisos()` sobre `/me` y pantalla "Sin acceso" ante 403.
 
 ## Fase 2 — Esquema y migración
 
@@ -114,6 +128,7 @@ whatsapp_messages
   enviado_por uuid NULL
   estado text NULL CHECK in ('pendiente','enviado','entregado','leido','fallido')  -- solo salientes
   error_codigo text NULL, error_detalle text NULL
+  plantilla_nombre text NULL, plantilla_idioma text NULL, plantilla_categoria text NULL  -- solo si tipo = 'template'; cuerpo = texto con variables ya reemplazadas
   wa_timestamp timestamptz NOT NULL
   created_at
   INDEX (conversation_id, wa_timestamp DESC)
@@ -154,6 +169,16 @@ Agregar al glosario de `CONTEXT.md`: Contacto, Conversación, Ventana de atenci�
 
 ## Fase 4 — Webhook: procesamiento
 
+**Hecha (2026-10-07), con estos ajustes:**
+- Identidad del contacto: `wa_id` pasa a opcional y se suma `user_id` (BSUID, único); CHECK de que haya al menos uno (migración `0005`). Se busca por `user_id` o teléfono y se completa lo que falte.
+- Cada evento se procesa entero en una transacción (`InboxUnitOfWork`) que lo toma con `FOR UPDATE SKIP LOCKED`; el fallo se registra afuera (`intentos`, `error`).
+- Solo se procesa el campo `messages` (entrantes y `statuses`). `account_update`, `smb_message_echoes`, `history` y `smb_app_state_sync` pasan a la **Fase 9**: no hay payloads reales para probarlos con el número de prueba. Los demás campos se marcan procesados sin acción.
+- Reacciones, `unsupported` y `system` no abren la ventana de 24 h (se prefiere bloquear de más que un 131047).
+- Un `status` de un `wamid` desconocido se ignora. La Fase 6 tiene que guardar el `wamid` antes de que llegue el primer status, o reintentar.
+- El vínculo con Saba al crear el contacto (4.4) pasa a la **Fase 5**, que es la que trae el puerto `IClienteSabaReader`.
+
+**Plan original:**
+
 **4.1** `ProcesarWebhookEventoUseCase` (handler del evento + barrido): toma el evento, despacha por `campo`, marca `procesado_at` o incrementa `intentos` + `error`. Idempotente: todo upsert por `wamid`.
 
 **4.2** `ReprocesadorWebhookService` (`OnModuleInit`): al arrancar y cada 60 s procesa filas con `procesado_at IS NULL AND intentos < 5` (`FOR UPDATE SKIP LOCKED` para múltiples instancias).
@@ -165,12 +190,23 @@ Agregar al glosario de `CONTEXT.md`: Contacto, Conversación, Ventana de atenci�
 - `history` → hilos con mensajes de fases 0/1/2: insertar `origen='historial'` (dirección según `from`), no toca ventana, no suma `no_leidos`; `ON CONFLICT (wamid) DO NOTHING`. Procesar en lotes (puede traer miles).
 - `account_update` → `PARTNER_REMOVED` / `ACCOUNT_OFFBOARDED` → `whatsapp_accounts.estado='desconectado'` + motivo; `ACCOUNT_RECONNECTED` → `conectado`.
 - `smb_app_state_sync` → actualizar `profile_name` del contacto si viene; resto se ignora en fase 1.
+- `message_template_status_update` → invalidar la caché de plantillas (no se persiste nada más).
 
 **4.4** Vínculo con Saba al **crear** un contacto: `IClienteSabaReader.buscarPorWaId(waId)` → lista de perfiles candidatos ordenados (solicitud activa más reciente primero); se fija el primero con `vinculo_origen='auto'`. No se recalcula si es `manual`.
 
 **Tests (con fixtures JSON reales de Meta en `test/fixtures/whatsapp/`):** texto entrante crea contacto+conversación+mensaje; duplicado no duplica; status fuera de orden; eco no abre ventana; historial no abre ventana ni suma no leídos; resuelta → abierta; imagen guarda caption y media_id; account_update cambia estado.
 
 ## Fase 5 — Módulo `sabaClientes` (solo lectura)
+
+**Reemplazada (2026-10-08):** este repo ya no lee `profiles`/`applications`. El servidor de Saba expone `GET /api/admin/marketing/customers/by-phone` (rama `feat/marketing-customers-by-phone` del repo `saba`, permiso `/admin/marketing/customers` en su `routePermissions.ts`) con identidad + últimas 5 solicitudes, hasta 5 perfiles. `sabaClientes` es ahora un cliente HTTP que reenvía la sesión del agente (`SABA_API_URL`). Se consulta **al abrir el chat** (`GET /whatsapp/conversaciones/:id/cliente-saba`) y se muestra en un panel lateral (o "Ver cliente" en pantallas chicas) con botón para copiar la cédula. Se quitó el vínculo automático del webhook. Nivel 3 (pagos) fuera por ser dato de cobranza.
+
+
+**Hecha (2026-10-07), con estos ajustes:**
+- `buscarPorTelefono` no usa `LATERAL`: dos consultas (perfiles por variantes del teléfono, y solicitudes de esos perfiles con `inArray`) y se ordena en memoria. Solicitud activa = `approved`, `pending`, `date_scheduled` (los de Saba).
+- El vínculo automático (antes 4.4) se hace después del commit del evento y se reintenta en cada mensaje mientras el contacto no tenga vínculo; no pisa uno `auto` ni `manual`. Un contacto solo con `user_id` queda sin vincular hasta que se vincule a mano.
+- `buscar` compara el teléfono sin `58` ni `0` inicial.
+
+**Plan original:**
 
 **5.1** Esquema Drizzle mínimo de solo lectura para `profiles` (id, nombre, telefono, role) y `applications` (id, user_id, status, created_at) — solo columnas usadas; **no** generan migración (excluir del `drizzle.config` o declararlas fuera del agregador de migraciones; resolver en la tarea).
 
@@ -183,13 +219,24 @@ Agregar al glosario de `CONTEXT.md`: Contacto, Conversación, Ventana de atenci�
 
 ## Fase 6 — Envío y acciones (API)
 
-**6.1** `WhatsAppCloudPort` (out) + `GraphWhatsAppCloudAdapter` (`fetch` a `https://graph.facebook.com/{v}/{PHONE_NUMBER_ID}/messages`, `{ messaging_product:'whatsapp', to, type:'text', text:{ body, preview_url:false } }`). Mapear errores de Graph a excepciones de dominio (ventana cerrada 131047, destinatario inválido, rate limit, auth).
+**Primer tramo hecho (2026-10-07), junto con la Fase 7:** `GET /whatsapp/conversaciones`, `GET …/:id/mensajes`, `POST …/:id/mensajes` (texto libre con ventana abierta) y `POST …/:id/leida` (200 con `data: null`, porque el cliente HTTP compartido siempre lee JSON). Errores de Meta en español (424 en vez de 5xx para que el mensaje llegue al agente). **Permisos pospuestos:** por ahora basta con acceso al panel (`AuthGuard`); la Fase 1 de permisos sigue pendiente. Sin teléfono (solo `user_id`) no se puede responder: Meta todavía no documenta el envío por BSUID.
+
+**Pendiente de este tramo:** reintentar, tomar/liberar/reasignar, resolver/reabrir, vínculo manual con Saba, plantillas (nuevo chat y reabrir), configuración.
+
+
+**6.1** `WhatsAppCloudPort` (out) + `GraphWhatsAppCloudAdapter` (`fetch` a `https://graph.facebook.com/{v}/{PHONE_NUMBER_ID}/messages`, `{ messaging_product:'whatsapp', to, type:'text', text:{ body, preview_url:false } }`). Mapear errores de Graph a excepciones de dominio con mensaje en español (tabla de `whatsapp-meta-v1.md` §6.1: 131047, 131030, 131026, 132000, 132001, 100, 190, 131056/130429/80007). El puerto también expone `sendTemplate(to, nombre, idioma, variables)` y `listApprovedTemplates()`.
+
+**6.1b** Plantillas: `GET /{WABA_ID}/message_templates?status=APPROVED&fields=name,language,status,category,parameter_format,components` siguiendo `paging.next`. Soportada = tiene `BODY`; `HEADER` solo `TEXT` sin variables; botones sin parámetros (`QUICK_REPLY`, `PHONE_NUMBER`, `URL` fija). Variables del cuerpo con `/\{\{\s*(\w+)\s*\}\}/g` sin repetir; `POSITIONAL` o `NAMED` (con `parameter_name`). Caché en memoria 60 s. Validación: todas las variables no vacías, ≤ 1024 caracteres, sin saltos de línea ni tabs.
+
+**6.1c** `normalizeWhatsAppPhone(input): string | null` en **`packages/utils`** (lo usan las dos apps): solo dígitos, quita `00`, `0`+10 dígitos → `58`+10, 10 dígitos que empiezan con `4` → `58`+número, válido entre 10 y 15 dígitos. Tests con la tabla de `whatsapp-meta-v1.md` §7.
 
 **6.2** `ResponderConversacionUseCase` (`whatsapp_chats.reply`):
 - Rechaza si la ventana está cerrada (`VentanaCerradaException` → 409).
 - Si nadie la tomó, la toma quien responde.
 - Inserta mensaje `saliente/sistema/pendiente`, llama a Meta, guarda `wamid` y `estado='enviado'`; en error → `fallido` + detalle (el mensaje queda visible con "reintentar").
 - Límite de 4096 caracteres (Zod).
+
+**6.2b** `IniciarConversacionUseCase` (`whatsapp_chats.start`): normaliza el teléfono, upsert de contacto y conversación (vínculo con Saba como en 4.4), envía la plantilla y guarda el mensaje `saliente/sistema` con `tipo='template'`, `plantilla_*` y el cuerpo ya renderizado. No abre la ventana (solo la abre el cliente al responder). `ReabrirConPlantillaUseCase` hace lo mismo sobre una conversación existente.
 
 **6.3** Endpoints (`packages/schemas/src/whatsapp/` primero, luego controller y `packages/services/src/components/whatsapp.ts`):
 
@@ -208,29 +255,41 @@ Agregar al glosario de `CONTEXT.md`: Contacto, Conversación, Ventana de atenci�
 | `GET /whatsapp/contactos/:id/candidatos-saba` · `GET /saba-clientes?q=` | `.view` | |
 | `PUT /whatsapp/contactos/:id/vinculo` | `.reply` | `{ sabaProfileId \| null }` → `manual` |
 | `GET /whatsapp/cuenta` | `.view` | estado de conexión para el banner |
+| `GET /whatsapp/plantillas` | `.start` | plantillas soportadas: `{ name, language, category, parameterFormat, bodyText, variables }` |
+| `POST /whatsapp/conversaciones` | `.start` | `{ telefono, plantilla, idioma, variables }` → nuevo chat |
+| `POST /whatsapp/conversaciones/:id/plantilla` | `.start` | `{ plantilla, idioma, variables }` → reabrir con ventana cerrada |
+| `GET /whatsapp/configuracion` | `whatsapp.configure` | configurado, número, token válido (consulta a Meta), último webhook recibido |
+| `POST /whatsapp/configuracion/prueba` | `whatsapp.configure` | envío de prueba (texto o plantilla) a un número; no crea conversación |
 | `GET /me/permissions` | autenticado | (fase 1) |
 
 Nombres de quién tomó/envió: resolver `tomada_por`/`enviado_por` contra `profiles` vía `sabaClientes` (o devolver email desde `auth.users`) — decidir en la tarea; la UI solo necesita un nombre.
 
 ## Fase 7 — UI `/chats` (cliente)
 
+**Primer tramo hecho (2026-10-07):** lista (polling 10 s) + hilo (polling 3 s) + compositor con contador de ventana; bloqueado con aviso si la ventana está cerrada o el contacto no tiene teléfono; abrir el chat lo marca leído; avisos para mensajes que no son texto; error de envío visible y el texto se conserva para reintentar. Sin pestañas, sin panel de Saba y sin plantillas todavía.
+
+
 `src/features/chats/{domain,application/{queries,mutations},infrastructure,ui/{components,pages,widgets}}` siguiendo `features/leads`; ruta `src/app/(app)/chats/page.tsx`; link "Chats" en `(app)/layout.tsx` visible solo con `whatsapp_chats.view`.
 
 - **Lista (izquierda):** pestañas Abiertas / Mías / Sin tomar / Resueltas; nombre (Saba > perfil WA > número), preview, hora, badge no leídos, avatar de quién la tomó, indicador "sin vincular". Polling 10–15 s.
 - **Hilo (centro):** burbujas entrantes/salientes; etiqueta "desde el celular" en ecos y "historial" en importados; aviso para no-texto; ticks de estado; "fallido — reintentar". Polling 3 s; scroll infinito hacia arriba; al abrir → `leida`.
-- **Compositor:** bloqueado si ventana cerrada ("Ventana de 24 h cerrada — espera a que el cliente escriba; plantillas próximamente"); contador "Ventana: 5 h 12 min" cuando está abierta; envío optimista.
+- **Compositor:** si la ventana está cerrada, bloqueado con botón **"Reabrir con plantilla"** (con `.start`); contador "Ventana: 5 h 12 min" cuando está abierta; envío optimista.
 - **Cabecera:** Tomar / Liberar / Reasignar / Resolver según permisos.
 - **Panel derecho (Saba):** perfil vinculado + solicitudes; "Hay N perfiles con este número" → elegir; "Contacto sin vincular" → buscador para vincular.
 - **Banner global:** WhatsApp desconectado (desde `/whatsapp/cuenta`) con motivo.
+- **Nuevo chat** (con `.start`): teléfono con vista previa normalizada ("Se enviará a +58 414 …" / "Número inválido"), selector `nombre · idioma · categoría`, un input por variable, vista previa del cuerpo en vivo. Sin plantillas soportadas: "No hay plantillas aprobadas de solo texto. Créalas en WhatsApp Manager."
+- **`/chats/configuracion`** (con `whatsapp.configure`): estado de la sección de Decisiones + "Enviar mensaje de prueba".
 
-**Tests:** Jest + MSW: lista, compositor bloqueado/abierto, envío fallido + reintento, vínculo manual.
+**Tests:** Jest + MSW: lista, compositor bloqueado/abierto, envío fallido + reintento, vínculo manual, nuevo chat con plantilla (variables y vista previa), reabrir con plantilla.
 
 ## Fase 8 — Prueba de punta a punta con número de prueba
 
-1. API local + `cloudflared tunnel` (preferible túnel con nombre para URL estable).
-2. Meta → WhatsApp → Configuración → Webhook: `https://<túnel>/api/v1/whatsapp/webhook` + `WHATSAPP_VERIFY_TOKEN`; suscribir `messages`, `account_update`, `history`, `smb_message_echoes`, `smb_app_state_sync`.
+1. API local + túnel con nombre `wa-dev.sabatransporte.com`.
+2. Meta → WhatsApp → Configuración → Webhook: `https://wa-dev.sabatransporte.com/api/v1/whatsapp/webhook` + `WHATSAPP_VERIFY_TOKEN`; suscribir `messages`, `account_update`, `history`, `smb_message_echoes`, `smb_app_state_sync`, `message_template_status_update`.
 3. Script `apps/api/scripts/whatsapp/suscribirApp.ts` → `POST /{WABA_ID}/subscribed_apps`.
 4. Escribir desde el celular → ver chat → responder → ver ticks → esperar >24 h y confirmar bloqueo.
+5. Nuevo chat con `seguimiento_solicitud` a un destinatario permitido → llega; responder desde el celular → se abre la ventana.
+6. Reabrir con plantilla una conversación vencida; destinatario no permitido → error 131030 en español; `/chats/configuracion` muestra estado y último webhook.
 
 ## Fase 9 — Conexión del número real (coexistencia)
 
@@ -253,7 +312,8 @@ Nombres de quién tomó/envió: resolver `tomada_por`/`enviado_por` contra `prof
 
 - [ ] Hosting de `apps/api` y `apps/client` con URL HTTPS fija (Cloud Run con CPU siempre asignada y mín. 1 instancia, o servidor Ubuntu + pm2).
 - [ ] Callback override del WABA real → URL de prod.
-- [ ] Tarjeta internacional en Billing Hub (sin método de pago Meta corta en 1 000 respuestas/mes).
+- [ ] Tarjeta internacional en Billing Hub (sin método de pago Meta corta en 1 000 respuestas/mes y no se envían plantillas). **Por confirmar** si la LLC tiene una.
+- [ ] Recrear las plantillas en la WABA real (pertenecen a la WABA; las de prueba no se trasladan).
 - [ ] Verificación del negocio aprobada.
 - [ ] Celular de la empresa abierto al menos cada ~14 días (si no, `PRIMARY_INACTIVITY` desconecta).
 
@@ -271,7 +331,12 @@ Fases 1, 2 y 5 pueden ir en paralelo. Cada fase es un PR (el usuario commitea y 
 ## Riesgos abiertos
 
 - Coexistencia sin ser Tech Provider no está documentada: puede requerir esperar la verificación.
-- Mensajes recibidos justo antes de conectar no abren ventana: solo se podrán contestar con plantilla (fase 2).
+- Mensajes recibidos justo antes de conectar no abren ventana: solo se podrán contestar con plantilla.
+- Meta puede reclasificar una plantilla UTILITY como MARKETING (más cara) o rechazarla si el texto suena promocional.
+- Algunos errores (131047, 131026) llegan solo por webhook de estado, no en la respuesta del envío: el mensaje se ve "enviado" y luego pasa a `fallido`.
 - El historial llega en lotes grandes: vigilar tamaño de `whatsapp_webhook_events.payload` y tiempo de procesamiento.
 - `has_permission_v2` todavía no existe: el resolver por constante se reemplaza cuando se aplique permisos v2.
 - Precios: respuestas gratis hasta 1 000/mes por número desde 2026-10-01; luego se cobran.
+- **Nombres de usuario de WhatsApp (BSUID):** el webhook trae `contacts[].user_id` y `messages[].from_user_id` (`VE.…`) además de `wa_id`. Con un cliente que activó nombre de usuario, `wa_id`/`from` pueden no venir: `whatsapp_contacts.wa_id NOT NULL UNIQUE` y el vínculo por teléfono no lo cubren. Resolver antes de la Fase 4.
+- Una app ajena llamada "Saba" (`3027254144127246`) está suscrita a la WABA de prueba y recibe sus webhooks. Identificar al dueño y desconectarla antes del número real.
+- `user_preferences` (baja de marketing del cliente): suscribir y respetar antes de enviar plantillas MARKETING a clientes reales.

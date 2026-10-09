@@ -12,34 +12,36 @@ import {
   startupBanner,
 } from './infrastructure/bootstrap/startupBanner';
 import {
-  dbTarget,
   redactDatabaseUrl,
   resolveDatabaseUrl,
 } from './infrastructure/database/databaseUrl';
 import { registerUncaughtErrorHandlers } from './infrastructure/logging/registerUncaughtErrorHandlers';
 import { StructuredLogger } from './infrastructure/logging/StructuredLogger';
-import { DEV_ADMIN } from './modules/auth/infrastructure/persistence/seedDevAdmin';
 import { ZodValidationPipe } from './shared/pipes/zodValidationPipe';
 
-// `nest start` corre desde apps/api (cwd) o desde dist/; cubrimos ambos.
+// `nest start` runs from apps/api (cwd) or from dist/; we cover both.
 loadEnv({ path: resolve(process.cwd(), '.env') });
 loadEnv({ path: resolve(__dirname, '../.env') });
 
-// Antes de crear la app: un throw durante el bootstrap también debe quedar
-// en Error Reporting con traza, no perderse en un stdout sin estructura.
+// Before creating the app: a throw during bootstrap must also land in Error
+// Reporting with a trace, not get lost in unstructured stdout.
 registerUncaughtErrorHandlers(new StructuredLogger());
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
+    // The WhatsApp webhook signs the exact bytes of the body.
+    rawBody: true,
   });
+  // Meta sends the chat history in batches that exceed the 100 kb limit.
+  app.useBodyParser('json', { limit: '5mb' });
   app.useLogger(app.get(StructuredLogger));
 
-  // `request.ip` es la IP del cliente que reenvía el BFF, no la del BFF: el
-  // rate limit del login cuenta por IP (ver TRUST_PROXY_HOPS en .env.example).
+  // `request.ip` is the IP of the client the BFF forwards, not the BFF's: the
+  // login rate limit counts per IP (see TRUST_PROXY_HOPS in .env.example).
   app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS ?? 1));
 
-  // El cliente usa baseURL .../api + paths /v1/... → /api/v1/health
+  // The client uses baseURL .../api + paths /v1/... → /api/v1/health
   app.setGlobalPrefix('api/v1');
 
   app.useGlobalPipes(new ZodValidationPipe());
@@ -50,8 +52,8 @@ async function bootstrap() {
     })
   );
 
-  // El cliente es SSR en su propio servicio, así que el navegador es lo único
-  // que llama a esta API: CORS es la frontera real, no un detalle.
+  // The client is SSR in its own service, so the browser is the only thing that
+  // calls this API: CORS is the real boundary, not a detail.
   app.enableCors({
     origin: allowedOrigins(),
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -74,28 +76,21 @@ async function bootstrap() {
   const port = Number(process.env.PORT) || 8080;
   await app.listen(port);
 
-  // Para humanos en la terminal: el StructuredLogger de abajo emite JSON (lo
-  // que lee el agregador de logs) y las URLs se pierden entre los campos.
+  // For humans in the terminal: the StructuredLogger below emits JSON (what the
+  // log aggregator reads) and URLs get lost among the fields.
   const databaseUrl = resolveDatabaseUrl();
   console.log(
     startupBanner({
       port,
       databaseUrl,
-      dbTarget: dbTarget(),
-      explicitDatabase: Boolean(process.env.DATABASE),
       panelUrl: allowedOrigins()[0],
-      studioUrl: process.env.SUPABASE_STUDIO_URL,
-      authUrl: process.env.SUPABASE_URL,
-      devLogin: { correo: DEV_ADMIN.email, contrasena: DEV_ADMIN.password },
+      sabaUrl: process.env.SABA_API_URL,
       color: shouldColor(),
     })
   );
 
   const logger = app.get(StructuredLogger);
   logger.log(`API escuchando en http://localhost:${port}`, 'Bootstrap');
-  logger.log(
-    `Base: ${process.env.DATABASE ? 'DATABASE explícita' : `DB_TARGET=${dbTarget()}`} → ${redactDatabaseUrl(databaseUrl)}`,
-    'Bootstrap'
-  );
+  logger.log(`Base: ${redactDatabaseUrl(databaseUrl)}`, 'Bootstrap');
 }
 bootstrap();

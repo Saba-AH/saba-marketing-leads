@@ -3,30 +3,30 @@ import { cn } from '@repo/ui/lib/utils';
 import * as React from 'react';
 
 type PaginationButtonProps = {
-  activo?: boolean;
+  active?: boolean;
 } & React.ComponentProps<'button'>;
 
 /**
- * Reemplaza al `PaginationLink` de shadcn, que renderiza un `<a>`.
+ * Replaces shadcn's `PaginationLink`, which renders an `<a>`.
  *
- * Ese componente asume paginación por URL. Acá la página es estado en memoria:
- * no hay destino al que apuntar, así que un ancla sería un enlace falso — el
- * lector de pantalla lo anunciaría como enlace, la barra espaciadora no lo
- * activaría y abrirlo en otra pestaña no llevaría a ninguna parte.
+ * That component assumes URL-based pagination. Here the page is in-memory
+ * state: there is no destination to point to, so an anchor would be a fake
+ * link — the screen reader would announce it as a link, the space bar would not
+ * activate it and opening it in another tab would lead nowhere.
  */
 export default function PaginationButton({
   className,
-  activo,
+  active,
   ...props
 }: PaginationButtonProps) {
   return (
     <button
-      aria-current={activo ? 'page' : undefined}
+      aria-current={active ? 'page' : undefined}
       className={cn(
-        buttonVariants({ variant: activo ? 'outline' : 'ghost', size: 'icon' }),
+        buttonVariants({ variant: active ? 'outline' : 'ghost', size: 'icon' }),
         className
       )}
-      data-active={activo}
+      data-active={active}
       data-slot="pagination-button"
       type="button"
       {...props}
