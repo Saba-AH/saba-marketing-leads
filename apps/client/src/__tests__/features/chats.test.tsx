@@ -472,7 +472,7 @@ describe('ChatsPage', () => {
 
   it('sends only once when Enter is pressed repeatedly while sending', async () => {
     let calls = 0;
-    let release: () => void = () => {};
+    let release!: () => void;
     const pending = new Promise<void>((resolve) => {
       release = resolve;
     });
