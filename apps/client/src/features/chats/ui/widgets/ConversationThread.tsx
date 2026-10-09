@@ -63,7 +63,7 @@ export function ConversationThread({
         aria-label={`Chat con ${displayName(conversation)}`}
         className="flex min-h-0 min-w-0 flex-1 flex-col"
       >
-        <header className="flex items-center gap-2 border-b px-3 py-3 md:px-5">
+        <header className="flex h-20 shrink-0 items-center gap-2 border-b px-3 md:px-5">
           <Button
             variant="ghost"
             size="icon"

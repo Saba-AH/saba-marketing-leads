@@ -48,7 +48,7 @@ export function ContactDetail({
       aria-label={TITLE}
       className="flex w-80 shrink-0 flex-col overflow-y-auto border-l"
     >
-      <header className="flex items-center gap-2 border-b px-4 py-3">
+      <header className="flex h-20 shrink-0 items-center gap-2 border-b px-4">
         <Button
           type="button"
           variant="ghost"

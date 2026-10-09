@@ -25,7 +25,7 @@ export function ChatsPage(): React.JSX.Element {
           selected ? 'hidden' : 'flex'
         )}
       >
-        <header className="border-b px-4 py-3">
+        <header className="flex h-20 shrink-0 flex-col justify-center border-b px-4">
           <h1 className="font-bold text-lg">Chats</h1>
           <p className="text-muted-foreground text-xs">
             Conversaciones de WhatsApp con los clientes de Saba.
